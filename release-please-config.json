@@ -21,8 +21,14 @@
           "path": "src-tauri/Cargo.toml",
           "jsonpath": "$.package.version"
         },
-        "README.md",
-        "README.zh.md"
+        {
+          "type": "generic",
+          "path": "README.md"
+        },
+        {
+          "type": "generic",
+          "path": "README.zh.md"
+        }
       ]
     }
   }
