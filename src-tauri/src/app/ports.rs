@@ -50,6 +50,7 @@ pub trait ConfigBackup: Send + Sync {
     fn backup_now(&self) -> DomainResult<String>;
     fn list_backups(&self) -> DomainResult<Vec<String>>;
     fn restore(&self, backup_name: &str) -> DomainResult<()>;
+    fn delete_backup(&self, backup_name: &str) -> DomainResult<()>;
     fn export_toml(&self, alarms: &[Alarm], settings: &AppSettings) -> DomainResult<()>;
     fn import_toml_if_needed(&self) -> DomainResult<Option<(Vec<AlarmDraft>, AppSettings)>>;
 }

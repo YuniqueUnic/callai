@@ -52,11 +52,15 @@ pub struct TomlConfigBackup {
 }
 
 impl TomlConfigBackup {
+    /// Product rule: keep at most 10 backups.
+    pub const MAX_BACKUP_FILES: usize = 10;
+
     pub fn new(paths: AppPaths) -> Self {
         Self { paths }
     }
 
     fn prune_backups(&self, keep: usize) -> DomainResult<()> {
+        let keep = keep.min(Self::MAX_BACKUP_FILES);
         let mut entries: Vec<_> = fs::read_dir(&self.paths.backups_dir)
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?
             .filter_map(|e| e.ok())
@@ -92,7 +96,7 @@ impl ConfigBackup for TomlConfigBackup {
         let dest = self.paths.backups_dir.join(&name);
         fs::copy(&self.paths.config_file, &dest)
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("backup copy: {e}")))?;
-        self.prune_backups(10)?;
+        self.prune_backups(Self::MAX_BACKUP_FILES)?;
         Ok(name)
     }
 
@@ -121,6 +125,36 @@ impl ConfigBackup for TomlConfigBackup {
         let _ = self.backup_now();
         fs::copy(&src, &self.paths.config_file)
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("restore: {e}")))?;
+        Ok(())
+    }
+
+    fn delete_backup(&self, backup_name: &str) -> DomainResult<()> {
+        self.paths.ensure()?;
+        // prevent path traversal
+        let name = Path::new(backup_name)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        if name.is_empty()
+            || !name.starts_with("config.toml.")
+            || !name.ends_with(".bak")
+            || name != backup_name
+        {
+            return Err(DomainError::new(
+                ErrorCode::StorageFailed,
+                "invalid backup name",
+            ));
+        }
+        let path = self.paths.backups_dir.join(name);
+        if !path.exists() {
+            return Err(DomainError::new(
+                ErrorCode::StorageFailed,
+                "backup not found",
+            ));
+        }
+        fs::remove_file(&path).map_err(|e| {
+            DomainError::new(ErrorCode::StorageFailed, format!("delete backup: {e}"))
+        })?;
         Ok(())
     }
 

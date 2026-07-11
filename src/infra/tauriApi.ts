@@ -52,6 +52,7 @@ export const api = {
   backupNow: () => call<string>("backup_now"),
   listBackups: () => call<string[]>("list_backups"),
   restoreBackup: (name: string) => call<void>("restore_backup", { name }),
+  deleteBackup: (name: string) => call<void>("delete_backup", { name }),
   nextTrigger: (id: string) => call<string | null>("next_trigger", { id }),
 };
 

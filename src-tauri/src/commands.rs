@@ -183,6 +183,11 @@ pub fn restore_backup(state: State<'_, AppState>, name: String) -> Result<(), St
 }
 
 #[tauri::command]
+pub fn delete_backup(state: State<'_, AppState>, name: String) -> Result<(), String> {
+    state.service.delete_backup(&name).map_err(map_err)
+}
+
+#[tauri::command]
 pub fn next_trigger(state: State<'_, AppState>, id: String) -> Result<Option<String>, String> {
     let alarm = state.service.get_alarm(&id).map_err(map_err)?;
     let next = alarm

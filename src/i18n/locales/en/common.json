@@ -23,5 +23,7 @@
   "trayResumeAll": "Resume all",
   "traySettings": "Settings",
   "trayQuit": "Quit",
-  "trayTooltip": "callai · cozy AI window alarm"
+  "trayTooltip": "callai · cozy AI window alarm",
+  "tabAlarms": "Alarms",
+  "tabSettings": "Settings"
 }

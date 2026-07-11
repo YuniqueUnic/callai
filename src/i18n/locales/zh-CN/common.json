@@ -23,5 +23,7 @@
   "trayResumeAll": "恢复所有闹钟",
   "traySettings": "设置",
   "trayQuit": "退出",
-  "trayTooltip": "callai · 帮你照顾 AI 的小闹钟"
+  "trayTooltip": "callai · 帮你照顾 AI 的小闹钟",
+  "tabAlarms": "闹钟",
+  "tabSettings": "设置"
 }

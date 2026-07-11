@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Input, Notification, Switch } from "animal-island-ui";
+import { Button, Input, Modal, Notification, Switch } from "animal-island-ui";
 import type { AppSettings, LocaleCode, ThemeMode } from "../domain/types";
 import { client } from "../infra/client";
 import { applyTheme } from "../theme/theme";
@@ -33,6 +33,7 @@ export function SettingsPage({ onBack }: Props) {
   const { t, i18n } = useTranslation(["settings", "common"]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [backups, setBackups] = useState<string[]>([]);
+  const [confirmDeleteBackup, setConfirmDeleteBackup] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -211,6 +212,9 @@ export function SettingsPage({ onBack }: Props) {
 
           <div className="field">
             <label className="label">{t("settings:backups")}</label>
+            <div className="hint" style={{ marginBottom: 8 }}>
+              {t("settings:backupKeepHint")}
+            </div>
             {backups.length === 0 ? (
               <div className="meta">{t("common:empty")}</div>
             ) : (
@@ -219,21 +223,61 @@ export function SettingsPage({ onBack }: Props) {
                   <span className="meta" title={b}>
                     {b}
                   </span>
-                  <Button
-                    size="small"
-                    onClick={async () => {
-                      await client.restoreBackup(b);
-                      Notification.success({ message: t("settings:restore") });
-                    }}
-                  >
-                    {t("settings:restore")}
-                  </Button>
+                  <div className="row">
+                    <Button
+                      size="small"
+                      onClick={async () => {
+                        await client.restoreBackup(b);
+                        Notification.success({ message: t("settings:restore") });
+                      }}
+                    >
+                      {t("settings:restore")}
+                    </Button>
+                    <Button
+                      size="small"
+                      danger
+                      onClick={() => setConfirmDeleteBackup(b)}
+                    >
+                      {t("settings:deleteBackup")}
+                    </Button>
+                  </div>
                 </div>
               ))
             )}
           </div>
         </div>
       </div>
+
+      <Modal
+        open={!!confirmDeleteBackup}
+        title={t("settings:deleteBackup")}
+        typewriter={false}
+        onClose={() => setConfirmDeleteBackup(null)}
+        onOk={() => {
+          if (!confirmDeleteBackup) return;
+          void (async () => {
+            try {
+              await client.deleteBackup(confirmDeleteBackup);
+              setBackups(await client.listBackups());
+              Notification.success({ message: t("settings:deleteBackupSuccess") });
+            } catch (err) {
+              Notification.error({
+                message: t("settings:deleteBackup"),
+                description: String((err as { message?: string })?.message ?? err),
+              });
+            } finally {
+              setConfirmDeleteBackup(null);
+            }
+          })();
+        }}
+      >
+        {t("settings:deleteBackupConfirm")}
+        {confirmDeleteBackup ? (
+          <div className="meta" style={{ marginTop: 8 }}>
+            {confirmDeleteBackup}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }

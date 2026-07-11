@@ -53,5 +53,13 @@
   "pickTime": "选择时间",
   "donePick": "完成",
   "hour": "时",
-  "minute": "分"
+  "minute": "分",
+  "runSuccess": "这次小任务顺利完成啦～",
+  "deleteSuccess": "闹钟已删掉啦～放心，随时可以再设一个",
+  "pauseSuccess": "已暂停所有闹钟，随时可以重新开启哦",
+  "resumeSuccess": "所有闹钟都回来啦～",
+  "tabAlarms": "闹钟",
+  "tabSettings": "设置",
+  "openLogsFromSettings": "查看执行日志",
+  "logsHint": "看看小闹钟们最近的工作记录"
 }

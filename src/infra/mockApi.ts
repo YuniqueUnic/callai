@@ -20,6 +20,7 @@ let settings: AppSettings = {
   backup_keep_count: 10,
 };
 let logSeq = 1;
+let mockBackups: string[] = ["config.toml.mock.bak"];
 
 function now() {
   return new Date().toISOString();
@@ -147,13 +148,18 @@ export const mockApi = {
     return d;
   },
   async backupNow() {
-    return "config.toml.mock.bak";
+    const name = `config.toml.mock.${Date.now()}.bak`;
+    mockBackups = [name, ...mockBackups].slice(0, 10);
+    return name;
   },
   async listBackups() {
-    return ["config.toml.mock.bak"];
+    return [...mockBackups];
   },
   async restoreBackup(_name: string) {
     return;
+  },
+  async deleteBackup(name: string) {
+    mockBackups = mockBackups.filter((b) => b !== name);
   },
   async nextTrigger(_id: string) {
     const d = new Date();

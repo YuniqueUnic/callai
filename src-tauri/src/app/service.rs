@@ -125,6 +125,10 @@ impl AlarmService {
         self.backup.restore(name)
     }
 
+    pub fn delete_backup(&self, name: &str) -> DomainResult<()> {
+        self.backup.delete_backup(name)
+    }
+
     pub fn run_alarm_now_blocking(&self, id: &str) -> DomainResult<ExecutionLog> {
         self.run_alarm_once(id)
     }

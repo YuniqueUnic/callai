@@ -171,6 +171,7 @@ pub fn run() {
             commands::backup_now,
             commands::list_backups,
             commands::restore_backup,
+            commands::delete_backup,
             commands::next_trigger,
             commands::refresh_tray_menu,
         ])
@@ -340,3 +341,6 @@ pub fn run() {
 fn _theme_touch(t: ThemeMode) -> ThemeMode {
     t
 }
+
+#[cfg(test)]
+mod tests;

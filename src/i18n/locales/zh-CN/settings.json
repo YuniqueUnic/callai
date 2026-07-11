@@ -16,5 +16,9 @@
   "notifyPermissionTitle": "需要通知权限",
   "notifyPermissionBody": "开启后，任务失败时会温柔地提醒你～",
   "failureNotifyTitle": "小任务不太顺利",
-  "failureNotifyBody": "「{{name}}」这次没完成，可以打开日志看看～"
+  "failureNotifyBody": "「{{name}}」这次没完成，可以打开日志看看～",
+  "deleteBackup": "删除",
+  "deleteBackupConfirm": "确定删除这份备份吗？删掉就找不回来啦～",
+  "deleteBackupSuccess": "备份已删除～",
+  "backupKeepHint": "最多保留 10 份备份，超出时会自动清理最旧的"
 }

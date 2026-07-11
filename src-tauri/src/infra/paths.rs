@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use crate::domain::{DomainError, DomainResult, ErrorCode};
 
+#[derive(Clone)]
 pub struct AppPaths {
     pub config_dir: PathBuf,
     pub data_dir: PathBuf,

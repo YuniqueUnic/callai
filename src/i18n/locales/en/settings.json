@@ -16,5 +16,9 @@
   "notifyPermissionTitle": "Notifications",
   "notifyPermissionBody": "Allow callai to notify you when a task needs care.",
   "failureNotifyTitle": "A little task needs care",
-  "failureNotifyBody": "“{{name}}” did not finish. Open logs for details."
+  "failureNotifyBody": "“{{name}}” did not finish. Open logs for details.",
+  "deleteBackup": "Delete",
+  "deleteBackupConfirm": "Delete this backup? This cannot be undone.",
+  "deleteBackupSuccess": "Backup deleted.",
+  "backupKeepHint": "Up to 10 backups are kept; older ones are removed automatically."
 }

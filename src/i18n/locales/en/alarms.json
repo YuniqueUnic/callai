@@ -53,5 +53,13 @@
   "pickTime": "Pick time",
   "donePick": "Done",
   "hour": "Hour",
-  "minute": "Minute"
+  "minute": "Minute",
+  "runSuccess": "That little task finished happily!",
+  "deleteSuccess": "Alarm removed. You can always create a new one.",
+  "pauseSuccess": "All alarms paused. You can resume anytime.",
+  "resumeSuccess": "All alarms are back on duty.",
+  "tabAlarms": "Alarms",
+  "tabSettings": "Settings",
+  "openLogsFromSettings": "View run logs",
+  "logsHint": "See how your alarms have been doing"
 }

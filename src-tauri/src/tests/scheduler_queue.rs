@@ -46,6 +46,9 @@ impl ConfigBackup for NoopBackup {
     fn restore(&self, _: &str) -> DomainResult<()> {
         Ok(())
     }
+    fn delete_backup(&self, _: &str) -> DomainResult<()> {
+        Ok(())
+    }
     fn export_toml(&self, _: &[Alarm], _: &AppSettings) -> DomainResult<()> {
         Ok(())
     }
