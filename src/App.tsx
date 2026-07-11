@@ -35,6 +35,11 @@ export default function App() {
     setLogsOpen(true);
   }, []);
 
+  useEffect(() => {
+    document.body.classList.toggle("callai-logs-open", logsOpen);
+    return () => document.body.classList.remove("callai-logs-open");
+  }, [logsOpen]);
+
   const onCreate = useCallback(() => {
     setEditId(null);
     setPage("edit");
@@ -136,6 +141,7 @@ export default function App() {
           width="min(420px, 92vw)"
           pushBackground
           onClose={() => setLogsOpen(false)}
+          className="logs-drawer"
         >
           {logsOpen ? <LogsPanel alarmId={logAlarmId} /> : null}
         </Drawer>

@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -5,15 +6,21 @@ import react from "@vitejs/plugin-react";
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
-export default defineConfig(async () => ({
-  test: { environment: "node", include: ["src/tests/**/*.test.ts"] },
-  plugins: [react()],
+export default defineConfig({
+  plugins: [
+    // Vite 8 / rolldown-vite: default plugin-react uses Oxc transform (no babel esbuild warn)
+    react({
+      // avoid babel pipeline on Vite 8
+      babel: undefined,
+    }),
+  ],
 
-  // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
-  //
-  // 1. prevent Vite from obscuring rust errors
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts", "src/tests/**/*.test.ts"],
+  },
+
   clearScreen: false,
-  // 2. tauri expects a fixed port, fail if that port is not available
   server: {
     port: 1420,
     strictPort: true,
@@ -26,8 +33,7 @@ export default defineConfig(async () => ({
         }
       : undefined,
     watch: {
-      // 3. tell Vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
   },
-}));
+});
