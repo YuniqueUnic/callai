@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "source": "callai.elements.png",
+  "grid": {
+    "cols": 8,
+    "rows": 2,
+    "cellWidth": 313,
+    "cellHeight": 313
+  },
+  "elements": [
+    {
+      "id": "hero-perch",
+      "file": "hero-perch.png",
+      "fileSm": "hero-perch@sm.png",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "create-alarm",
+      "file": "create-alarm.png",
+      "fileSm": "create-alarm@sm.png",
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "set-time",
+      "file": "set-time.png",
+      "fileSm": "set-time@sm.png",
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "task-checklist",
+      "file": "task-checklist.png",
+      "fileSm": "task-checklist@sm.png",
+      "row": 0,
+      "col": 3
+    },
+    {
+      "id": "running",
+      "file": "running.png",
+      "fileSm": "running@sm.png",
+      "row": 0,
+      "col": 4
+    },
+    {
+      "id": "retry",
+      "file": "retry.png",
+      "fileSm": "retry@sm.png",
+      "row": 0,
+      "col": 5
+    },
+    {
+      "id": "paused-sleep",
+      "file": "paused-sleep.png",
+      "fileSm": "paused-sleep@sm.png",
+      "row": 0,
+      "col": 6
+    },
+    {
+      "id": "sprout-fresh",
+      "file": "sprout-fresh.png",
+      "fileSm": "sprout-fresh@sm.png",
+      "row": 0,
+      "col": 7
+    },
+    {
+      "id": "theme-light",
+      "file": "theme-light.png",
+      "fileSm": "theme-light@sm.png",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "theme-dark",
+      "file": "theme-dark.png",
+      "fileSm": "theme-dark@sm.png",
+      "row": 1,
+      "col": 1
+    },
+    {
+      "id": "chat-global",
+      "file": "chat-global.png",
+      "fileSm": "chat-global@sm.png",
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "multi-device",
+      "file": "multi-device.png",
+      "fileSm": "multi-device@sm.png",
+      "row": 1,
+      "col": 3
+    },
+    {
+      "id": "notify-badge",
+      "file": "notify-badge.png",
+      "fileSm": "notify-badge@sm.png",
+      "row": 1,
+      "col": 4
+    },
+    {
+      "id": "logs-clipboard",
+      "file": "logs-clipboard.png",
+      "fileSm": "logs-clipboard@sm.png",
+      "row": 1,
+      "col": 5
+    },
+    {
+      "id": "success-check",
+      "file": "success-check.png",
+      "fileSm": "success-check@sm.png",
+      "row": 1,
+      "col": 6
+    },
+    {
+      "id": "sync-refresh",
+      "file": "sync-refresh.png",
+      "fileSm": "sync-refresh@sm.png",
+      "row": 1,
+      "col": 7
+    }
+  ],
+  "usage": {
+    "hero-perch": "empty state / brand hero",
+    "create-alarm": "FAB / create empty",
+    "set-time": "schedule section",
+    "task-checklist": "task config section",
+    "running": "alarm running status",
+    "retry": "retrying status",
+    "paused-sleep": "paused status",
+    "sprout-fresh": "success / fresh window toast",
+    "theme-light": "settings light theme",
+    "theme-dark": "settings dark theme",
+    "chat-global": "i18n / language",
+    "multi-device": "cross-platform hint",
+    "notify-badge": "failure notification",
+    "logs-clipboard": "logs page empty / header",
+    "success-check": "run success",
+    "sync-refresh": "manual run / refresh"
+  }
+}

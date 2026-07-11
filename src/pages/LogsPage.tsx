@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button, Input, Tag } from "animal-island-ui";
 import type { ExecutionLog, ExecutionStatus } from "../domain/types";
 import { client } from "../infra/client";
+import { ElementImage } from "../ui/ElementImage";
 
 interface Props {
   alarmId?: string | null;
@@ -71,6 +72,7 @@ export function LogsPage({ alarmId, onBack }: Props) {
 
         {logs.length === 0 ? (
           <div className="empty-state">
+            <ElementImage id="logs-clipboard" size={140} alt="" />
             <h2>{t("logs:empty")}</h2>
           </div>
         ) : (

@@ -365,3 +365,45 @@ textarea.raw {
     transition: none;
   }
 }
+
+.callai-element {
+  image-rendering: auto;
+  pointer-events: none;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-state .callai-element {
+  margin-bottom: 8px;
+  filter: drop-shadow(0 8px 16px rgba(61, 52, 40, 0.12));
+}
+
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.section-illus {
+  float: right;
+  margin: -4px 0 8px 12px;
+  max-width: 88px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-illus {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}

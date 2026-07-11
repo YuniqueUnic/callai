@@ -31,3 +31,13 @@ src-tauri/target
 # callai local data (never commit)
 *.db
 *.db-journal
+
+# Brand debug / QA intermediates (never commit)
+assets/brand/_dbg/
+assets/brand/_dbg2/
+assets/brand/qa-*.png
+assets/brand/preview-*.png
+assets/brand/elements-raw/
+assets/brand/elements/
+
+assets/brand/callai.iconset/

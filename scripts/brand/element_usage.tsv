@@ -1,0 +1,16 @@
+hero-perch	empty state / brand hero / header mark
+create-alarm	FAB / create empty state
+set-time	schedule section
+task-checklist	task config section
+running	alarm running status
+retry	retrying status
+paused-sleep	paused status
+sprout-fresh	success / fresh window toast
+theme-light	settings light theme
+theme-dark	settings dark theme
+chat-global	i18n / language
+multi-device	cross-platform hint
+notify-badge	failure notification
+logs-clipboard	logs page empty / header
+success-check	run success
+sync-refresh	manual run / refresh

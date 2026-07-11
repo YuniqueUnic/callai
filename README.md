@@ -26,29 +26,33 @@ Claude、ChatGPT、Codex 等主流 AI 工具普遍采用**滚动窗口（Rolling
 
 #### 本地开发
 
+推荐用 [just](https://github.com/casey/just)（见根目录 `justfile`）：
+
+```bash
+just setup      # bun install + cargo fetch
+just dev        # Tauri 桌面开发
+just dev-web    # 仅前端 mock
+just test       # 前端 + Rust 测试
+just gate       # 完整本地门禁
+just --list     # 全部命令
+```
+
+等价的原始命令：
+
 ```bash
 bun install
 bun run tauri dev
-```
-
-仅前端（浏览器 mock API）：
-
-```bash
+# 仅前端
 bun run dev
 ```
 
 #### 质量门禁
 
 ```bash
-# Frontend
-bun run typecheck
-bun test
-bun run build
-
-# Rust / Tauri core
-cargo fmt --manifest-path src-tauri/Cargo.toml --all
-cargo test --manifest-path src-tauri/Cargo.toml --lib
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+just gate
+# 或分步：
+just typecheck && just test-web && just build-web
+just fmt && just test-rs && just clippy
 ```
 
 #### 运行时调度
@@ -85,6 +89,20 @@ src-tauri/
 - [PRODUCT.md](./PRODUCT.md)
 - [DESIGN.md](./DESIGN.md)
 - [usecases/](./usecases/)
+
+#### 品牌素材
+
+- 源图：`callai.logo.png`（应用/托盘 icon）、`callai.elements.png`（UI 插画精灵表）
+- 透明主 icon：`assets/brand/callai-icon-master.png` / `src-tauri/icons/*`
+- UI 切片：`src/assets/elements/*.png`（命名见 `catalog.json`）
+- 生成脚本：`scripts/brand/`（`just brand` / `just brand-check`）
+
+```bash
+just brand          # 全量重生 icons + elements + index.ts
+just brand-logo     # 仅 logo → app/tray icons
+just brand-elements # 仅精灵表切片 + UI 模块
+just brand-check    # 校验产物
+```
 
 #### 桌面交互
 

@@ -4,6 +4,7 @@ import { Button, Card, Modal, Notification, Switch, Tag } from "animal-island-ui
 import type { Alarm } from "../domain/types";
 import { isAlarmRunning, scheduleLabel } from "../domain/alarmRules";
 import { client } from "../infra/client";
+import { ElementImage } from "../ui/ElementImage";
 
 interface Props {
   onCreate: () => void;
@@ -106,9 +107,12 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
   return (
     <div>
       <div className="app-header">
-        <div>
-          <h1>{t("alarms:title")}</h1>
-          <p>{t("common:tagline")}</p>
+        <div className="header-brand">
+          <ElementImage id="hero-perch" size={44} alt="" />
+          <div>
+            <h1>{t("alarms:title")}</h1>
+            <p>{t("common:tagline")}</p>
+          </div>
         </div>
         <div className="header-actions">
           <Button size="small" onClick={() => void setAll(false)}>
@@ -131,6 +135,7 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
           <p className="meta">{t("common:loading")}</p>
         ) : alarms.length === 0 ? (
           <div className="empty-state">
+            <ElementImage id="create-alarm" size={160} alt="" />
             <h2>{t("alarms:emptyTitle")}</h2>
             <p>{t("alarms:emptyHint")}</p>
           </div>
@@ -165,14 +170,20 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
                   </div>
                   <div className="row">
                     {!alarm.enabled && (
-                      <Tag color="brown" size="small">
-                        {t("alarms:paused")}
-                      </Tag>
+                      <span className="row">
+                        <ElementImage id="paused-sleep" size={28} alt="" />
+                        <Tag color="brown" size="small">
+                          {t("alarms:paused")}
+                        </Tag>
+                      </span>
                     )}
                     {running && (
-                      <Tag color="app-yellow" size="small">
-                        {t("alarms:running")}
-                      </Tag>
+                      <span className="row">
+                        <ElementImage id="running" size={28} alt="" />
+                        <Tag color="app-yellow" size="small">
+                          {t("alarms:running")}
+                        </Tag>
+                      </span>
                     )}
                     <Tag color="app-blue" size="small" variant="outlined">
                       {alarm.binary}

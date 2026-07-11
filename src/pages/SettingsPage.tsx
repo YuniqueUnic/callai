@@ -4,6 +4,7 @@ import { Button, Input, Notification, Switch } from "animal-island-ui";
 import type { AppSettings, LocaleCode, ThemeMode } from "../domain/types";
 import { client } from "../infra/client";
 import { applyTheme } from "../theme/theme";
+import { ElementImage } from "../ui/ElementImage";
 
 interface Props {
   onBack: () => void;
@@ -48,7 +49,11 @@ export function SettingsPage({ onBack }: Props) {
       <div className="app-main">
         <div className="settings-card">
           <div className="field">
-            <label>{t("common:theme")}</label>
+            <label className="row" style={{ gap: 10 }}>
+              <ElementImage id="theme-light" size={36} alt="" />
+              <ElementImage id="theme-dark" size={36} alt="" />
+              <span>{t("common:theme")}</span>
+            </label>
             <div className="segmented">
               {(
                 [
@@ -74,7 +79,10 @@ export function SettingsPage({ onBack }: Props) {
           </div>
 
           <div className="field">
-            <label>{t("common:language")}</label>
+            <label className="row" style={{ gap: 10 }}>
+              <ElementImage id="chat-global" size={36} alt="" />
+              <span>{t("common:language")}</span>
+            </label>
             <div className="segmented">
               {(
                 [

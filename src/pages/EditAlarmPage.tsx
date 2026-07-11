@@ -19,6 +19,7 @@ import {
 } from "../domain/alarmRules";
 import { client } from "../infra/client";
 import { pickBinaryFile } from "../infra/dialog";
+import { ElementImage } from "../ui/ElementImage";
 
 interface Props {
   alarmId?: string | null;
@@ -177,6 +178,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
         </Card>
 
         <Card color="app-yellow">
+          <ElementImage id="set-time" size={72} className="section-illus" alt="" />
           <div className="field">
             <label>{t("alarms:schedule")}</label>
             <Radio
@@ -264,6 +266,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
         </Card>
 
         <Card color="app-blue">
+          <ElementImage id="task-checklist" size={72} className="section-illus" alt="" />
           <h3 style={{ marginTop: 0 }}>{t("alarms:task")}</h3>
           <div className="field">
             <label>{t("alarms:binary")}</label>
