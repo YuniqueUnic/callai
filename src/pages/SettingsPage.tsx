@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Input, Modal, Notification, Switch } from "animal-island-ui";
+import { Button, Input, Modal, Switch } from "animal-island-ui";
+import { toast } from "../ui/toast";
 import type { AppSettings, LocaleCode, ThemeMode } from "../domain/types";
 import { client } from "../infra/client";
 import { applyTheme } from "../theme/theme";
@@ -52,7 +53,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
     if (saved.locale !== i18n.language) {
       await i18n.changeLanguage(saved.locale);
     }
-    Notification.success({ message: t("settings:saved") });
+    toast.success({ message: t("settings:saved"), key: "settings-save", duration: 2.6 });
   }
 
   if (!settings) {
@@ -158,7 +159,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
                   if (v) {
                     const ok = await ensureNotifyPermission();
                     if (!ok) {
-                      Notification.warning({
+                      toast.warning({
                         message: t("settings:notifyPermissionTitle"),
                         description: t("settings:notifyPermissionBody"),
                       });
@@ -206,7 +207,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
               onClick={async () => {
                 const name = await client.backupNow();
                 setBackups(await client.listBackups());
-                Notification.success({
+                toast.success({
                   message: t("settings:backupNow"),
                   description: name || undefined,
                 });
@@ -235,7 +236,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
                       icon={<IconRestore size={16} />}
                       onClick={async () => {
                         await client.restoreBackup(b);
-                        Notification.success({
+                        toast.success({
                           message: t("settings:restore"),
                         });
                       }}
@@ -281,11 +282,11 @@ export function SettingsPage({ onOpenLogs }: Props) {
             try {
               await client.deleteBackup(confirmDeleteBackup);
               setBackups(await client.listBackups());
-              Notification.success({
+              toast.success({
                 message: t("settings:deleteBackupSuccess"),
               });
             } catch (err) {
-              Notification.error({
+              toast.error({
                 message: t("settings:deleteBackup"),
                 description: String(
                   (err as { message?: string })?.message ?? err,

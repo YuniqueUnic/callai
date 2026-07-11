@@ -4,11 +4,11 @@ import {
   Card,
   Collapse,
   Input,
-  Notification,
   Select,
   Switch,
   Tag,
 } from "animal-island-ui";
+import { toast } from "../ui/toast";
 import type { AlarmDraft, RetryInterval, TemplateDto } from "../domain/types";
 import {
   commandPreview,
@@ -103,18 +103,23 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
     };
     const code = validateDraft(next);
     if (code) {
-      Notification.warning({ message: t(`alarms:ERR_${code}` as "alarms:ERR_INVALID_NAME") });
+      toast.warning({ message: t(`alarms:ERR_${code}` as "alarms:ERR_INVALID_NAME") });
       return;
     }
     setSaving(true);
     try {
       if (alarmId) await client.updateAlarm(alarmId, next);
       else await client.createAlarm(next);
-      Notification.success({ message: t("alarms:saveSuccess") });
-      onSaved();
+      toast.success({
+        message: t("alarms:saveSuccess"),
+        key: "alarm-save",
+        duration: 3.6,
+      });
+      // brief beat so toast is visible before route change
+      window.setTimeout(() => onSaved(), 280);
     } catch (err) {
       const c = (err as { code?: string })?.code ?? "INTERNAL";
-      Notification.error({
+      toast.error({
         message: t(`alarms:ERR_${c}` as "alarms:ERR_INTERNAL"),
         description: String((err as { message?: string })?.message ?? ""),
       });

@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
   Button,
   Modal,
-  Notification,
   Progress,
   Switch,
   Tag,
 } from "animal-island-ui";
+import { toast } from "../ui/toast";
 import type { Alarm } from "../domain/types";
 import { isAlarmRunning, scheduleTimeChips } from "../domain/alarmRules";
 import {
@@ -65,7 +66,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
       setNextMap(Object.fromEntries(entries));
     } catch (err) {
       if (!silent) {
-        Notification.error({
+        toast.error({
           message: t("alarms:ERR_INTERNAL"),
           description: String((err as { message?: string })?.message ?? err),
         });
@@ -93,11 +94,13 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
     try {
       await client.setEnabled(alarm.id, enabled);
       await refresh();
-      Notification.success({
+      toast.success({
         message: enabled ? t("alarms:resumeSuccess") : t("alarms:pauseSuccess"),
+        key: enabled ? "alarm-resume" : "alarm-pause",
+        duration: 2.8,
       });
     } catch (err) {
-      Notification.warning({
+      toast.warning({
         message: t("alarms:ERR_INTERNAL"),
         description: String((err as { message?: string })?.message ?? err),
       });
@@ -105,13 +108,19 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
   }
 
   async function runNow(alarm: Alarm) {
+    // close confirm dialog immediately on accept, then run
+    setConfirmRun(null);
     setBusyId(alarm.id);
     try {
       const log = await client.runNow(alarm.id);
       if (log.status === "success") {
-        Notification.success({ message: t("alarms:runSuccess") });
+        toast.success({
+          message: t("alarms:runSuccess"),
+          key: "alarm-run",
+          duration: 3.2,
+        });
       } else {
-        Notification.warning({
+        toast.warning({
           message: t("alarms:ERR_EXECUTION_FAILED"),
           description: log.stderr || undefined,
           btn: (
@@ -121,16 +130,15 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
           ),
         });
       }
-      await refresh();
+      await refresh({ silent: true });
     } catch (err) {
       const code = (err as { code?: string })?.code;
-      Notification.error({
+      toast.error({
         message: t(`alarms:ERR_${code ?? "INTERNAL"}` as "alarms:ERR_INTERNAL"),
         description: String((err as { message?: string })?.message ?? err),
       });
     } finally {
       setBusyId(null);
-      setConfirmRun(null);
     }
   }
 
@@ -139,11 +147,11 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
     try {
       await client.deleteAlarm(alarm.id);
       setAlarms((prev) => prev.filter((a) => a.id !== alarm.id));
-      Notification.success({ message: t("alarms:deleteSuccess") });
+      toast.success({ message: t("alarms:deleteSuccess"), key: "alarm-delete", duration: 3.2 });
       await refresh();
     } catch (err) {
       const code = (err as { code?: string })?.code;
-      Notification.error({
+      toast.error({
         message:
           code === "ALARM_BUSY" || code === "ErrAlarmBusy"
             ? t("alarms:ERR_ALARM_BUSY")
@@ -160,11 +168,13 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
     try {
       await client.setAllEnabled(enabled);
       await refresh();
-      Notification.success({
+      toast.success({
         message: enabled ? t("alarms:resumeSuccess") : t("alarms:pauseSuccess"),
+        key: enabled ? "alarm-resume" : "alarm-pause",
+        duration: 2.8,
       });
     } catch (err) {
-      Notification.error({
+      toast.error({
         message: t("alarms:ERR_INTERNAL"),
         description: String((err as { message?: string })?.message ?? err),
       });
@@ -232,7 +242,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
               return (
                 <article
                   key={alarm.id}
-                  className={`alarm-card ${alarm.enabled ? "" : "paused"} ${running ? "is-running" : ""} ${busyId === alarm.id ? "is-busy" : ""}`}
+                  className={`alarm-card ${alarm.enabled ? "" : "paused"} ${running || busyId === alarm.id ? "is-running" : ""} ${busyId === alarm.id ? "is-busy" : ""}`}
                 >
                   <div className="alarm-card-top">
                     <div className="alarm-card-title">
@@ -314,7 +324,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                         </Tag>
                       </span>
                     )}
-                    {running && (
+                    {(running || busyId === alarm.id) && (
                       <span className="status-inline">
                         <ElementImage id="running" size={22} alt="" motion="hop" />
                         <Tag color="app-yellow" size="small">
@@ -331,6 +341,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                     <IconButton
                       label={t("common:edit")}
                       icon={<IconEdit size={16} />}
+                      disabled={running || busyId === alarm.id}
                       onClick={() => onEdit(alarm.id)}
                     />
                     <IconButton
@@ -342,15 +353,19 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                       label={t("common:delete")}
                       icon={<IconTrash size={16} />}
                       variant="danger"
-                      disabled={running || deleting}
+                      disabled={running || deleting || busyId === alarm.id}
                       onClick={() => setConfirmDelete(alarm)}
                     />
                     <IconButton
-                      label={t("alarms:runNow")}
+                      label={
+                        busyId === alarm.id
+                          ? t("alarms:running")
+                          : t("alarms:runNow")
+                      }
                       icon={<IconBolt size={16} />}
                       variant="primary"
                       loading={busyId === alarm.id}
-                      disabled={running}
+                      disabled={running || busyId === alarm.id || !!busyId}
                       onClick={() => setConfirmRun(alarm)}
                     />
                   </div>
@@ -361,23 +376,29 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
         )}
       </div>
 
-      <button
-        className="fab"
-        type="button"
-        aria-label={t("alarms:create")}
-        title={t("alarms:create")}
-        onClick={onCreate}
-      >
-        <IconPlus size={28} />
-      </button>
+      {typeof document !== "undefined"
+        ? createPortal(
+            <button
+              className="fab"
+              type="button"
+              aria-label={t("alarms:create")}
+              onClick={onCreate}
+            >
+              <IconPlus size={28} />
+            </button>,
+            document.body,
+          )
+        : null}
 
       <Modal
         open={!!confirmRun}
         title={t("alarms:runNow")}
         typewriter={false}
-        onClose={() => setConfirmRun(null)}
+        onClose={() => {
+          if (!busyId) setConfirmRun(null);
+        }}
         onOk={() => {
-          if (confirmRun) void runNow(confirmRun);
+          if (confirmRun && !busyId) void runNow(confirmRun);
         }}
       >
         {t("alarms:runConfirm")}

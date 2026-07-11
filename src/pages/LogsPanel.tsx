@@ -35,102 +35,106 @@ export function LogsPanel({ alarmId }: Props) {
 
   return (
     <div className="logs-panel">
+      {/* Fixed to drawer viewport bottom-right (under scrolling list) */}
       <ElementImage
-        id="logs-clipboard"
-        size={160}
+        id="hero-perch"
+        size={240}
         alt=""
         motion="breathe"
         className="logs-watermark"
       />
-      <div className="logs-toolbar">
-        <Input
-          value={query}
-          allowClear
-          placeholder={t("logs:search")}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void refresh();
-          }}
-          style={{ flex: 1, minWidth: 0 }}
-        />
-        <IconButton
-          label={t("common:confirm")}
-          icon={<IconSearch size={16} />}
-          variant="primary"
-          onClick={() => void refresh()}
-        />
-      </div>
-      <div className="segmented logs-filter">
-        {(["all", "success", "failed", "retrying"] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            className={status === s ? "active" : ""}
-            onClick={() => setStatus(s)}
-          >
-            {t(`logs:${s}` as "logs:all")}
-          </button>
-        ))}
-      </div>
 
-      {logs.length === 0 ? (
-        <div className="empty-state compact">
-          <ElementImage id="logs-clipboard" size={100} alt="" />
-          <h2>{t("logs:empty")}</h2>
+      <div className="logs-panel-scroll">
+        <div className="logs-toolbar">
+          <Input
+            value={query}
+            allowClear
+            placeholder={t("logs:search")}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void refresh();
+            }}
+            style={{ flex: 1, minWidth: 0 }}
+          />
+          <IconButton
+            label={t("common:confirm")}
+            icon={<IconSearch size={16} />}
+            variant="primary"
+            onClick={() => void refresh()}
+          />
         </div>
-      ) : (
-        <div className="log-list">
-          {logs.map((log) => (
-            <div
-              key={log.id}
-              className={`log-card ${log.status}`}
-              onClick={() => setOpenId(openId === log.id ? null : log.id)}
+        <div className="segmented logs-filter">
+          {(["all", "success", "failed", "retrying"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={status === s ? "active" : ""}
+              onClick={() => setStatus(s)}
             >
-              <div className="row" style={{ justifyContent: "space-between" }}>
-                <strong>{log.alarm_name}</strong>
-                <Tag
-                  color={
-                    log.status === "success"
-                      ? "app-green"
-                      : log.status === "failed"
-                        ? "app-red"
-                        : "app-yellow"
-                  }
-                  size="small"
-                >
-                  {t(`logs:${log.status}` as "logs:success")}
-                </Tag>
-              </div>
-              <div className="meta">
-                {formatDateTime(log.started_at, i18n.language)} ·{" "}
-                {t("logs:duration")} {log.duration_ms ?? "—"}ms ·{" "}
-                {t("logs:retries")} {log.retry_count}
-              </div>
-              <div className="meta">{log.command_preview}</div>
-              {openId === log.id && (
-                <div className="log-detail">
-                  <div>
-                    <strong>{t("logs:command")}</strong>: {log.command_preview}
-                  </div>
-                  <div>
-                    <strong>{t("logs:exitCode")}</strong>: {log.exit_code ?? "—"}
-                  </div>
-                  <div>
-                    <strong>{t("logs:stdout")}</strong>
-                    {"\n"}
-                    {log.stdout || "—"}
-                  </div>
-                  <div>
-                    <strong>{t("logs:stderr")}</strong>
-                    {"\n"}
-                    {log.stderr || "—"}
-                  </div>
-                </div>
-              )}
-            </div>
+              {t(`logs:${s}` as "logs:all")}
+            </button>
           ))}
         </div>
-      )}
+
+        {logs.length === 0 ? (
+          <div className="empty-state compact">
+            <ElementImage id="logs-clipboard" size={100} alt="" />
+            <h2>{t("logs:empty")}</h2>
+          </div>
+        ) : (
+          <div className="log-list">
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className={`log-card ${log.status}`}
+                onClick={() => setOpenId(openId === log.id ? null : log.id)}
+              >
+                <div className="row" style={{ justifyContent: "space-between" }}>
+                  <strong>{log.alarm_name}</strong>
+                  <Tag
+                    color={
+                      log.status === "success"
+                        ? "app-green"
+                        : log.status === "failed"
+                          ? "app-red"
+                          : "app-yellow"
+                    }
+                    size="small"
+                  >
+                    {t(`logs:${log.status}` as "logs:success")}
+                  </Tag>
+                </div>
+                <div className="meta">
+                  {formatDateTime(log.started_at, i18n.language)} ·{" "}
+                  {t("logs:duration")} {log.duration_ms ?? "—"}ms ·{" "}
+                  {t("logs:retries")} {log.retry_count}
+                </div>
+                <div className="meta">{log.command_preview}</div>
+                {openId === log.id && (
+                  <div className="log-detail">
+                    <div>
+                      <strong>{t("logs:command")}</strong>: {log.command_preview}
+                    </div>
+                    <div>
+                      <strong>{t("logs:exitCode")}</strong>: {log.exit_code ?? "—"}
+                    </div>
+                    <div>
+                      <strong>{t("logs:stdout")}</strong>
+                      {"\n"}
+                      {log.stdout || "—"}
+                    </div>
+                    <div>
+                      <strong>{t("logs:stderr")}</strong>
+                      {"\n"}
+                      {log.stderr || "—"}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

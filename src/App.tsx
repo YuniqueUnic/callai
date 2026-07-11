@@ -10,6 +10,7 @@ import { LogsPanel } from "./pages/LogsPanel";
 import { SettingsPage } from "./pages/SettingsPage";
 import { applyTheme, readStoredTheme } from "./theme/theme";
 import { SeaMarquee } from "./ui/SeaMarquee";
+import { warmToast } from "./ui/toast";
 
 export default function App() {
   const { t, i18n } = useTranslation(["common", "alarms", "logs"]);
@@ -19,6 +20,7 @@ export default function App() {
   const [logsOpen, setLogsOpen] = useState(false);
 
   useEffect(() => {
+    warmToast();
     applyTheme(readStoredTheme());
     void client.getSettings().then((s) => {
       applyTheme(s.theme);
