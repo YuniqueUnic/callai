@@ -258,13 +258,19 @@ impl AlarmStore for SqliteStore {
 
     fn delete_alarm(&self, id: &str) -> DomainResult<()> {
         let conn = self.conn.lock().unwrap();
-        conn.execute("DELETE FROM execution_logs WHERE alarm_id = ?1", params![id])
-            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
+        conn.execute(
+            "DELETE FROM execution_logs WHERE alarm_id = ?1",
+            params![id],
+        )
+        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         let n = conn
             .execute("DELETE FROM alarms WHERE id = ?1", params![id])
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         if n == 0 {
-            return Err(DomainError::new(ErrorCode::AlarmNotFound, "alarm not found"));
+            return Err(DomainError::new(
+                ErrorCode::AlarmNotFound,
+                "alarm not found",
+            ));
         }
         Ok(())
     }

@@ -11,9 +11,7 @@ use crate::domain::{
     AlarmDraft, AppSettings, DomainError, DomainResult, ErrorCode, LocaleCode, RetryInterval,
     RetryPolicy, ScheduleSpec, ThemeMode,
 };
-use crate::infra::{
-    AlarmScheduler, AppPaths, SqliteStore, SystemProcessRunner, TomlConfigBackup,
-};
+use crate::infra::{AlarmScheduler, AppPaths, SqliteStore, SystemProcessRunner, TomlConfigBackup};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -68,26 +66,13 @@ pub enum Commands {
 pub fn is_cli_invocation(args: &[String]) -> bool {
     match args.get(1).map(String::as_str) {
         Some(
-            "run"
-            | "daemon"
-            | "list"
-            | "run-once"
-            | "validate"
-            | "generate-example"
-            | "app"
-            | "help"
-            | "--help"
-            | "-h"
-            | "--version"
-            | "-V"
-            | "version",
+            "run" | "daemon" | "list" | "run-once" | "validate" | "generate-example" | "app"
+            | "help" | "--help" | "-h" | "--version" | "-V" | "version",
         ) => true,
         Some(s) if s.starts_with('-') => true,
         _ => false,
     }
 }
-
-
 
 /// On Windows, GUI binaries use `windows_subsystem = "windows"`.
 /// CLI mode re-attaches the parent console (or allocates one) so prints work.
@@ -175,12 +160,9 @@ pub fn run(args: Vec<String>) -> Result<(), String> {
             }
             Ok(())
         }
-        Commands::Run { import_toml } | Commands::Daemon { import_toml } => {
-            run_daemon(import_toml)
-        }
+        Commands::Run { import_toml } | Commands::Daemon { import_toml } => run_daemon(import_toml),
     }
 }
-
 
 fn run_daemon(import_toml: bool) -> Result<(), String> {
     let svc = Arc::new(open_service(true).map_err(err_str)?);
@@ -256,9 +238,8 @@ retry_interval = "2m"
 # env_vars = []
 # retry_interval = "5m"
 "#;
-    std::fs::write(out, sample).map_err(|e| {
-        DomainError::new(ErrorCode::StorageFailed, format!("write example: {e}"))
-    })?;
+    std::fs::write(out, sample)
+        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("write example: {e}")))?;
     Ok(())
 }
 
@@ -273,14 +254,12 @@ fn validate(config_path: Option<&std::path::Path>) -> DomainResult<()> {
             format!("config not found: {}", path.display()),
         ));
     }
-    let text = std::fs::read_to_string(&path).map_err(|e| {
-        DomainError::new(ErrorCode::ConfigCorrupt, format!("read config: {e}"))
-    })?;
+    let text = std::fs::read_to_string(&path)
+        .map_err(|e| DomainError::new(ErrorCode::ConfigCorrupt, format!("read config: {e}")))?;
     // Reuse backup parser via a temp AppPaths-like approach: parse with same structs by
     // writing through TomlConfigBackup::import on a synthetic path is heavy; parse lightly.
-    let value: toml::Value = toml::from_str(&text).map_err(|e| {
-        DomainError::new(ErrorCode::ConfigCorrupt, format!("parse toml: {e}"))
-    })?;
+    let value: toml::Value = toml::from_str(&text)
+        .map_err(|e| DomainError::new(ErrorCode::ConfigCorrupt, format!("parse toml: {e}")))?;
     let alarms = value
         .get("alarms")
         .and_then(|v| v.as_array())
@@ -296,10 +275,7 @@ fn validate(config_path: Option<&std::path::Path>) -> DomainResult<()> {
             .get("name")
             .and_then(|v| v.as_str())
             .unwrap_or("(unnamed)");
-        let binary = a
-            .get("binary")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let binary = a.get("binary").and_then(|v| v.as_str()).unwrap_or("");
         if binary.is_empty() {
             return Err(DomainError::new(
                 ErrorCode::InvalidBinary,
@@ -330,7 +306,9 @@ fn validate(config_path: Option<&std::path::Path>) -> DomainResult<()> {
         schedule.validate()?;
         match runner.which(binary)? {
             Some(p) => println!("ok  {name}: binary found at {p}"),
-            None => println!("warn {name}: binary `{binary}` not found on PATH (still valid config)"),
+            None => {
+                println!("warn {name}: binary `{binary}` not found on PATH (still valid config)")
+            }
         }
     }
     // also ensure settings table shape if present

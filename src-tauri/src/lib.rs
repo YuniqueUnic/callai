@@ -16,7 +16,9 @@ use tracing_subscriber::EnvFilter;
 use app::{AlarmService, SystemClock, SystemSleeper};
 use commands::AppState;
 use domain::{LocaleCode, ThemeMode};
-use infra::{set_failure_hook, AlarmScheduler, AppPaths, SqliteStore, SystemProcessRunner, TomlConfigBackup};
+use infra::{
+    set_failure_hook, AlarmScheduler, AppPaths, SqliteStore, SystemProcessRunner, TomlConfigBackup,
+};
 
 const EVENT_NAVIGATE: &str = "callai://navigate";
 
@@ -116,12 +118,7 @@ fn notify_failure(app: &AppHandle, name: &str, locale: LocaleCode) {
             format!("「{name}」这次没完成，可以打开日志看看～"),
         ),
     };
-    let _ = app
-        .notification()
-        .builder()
-        .title(title)
-        .body(body)
-        .show();
+    let _ = app.notification().builder().title(title).body(body).show();
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -227,33 +224,31 @@ pub fn run() {
                                     let app2 = app.clone();
                                     let name = alarm.name.clone();
                                     let id = alarm.id.clone();
-                                    std::thread::spawn(move || {
-                                        match service.run_alarm_once(&id) {
-                                            Ok(log)
-                                                if !matches!(
-                                                    log.status,
-                                                    crate::domain::ExecutionStatus::Success
-                                                ) =>
-                                            {
-                                                let notify = service
-                                                    .get_settings()
-                                                    .map(|s| s.notify_on_failure)
-                                                    .unwrap_or(false);
-                                                if notify {
-                                                    notify_failure(&app2, &name, locale);
-                                                }
+                                    std::thread::spawn(move || match service.run_alarm_once(&id) {
+                                        Ok(log)
+                                            if !matches!(
+                                                log.status,
+                                                crate::domain::ExecutionStatus::Success
+                                            ) =>
+                                        {
+                                            let notify = service
+                                                .get_settings()
+                                                .map(|s| s.notify_on_failure)
+                                                .unwrap_or(false);
+                                            if notify {
+                                                notify_failure(&app2, &name, locale);
                                             }
-                                            Err(_) => {
-                                                let notify = service
-                                                    .get_settings()
-                                                    .map(|s| s.notify_on_failure)
-                                                    .unwrap_or(false);
-                                                if notify {
-                                                    notify_failure(&app2, &name, locale);
-                                                }
-                                            }
-                                            _ => {}
                                         }
+                                        Err(_) => {
+                                            let notify = service
+                                                .get_settings()
+                                                .map(|s| s.notify_on_failure)
+                                                .unwrap_or(false);
+                                            if notify {
+                                                notify_failure(&app2, &name, locale);
+                                            }
+                                        }
+                                        _ => {}
                                     });
                                 }
                             }

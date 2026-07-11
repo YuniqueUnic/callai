@@ -273,7 +273,9 @@ impl AlarmService {
             .list_alarms()?
             .into_iter()
             .find(|a| a.name == name || a.id == name)
-            .ok_or_else(|| DomainError::new(ErrorCode::AlarmNotFound, format!("alarm not found: {name}")))
+            .ok_or_else(|| {
+                DomainError::new(ErrorCode::AlarmNotFound, format!("alarm not found: {name}"))
+            })
     }
 
     pub fn bootstrap(&self) -> DomainResult<()> {

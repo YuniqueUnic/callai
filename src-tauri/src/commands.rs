@@ -197,7 +197,6 @@ pub fn next_trigger(state: State<'_, AppState>, id: String) -> Result<Option<Str
     Ok(next.map(|d| d.to_rfc3339()))
 }
 
-
 #[tauri::command]
 pub fn refresh_tray_menu(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), String> {
     let locale = state
