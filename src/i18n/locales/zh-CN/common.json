@@ -1,0 +1,18 @@
+{
+  "appName": "callai",
+  "tagline": "帮你照顾 AI 的小闹钟",
+  "home": "首页",
+  "logs": "日志",
+  "settings": "设置",
+  "save": "保存",
+  "cancel": "取消",
+  "confirm": "确定",
+  "delete": "删除",
+  "edit": "编辑",
+  "back": "返回",
+  "loading": "加载中…",
+  "empty": "还没有内容哦～",
+  "success": "完成啦～",
+  "language": "语言",
+  "theme": "主题"
+}

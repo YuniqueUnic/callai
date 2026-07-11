@@ -1,0 +1,15 @@
+{
+  "title": "Run logs",
+  "all": "All",
+  "success": "Success",
+  "failed": "Failed",
+  "retrying": "Retrying",
+  "search": "Search task or output…",
+  "empty": "No runs recorded yet.",
+  "duration": "Duration",
+  "retries": "Retries",
+  "stdout": "stdout",
+  "stderr": "stderr",
+  "command": "Command",
+  "exitCode": "Exit code"
+}

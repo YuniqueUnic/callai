@@ -1,0 +1,18 @@
+{
+  "appName": "callai",
+  "tagline": "A cozy alarm for your AI window",
+  "home": "Home",
+  "logs": "Logs",
+  "settings": "Settings",
+  "save": "Save",
+  "cancel": "Cancel",
+  "confirm": "OK",
+  "delete": "Delete",
+  "edit": "Edit",
+  "back": "Back",
+  "loading": "Loading…",
+  "empty": "Nothing here yet.",
+  "success": "Done!",
+  "language": "Language",
+  "theme": "Theme"
+}

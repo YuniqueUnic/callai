@@ -1,0 +1,16 @@
+{
+  "title": "设置",
+  "themeSystem": "跟随系统",
+  "themeLight": "浅色",
+  "themeDark": "深色",
+  "localeZh": "中文",
+  "localeEn": "English",
+  "launchMinimized": "启动时最小化到托盘",
+  "logRetention": "日志保留天数",
+  "notifyFailure": "失败时系统通知",
+  "autoBackup": "启动时自动备份配置",
+  "backupNow": "立即备份",
+  "backups": "配置备份",
+  "restore": "恢复",
+  "saved": "设置已保存～"
+}

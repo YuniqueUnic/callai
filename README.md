@@ -6,61 +6,91 @@ Claude、ChatGPT、Codex 等主流 AI 工具普遍采用**滚动窗口（Rolling
 
 这就导致一个非常现实的痛点：
 
-> 你每天上午 9:30 开始高强度使用 AI，到 11:30–12:00 就可能把当天的额度用光。  
-> 中午吃完饭回来，下午还要等很久才能等到窗口自然滑出之前的消耗。  
+> 你每天上午 9:30 开始高强度使用 AI，到 11:30–12:00 就可能把当天的额度用光。
+> 中午吃完饭回来，下午还要等很久才能等到窗口自然滑出之前的消耗。
 > 结果就是：上午高效、下午等待、晚上继续等。
-
-这种“用完即等”的体验，在需要持续高强度使用 AI 的场景下（编程、重度内容创作、复杂业务决策等）极其低效。
 
 #### 解决方案：给 AI 定闹钟
 
-**callai** 的核心思路非常简单却有效：
+**callai** 通过定时任务，在特定时间点主动触发一次极轻量任务（比如 `echo hi` 或 `codex exec hi`），提前“占位”并平移滚动窗口的起始时间。
 
-**通过定时任务，在特定时间点主动触发一次极轻量的对话（比如只说一句“hi”或“warmup”），提前“占位”并重置滚动窗口的起始时间。**
+按推荐的 3 次触发配置（例如每天 8:00、13:00、18:00），你可以在黄金工作时段保持更新鲜的额度窗口。
 
-这样做的本质是**人为干预并平移额度窗口**，让窗口的重置节奏与你的工作节奏对齐。
+#### 技术栈
 
-按推荐的 3 次触发配置（例如每天 8:00、13:00、18:00 各执行一次微小任务），你可以稳定获得以下效果：
+- 前端：TypeScript + React + Vite 8 + Bun + [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)
+- 后端：Rust + Tauri 2
+- 存储：SQLite（闹钟/日志）+ TOML（可编辑配置 + 备份）
+- i18n：中 / 英
+- 主题：Light / Dark / System
 
-- **8:00–12:00**：满血 5 小时窗口
-- **13:00–17:00**：午休后再次获得满血窗口
-- **18:00–22:00**：下班前/晚上继续保持高可用额度
+#### 本地开发
 
-从此告别“用完等半天”的尴尬，真正实现**全天候高强度 AI 辅助**。
+```bash
+bun install
+bun run tauri dev
+```
 
-#### callai 项目背景
+仅前端（浏览器 mock API）：
 
-我们在日常高强度使用 Codex CLI + Claude + ChatGPT 的过程中，深刻感受到滚动窗口机制带来的效率损耗。
+```bash
+bun run dev
+```
 
-作为**云选优品（Yunxuan Youpin）**团队，我们日常需要大量使用 AI 进行：
-- 复杂业务逻辑开发与调试
-- 跨平台系统自动化脚本编写
-- 大量数据处理与决策支持
-- 持续的内容与运营优化
+#### 质量门禁
 
-这些场景对 AI 的**连续可用性**要求极高，而传统的手动等待或简单脚本方案都无法稳定解决窗口对齐问题。
+```bash
+# Frontend
+bun run typecheck
+bun test
+bun run build
 
-因此我们开发了 **callai** —— 一个轻量、可靠、跨平台的“AI 额度窗口管理工具”，把“给 AI 定闹钟”这个实用技巧产品化、自动化。
+# Rust / Tauri core
+cargo fmt --manifest-path src-tauri/Cargo.toml --all
+cargo test --manifest-path src-tauri/Cargo.toml --lib
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+```
 
-#### callai 核心功能特点
+#### 运行时调度
 
-- **跨平台原生二进制**：支持 Linux / macOS / Windows，一次构建，到处运行
-- **极致轻量**：通过环境变量注入密钥和配置，无需复杂安装
-- **灵活执行**：支持任意 binary（完整路径或系统 PATH 中的命令），并可自定义参数
-- **强大调度能力**：原生支持 cron 表达式，可精确控制触发时间
-- **智能重试机制**：任务失败时支持按 1min / 2min / 5min / 10min 间隔自动重试，最多 3 次，极大提升稳定性
-- **完善日志系统**：记录每次执行的详细日志（时间、binary、参数、退出码、耗时、重试次数等），便于排查和审计
-- **配置简单**：使用 TOML 配置文件 + 环境变量双支持，上手成本极低
-- **安全可控**：支持通过 profile 和危险模式参数灵活控制执行权限
+- 轮询线程每 20s 检查 due 闹钟
+- **单 worker 队列**串行执行任务（含真实重试等待），避免线程堆积
+- 同一 alarm 在队列中 / 执行中时不会重复入队
 
-#### 适用人群
+#### 架构
 
-- 重度使用 Claude / ChatGPT / Codex 等 AI 工具的开发者与创作者
-- 需要长时间高强度 AI 辅助的团队（尤其是跨境电商、SaaS 开发、内容运营等场景）
-- 希望把“窗口管理”这件事彻底自动化，不想每天手动操作的人
+```
+src/                 # UI + frontend domain + Tauri bridge
+  domain/            # pure rules (validate, preview, schedule labels)
+  infra/             # tauri invoke + browser mock
+  pages/             # Home / Edit / Logs / Settings
+  i18n/              # zh-CN + en
+  theme/             # dark/light tokens
+src-tauri/
+  src/domain/        # pure Rust domain
+  src/app/           # use-cases + ports
+  src/infra/         # sqlite / process / toml backup / scheduler
+  src/commands.rs    # Tauri commands
+  src/tests/         # mirrored unit/integration tests
+```
 
----
+#### 数据位置
 
-**一句话总结：**
+- 配置：`~/.config/callai/config.toml`
+- 备份：`~/.config/callai/backups/`
+- 数据库：`~/.local/share/callai/callai.db`
 
-callai 不是另一个 AI 聊天工具，而是一个**专门用来管理 AI 额度窗口的轻量级调度器**，通过智能定时“占位”，让你在工作时间始终拥有最新鲜、最充足的 AI 使用额度。
+#### 文档
+
+- [PRODUCT.md](./PRODUCT.md)
+- [DESIGN.md](./DESIGN.md)
+- [usecases/](./usecases/)
+
+#### 桌面交互
+
+- 托盘菜单「New alarm」会显示主窗口并跳到新建页
+- 编辑页 binary 支持「浏览」选择本地可执行文件（Tauri dialog）
+
+#### 许可说明
+
+前端使用 `animal-island-ui`（CC BY-NC 4.0）。该组件库声明禁止商业用途；本项目当前定位为内部 / 非商业学习与自用工具。若要商业分发，需替换 UI 库或取得授权。

@@ -1,0 +1,15 @@
+{
+  "title": "执行日志",
+  "all": "全部",
+  "success": "成功",
+  "failed": "失败",
+  "retrying": "重试中",
+  "search": "搜索任务或输出…",
+  "empty": "今天还没有执行记录哦～",
+  "duration": "耗时",
+  "retries": "重试",
+  "stdout": "标准输出",
+  "stderr": "错误输出",
+  "command": "完整命令",
+  "exitCode": "退出码"
+}

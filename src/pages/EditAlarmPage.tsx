@@ -1,0 +1,396 @@
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  Button,
+  Card,
+  Collapse,
+  Input,
+  Notification,
+  Radio,
+  Select,
+  Switch,
+  Tag,
+} from "animal-island-ui";
+import type { AlarmDraft, RetryInterval, TemplateDto } from "../domain/types";
+import {
+  commandPreview,
+  defaultDraft,
+  validateDraft,
+} from "../domain/alarmRules";
+import { client } from "../infra/client";
+import { pickBinaryFile } from "../infra/dialog";
+
+interface Props {
+  alarmId?: string | null;
+  onBack: () => void;
+  onSaved: () => void;
+}
+
+const INTERVALS: RetryInterval[] = ["1m", "2m", "5m", "10m"];
+
+export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
+  const { t, i18n } = useTranslation(["alarms", "common"]);
+  const [draft, setDraft] = useState<AlarmDraft>(defaultDraft());
+  const [templates, setTemplates] = useState<TemplateDto[]>([]);
+  const [binaryPath, setBinaryPath] = useState<string | null>(null);
+  const [scheduleMode, setScheduleMode] = useState<"daily" | "cron">("daily");
+  const [newTime, setNewTime] = useState("09:00");
+  const [saving, setSaving] = useState(false);
+  const [argsText, setArgsText] = useState("callai warmup {{date}}");
+
+  useEffect(() => {
+    void (async () => {
+      setTemplates(await client.listTemplates());
+      if (alarmId) {
+        const a = await client.getAlarm(alarmId);
+        const d: AlarmDraft = {
+          name: a.name,
+          enabled: a.enabled,
+          schedule: a.schedule,
+          binary: a.binary,
+          args: a.args,
+          env_vars: a.env_vars,
+          retry: a.retry,
+        };
+        setDraft(d);
+        setArgsText(a.args.join("\n"));
+        setScheduleMode(a.schedule.mode);
+      }
+    })();
+  }, [alarmId]);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      void client.checkBinary(draft.binary).then(setBinaryPath);
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [draft.binary]);
+
+  const preview = useMemo(
+    () => commandPreview(draft.binary, argsText.split("\n").map((s) => s.trim()).filter(Boolean)),
+    [draft.binary, argsText],
+  );
+
+  function updateDailyTimes(times: string[]) {
+    setDraft((d) => ({ ...d, schedule: { mode: "daily", times } }));
+  }
+
+  async function onTemplate(id: string) {
+    const d = await client.templateDraft(id);
+    if (!d) return;
+    setDraft(d);
+    setArgsText(d.args.join("\n"));
+    setScheduleMode(d.schedule.mode);
+  }
+
+  async function save() {
+    const next: AlarmDraft = {
+      ...draft,
+      args: argsText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      schedule:
+        scheduleMode === "daily"
+          ? draft.schedule.mode === "daily"
+            ? draft.schedule
+            : { mode: "daily", times: ["08:00"] }
+          : draft.schedule.mode === "cron"
+            ? draft.schedule
+            : { mode: "cron", expression: "0 8,13,18 * * *" },
+    };
+    const code = validateDraft(next);
+    if (code) {
+      Notification.warning({ message: t(`alarms:ERR_${code}` as "alarms:ERR_INVALID_NAME") });
+      return;
+    }
+    setSaving(true);
+    try {
+      if (alarmId) await client.updateAlarm(alarmId, next);
+      else await client.createAlarm(next);
+      Notification.success({ message: t("alarms:saveSuccess") });
+      onSaved();
+    } catch (err) {
+      const c = (err as { code?: string })?.code ?? "INTERNAL";
+      Notification.error({
+        message: t(`alarms:ERR_${c}` as "alarms:ERR_INTERNAL"),
+        description: String((err as { message?: string })?.message ?? ""),
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const dailyTimes =
+    draft.schedule.mode === "daily" ? draft.schedule.times : ["08:00", "13:00", "18:00"];
+
+  return (
+    <div>
+      <div className="app-header">
+        <div>
+          <h1>{alarmId ? t("alarms:edit") : t("alarms:create")}</h1>
+          <p>{t("common:tagline")}</p>
+        </div>
+        <div className="header-actions">
+          <Button onClick={onBack}>{t("common:back")}</Button>
+          <Button type="primary" loading={saving} onClick={() => void save()}>
+            {t("common:save")}
+          </Button>
+        </div>
+      </div>
+
+      <div className="app-main form-stack">
+        <Card>
+          <div className="field">
+            <label>{t("alarms:template")}</label>
+            <Select
+              value=""
+              placeholder={t("alarms:template")}
+              options={[
+                { key: "", label: "—" },
+                ...templates.map((tpl) => ({
+                  key: tpl.id,
+                  label: i18n.language.startsWith("zh") ? tpl.name_zh : tpl.name_en,
+                })),
+              ]}
+              onChange={(key) => key && void onTemplate(key)}
+            />
+          </div>
+
+          <div className="field" style={{ marginTop: 12 }}>
+            <label>{t("alarms:name")}</label>
+            <Input
+              value={draft.name}
+              allowClear
+              placeholder={t("alarms:namePlaceholder")}
+              onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+            />
+          </div>
+
+          <div className="field" style={{ marginTop: 12 }}>
+            <label>{t("alarms:enabled")}</label>
+            <Switch
+              checked={draft.enabled}
+              onChange={(v) => setDraft((d) => ({ ...d, enabled: v }))}
+            />
+          </div>
+        </Card>
+
+        <Card color="app-yellow">
+          <div className="field">
+            <label>{t("alarms:schedule")}</label>
+            <Radio
+              value={scheduleMode}
+              options={[
+                { value: "daily", label: t("alarms:daily") },
+                { value: "cron", label: t("alarms:cron") },
+              ]}
+              onChange={(v) => {
+                const mode = String(v) as "daily" | "cron";
+                setScheduleMode(mode);
+                if (mode === "daily") {
+                  setDraft((d) => ({
+                    ...d,
+                    schedule: { mode: "daily", times: dailyTimes },
+                  }));
+                } else {
+                  setDraft((d) => ({
+                    ...d,
+                    schedule: {
+                      mode: "cron",
+                      expression:
+                        d.schedule.mode === "cron"
+                          ? d.schedule.expression
+                          : "0 8,13,18 * * *",
+                    },
+                  }));
+                }
+              }}
+            />
+          </div>
+
+          {scheduleMode === "daily" ? (
+            <div className="field" style={{ marginTop: 12 }}>
+              <div className="times-row">
+                {dailyTimes.map((time) => (
+                  <span className="time-chip" key={time}>
+                    {time}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateDailyTimes(dailyTimes.filter((x) => x !== time))
+                      }
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="row" style={{ marginTop: 8 }}>
+                <Input
+                  type="time"
+                  value={newTime}
+                  onChange={(e) => setNewTime(e.target.value)}
+                  style={{ width: 140 }}
+                />
+                <Button
+                  size="small"
+                  onClick={() => {
+                    if (!newTime) return;
+                    if (!dailyTimes.includes(newTime)) {
+                      updateDailyTimes([...dailyTimes, newTime].sort());
+                    }
+                  }}
+                >
+                  {t("alarms:addTime")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="field" style={{ marginTop: 12 }}>
+              <Input
+                value={
+                  draft.schedule.mode === "cron" ? draft.schedule.expression : ""
+                }
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    schedule: { mode: "cron", expression: e.target.value },
+                  }))
+                }
+              />
+            </div>
+          )}
+        </Card>
+
+        <Card color="app-blue">
+          <h3 style={{ marginTop: 0 }}>{t("alarms:task")}</h3>
+          <div className="field">
+            <label>{t("alarms:binary")}</label>
+            <div className="row">
+              <Input
+                value={draft.binary}
+                placeholder={t("alarms:binaryPlaceholder")}
+                onChange={(e) => setDraft((d) => ({ ...d, binary: e.target.value }))}
+                style={{ flex: 1, minWidth: 220 }}
+              />
+              <Button
+                size="small"
+                onClick={() => {
+                  void pickBinaryFile().then((path) => {
+                    if (path) setDraft((d) => ({ ...d, binary: path }));
+                  });
+                }}
+              >
+                {t("alarms:browse")}
+              </Button>
+              {binaryPath ? (
+                <Tag color="app-green" size="small">
+                  {t("alarms:binaryOk")}
+                </Tag>
+              ) : (
+                <Tag color="app-orange" size="small">
+                  {t("alarms:binaryMissing")}
+                </Tag>
+              )}
+            </div>
+            {binaryPath && <div className="hint">{binaryPath}</div>}
+          </div>
+
+          <div className="field" style={{ marginTop: 12 }}>
+            <label>{t("alarms:args")}</label>
+            <textarea
+              className="raw"
+              value={argsText}
+              placeholder={t("alarms:argsPlaceholder")}
+              onChange={(e) => setArgsText(e.target.value)}
+            />
+            <div className="hint">{"{{date}} · {{datetime}} · {{timestamp}}"}</div>
+          </div>
+
+          <div className="field" style={{ marginTop: 12 }}>
+            <label>{t("alarms:preview")}</label>
+            <div className="preview-box">{preview}</div>
+          </div>
+
+          <Collapse
+            question={t("alarms:env")}
+            answer={
+              <div>
+                {draft.env_vars.map((env, idx) => (
+                  <div className="row" key={`${env.key}-${idx}`} style={{ marginBottom: 8 }}>
+                    <Input
+                      value={env.key}
+                      placeholder="KEY"
+                      onChange={(e) => {
+                        const env_vars = [...draft.env_vars];
+                        env_vars[idx] = { ...env_vars[idx], key: e.target.value };
+                        setDraft((d) => ({ ...d, env_vars }));
+                      }}
+                    />
+                    <Input
+                      value={env.value}
+                      placeholder="value"
+                      onChange={(e) => {
+                        const env_vars = [...draft.env_vars];
+                        env_vars[idx] = { ...env_vars[idx], value: e.target.value };
+                        setDraft((d) => ({ ...d, env_vars }));
+                      }}
+                    />
+                    <Button
+                      size="small"
+                      danger
+                      onClick={() =>
+                        setDraft((d) => ({
+                          ...d,
+                          env_vars: d.env_vars.filter((_, i) => i !== idx),
+                        }))
+                      }
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  size="small"
+                  onClick={() =>
+                    setDraft((d) => ({
+                      ...d,
+                      env_vars: [...d.env_vars, { key: "", value: "" }],
+                    }))
+                  }
+                >
+                  {t("alarms:addEnv")}
+                </Button>
+              </div>
+            }
+          />
+        </Card>
+
+        <Card>
+          <div className="field">
+            <label>{t("alarms:retry")}</label>
+            <div className="segmented">
+              {INTERVALS.map((interval) => (
+                <button
+                  key={interval}
+                  type="button"
+                  className={draft.retry.interval === interval ? "active" : ""}
+                  onClick={() =>
+                    setDraft((d) => ({
+                      ...d,
+                      retry: { ...d.retry, interval, max_attempts: 3 },
+                    }))
+                  }
+                >
+                  {t(`alarms:interval_${interval}` as "alarms:interval_2m")}
+                </button>
+              ))}
+            </div>
+            <div className="hint">{t("alarms:retryHint")}</div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}

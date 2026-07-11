@@ -1,0 +1,16 @@
+{
+  "title": "Settings",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "localeZh": "中文",
+  "localeEn": "English",
+  "launchMinimized": "Launch minimized to tray",
+  "logRetention": "Log retention (days)",
+  "notifyFailure": "Notify on failure",
+  "autoBackup": "Auto-backup config on start",
+  "backupNow": "Backup now",
+  "backups": "Config backups",
+  "restore": "Restore",
+  "saved": "Settings saved."
+}
