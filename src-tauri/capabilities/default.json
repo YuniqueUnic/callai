@@ -8,7 +8,6 @@
   "permissions": [
     "core:default",
     "core:event:default",
-    "opener:default",
     "dialog:default",
     "notification:default",
     "notification:allow-notify"

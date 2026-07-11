@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Button,
   Card,
   Collapse,
   Input,
@@ -19,6 +18,8 @@ import {
 import { client } from "../infra/client";
 import { pickBinaryFile } from "../infra/dialog";
 import { ElementImage } from "../ui/ElementImage";
+import { IconButton } from "../ui/IconButton";
+import { IconBack, IconFolder, IconPlus, IconSave, IconTrash } from "../ui/icons";
 import { TimePicker } from "../ui/TimePicker";
 
 interface Props {
@@ -135,10 +136,18 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           </div>
         </div>
         <div className="header-actions">
-          <Button size="small" onClick={onBack}>{t("common:back")}</Button>
-          <Button size="small" type="primary" loading={saving} onClick={() => void save()}>
-            {t("common:save")}
-          </Button>
+          <IconButton
+            label={t("common:back")}
+            icon={<IconBack size={18} />}
+            onClick={onBack}
+          />
+          <IconButton
+            label={t("common:save")}
+            icon={<IconSave size={18} />}
+            variant="primary"
+            loading={saving}
+            onClick={() => void save()}
+          />
         </div>
       </div>
 
@@ -283,16 +292,15 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                 onChange={(e) => setDraft((d) => ({ ...d, binary: e.target.value }))}
                 style={{ flex: 1, minWidth: 220 }}
               />
-              <Button
-                size="small"
+              <IconButton
+                label={t("alarms:browse")}
+                icon={<IconFolder size={16} />}
                 onClick={() => {
                   void pickBinaryFile().then((path) => {
                     if (path) setDraft((d) => ({ ...d, binary: path }));
                   });
                 }}
-              >
-                {t("alarms:browse")}
-              </Button>
+              />
               {binaryPath ? (
                 <Tag color="app-green" size="small">
                   {t("alarms:binaryOk")}
@@ -346,31 +354,29 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                         setDraft((d) => ({ ...d, env_vars }));
                       }}
                     />
-                    <Button
-                      size="small"
-                      danger
+                    <IconButton
+                      label={t("common:delete")}
+                      icon={<IconTrash size={14} />}
+                      variant="danger"
                       onClick={() =>
                         setDraft((d) => ({
                           ...d,
                           env_vars: d.env_vars.filter((_, i) => i !== idx),
                         }))
                       }
-                    >
-                      ×
-                    </Button>
+                    />
                   </div>
                 ))}
-                <Button
-                  size="small"
+                <IconButton
+                  label={t("alarms:addEnv")}
+                  icon={<IconPlus size={16} />}
                   onClick={() =>
                     setDraft((d) => ({
                       ...d,
                       env_vars: [...d.env_vars, { key: "", value: "" }],
                     }))
                   }
-                >
-                  {t("alarms:addEnv")}
-                </Button>
+                />
               </div>
             }
           />

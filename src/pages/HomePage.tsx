@@ -3,8 +3,19 @@ import { useTranslation } from "react-i18next";
 import { Button, Card, Modal, Notification, Switch, Tag } from "animal-island-ui";
 import type { Alarm } from "../domain/types";
 import { isAlarmRunning, scheduleLabel } from "../domain/alarmRules";
+import { formatDateTime } from "../domain/format";
 import { client } from "../infra/client";
 import { ElementImage } from "../ui/ElementImage";
+import { IconButton } from "../ui/IconButton";
+import {
+  IconBolt,
+  IconEdit,
+  IconLogs,
+  IconPause,
+  IconPlay,
+  IconPlus,
+  IconTrash,
+} from "../ui/icons";
 
 interface Props {
   onCreate: () => void;
@@ -13,7 +24,7 @@ interface Props {
 }
 
 export function HomePage({ onCreate, onEdit, onLogs }: Props) {
-  const { t } = useTranslation(["alarms", "common"]);
+  const { t, i18n } = useTranslation(["alarms", "common"]);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextMap, setNextMap] = useState<Record<string, string>>({});
@@ -101,7 +112,6 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
     setDeleting(true);
     try {
       await client.deleteAlarm(alarm.id);
-      // optimistic local update so UI is instantly correct even if list lags
       setAlarms((prev) => prev.filter((a) => a.id !== alarm.id));
       Notification.success({ message: t("alarms:deleteSuccess") });
       await refresh();
@@ -146,12 +156,17 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
           </div>
         </div>
         <div className="header-actions">
-          <Button size="small" onClick={() => void setAll(false)}>
-            {t("alarms:pauseAll")}
-          </Button>
-          <Button size="small" onClick={() => void setAll(true)}>
-            {t("alarms:resumeAll")}
-          </Button>
+          <IconButton
+            label={t("alarms:pauseAll")}
+            icon={<IconPause size={18} />}
+            onClick={() => void setAll(false)}
+          />
+          <IconButton
+            label={t("alarms:resumeAll")}
+            icon={<IconPlay size={18} />}
+            variant="primary"
+            onClick={() => void setAll(true)}
+          />
         </div>
       </div>
 
@@ -175,7 +190,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                   className={`alarm-card ${alarm.enabled ? "" : "paused"}`}
                 >
                   <div className="alarm-card-top">
-                    <div>
+                    <div className="alarm-card-title">
                       <h3>{alarm.name}</h3>
                       <div className="meta">
                         {scheduleLabel(alarm.schedule, t("alarms:daily"))}
@@ -187,16 +202,20 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                       size="small"
                     />
                   </div>
-                  <div className="meta">
-                    {t("alarms:nextTrigger")}:{" "}
-                    {nextMap[alarm.id]
-                      ? new Date(nextMap[alarm.id]).toLocaleString()
-                      : "—"}
+
+                  <div className="alarm-next">
+                    <span className="alarm-next-label">{t("alarms:nextTrigger")}</span>
+                    <strong>
+                      {nextMap[alarm.id]
+                        ? formatDateTime(nextMap[alarm.id], i18n.language)
+                        : "—"}
+                    </strong>
                   </div>
-                  <div className="row">
+
+                  <div className="row alarm-status-row">
                     {!alarm.enabled && (
                       <span className="status-inline">
-                        <ElementImage id="paused-sleep" size={26} alt="" />
+                        <ElementImage id="paused-sleep" size={22} alt="" />
                         <Tag color="brown" size="small">
                           {t("alarms:paused")}
                         </Tag>
@@ -204,7 +223,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                     )}
                     {running && (
                       <span className="status-inline">
-                        <ElementImage id="running" size={26} alt="" />
+                        <ElementImage id="running" size={22} alt="" />
                         <Tag color="app-yellow" size="small">
                           {t("alarms:running")}
                         </Tag>
@@ -214,31 +233,33 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                       {alarm.binary}
                     </Tag>
                   </div>
-                  <div className="card-actions">
-                    {/* Order: edit, logs, delete, run — delete left of run */}
-                    <Button size="small" onClick={() => onEdit(alarm.id)}>
-                      {t("common:edit")}
-                    </Button>
-                    <Button size="small" onClick={() => onLogs(alarm.id)}>
-                      {t("alarms:viewLogs")}
-                    </Button>
-                    <Button
-                      size="small"
-                      danger
+
+                  <div className="card-actions icon-actions">
+                    <IconButton
+                      label={t("common:edit")}
+                      icon={<IconEdit size={16} />}
+                      onClick={() => onEdit(alarm.id)}
+                    />
+                    <IconButton
+                      label={t("alarms:viewLogs")}
+                      icon={<IconLogs size={16} />}
+                      onClick={() => onLogs(alarm.id)}
+                    />
+                    <IconButton
+                      label={t("common:delete")}
+                      icon={<IconTrash size={16} />}
+                      variant="danger"
                       disabled={running || deleting}
                       onClick={() => setConfirmDelete(alarm)}
-                    >
-                      {t("common:delete")}
-                    </Button>
-                    <Button
-                      size="small"
-                      type="primary"
+                    />
+                    <IconButton
+                      label={t("alarms:runNow")}
+                      icon={<IconBolt size={16} />}
+                      variant="primary"
                       loading={busyId === alarm.id}
                       disabled={running}
                       onClick={() => setConfirmRun(alarm)}
-                    >
-                      {t("alarms:runNow")}
-                    </Button>
+                    />
                   </div>
                 </Card>
               );
@@ -251,9 +272,10 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
         className="fab"
         type="button"
         aria-label={t("alarms:create")}
+        title={t("alarms:create")}
         onClick={onCreate}
       >
-        +
+        <IconPlus size={28} />
       </button>
 
       <Modal

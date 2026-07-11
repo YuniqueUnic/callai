@@ -5,6 +5,8 @@ import type { AppSettings, LocaleCode, ThemeMode } from "../domain/types";
 import { client } from "../infra/client";
 import { applyTheme } from "../theme/theme";
 import { ElementImage } from "../ui/ElementImage";
+import { IconButton } from "../ui/IconButton";
+import { IconLogs, IconRestore, IconTrash } from "../ui/icons";
 import { isTauri } from "../infra/tauriApi";
 
 async function ensureNotifyPermission(): Promise<boolean> {
@@ -61,6 +63,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
     <>
       <div className="app-header">
         <div className="header-brand">
+          <ElementImage id="multi-device" size={40} alt="" />
           <div>
             <h1>{t("settings:title")}</h1>
             <p>{t("common:tagline")}</p>
@@ -74,8 +77,8 @@ export function SettingsPage({ onOpenLogs }: Props) {
             <div className="panel-head">
               <label className="label">{t("common:theme")}</label>
               <span className="row">
-                <ElementImage id="theme-light" size={32} alt="" />
-                <ElementImage id="theme-dark" size={32} alt="" />
+                <ElementImage id="theme-light" size={28} alt="" />
+                <ElementImage id="theme-dark" size={28} alt="" />
               </span>
             </div>
             <div className="segmented">
@@ -105,7 +108,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
           <div className="field">
             <div className="panel-head">
               <label className="label">{t("common:language")}</label>
-              <ElementImage id="chat-global" size={32} alt="" />
+              <ElementImage id="chat-global" size={28} alt="" />
             </div>
             <div className="segmented">
               {(
@@ -222,40 +225,43 @@ export function SettingsPage({ onOpenLogs }: Props) {
                   <span className="meta" title={b}>
                     {b}
                   </span>
-                  <div className="row">
-                    <Button
-                      size="small"
+                  <div className="row icon-actions">
+                    <IconButton
+                      label={t("settings:restore")}
+                      icon={<IconRestore size={16} />}
                       onClick={async () => {
                         await client.restoreBackup(b);
                         Notification.success({
                           message: t("settings:restore"),
                         });
                       }}
-                    >
-                      {t("settings:restore")}
-                    </Button>
-                    <Button
-                      size="small"
-                      danger
+                    />
+                    <IconButton
+                      label={t("settings:deleteBackup")}
+                      icon={<IconTrash size={16} />}
+                      variant="danger"
                       onClick={() => setConfirmDeleteBackup(b)}
-                    >
-                      {t("settings:deleteBackup")}
-                    </Button>
+                    />
                   </div>
                 </div>
               ))
             )}
           </div>
 
-          {/* Logs entry at bottom of settings */}
           <div className="settings-logs-entry">
-            <div>
-              <div className="label">{t("alarms:openLogsFromSettings")}</div>
-              <div className="hint">{t("alarms:logsHint")}</div>
+            <div className="settings-logs-copy">
+              <ElementImage id="logs-clipboard" size={36} alt="" />
+              <div>
+                <div className="label">{t("alarms:openLogsFromSettings")}</div>
+                <div className="hint">{t("alarms:logsHint")}</div>
+              </div>
             </div>
-            <Button type="primary" size="small" onClick={onOpenLogs}>
-              {t("common:logs")}
-            </Button>
+            <IconButton
+              label={t("common:logs")}
+              icon={<IconLogs size={18} />}
+              variant="primary"
+              onClick={onOpenLogs}
+            />
           </div>
         </div>
       </div>

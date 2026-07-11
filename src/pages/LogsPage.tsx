@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Input, Tag } from "animal-island-ui";
+import { Input, Tag } from "animal-island-ui";
 import type { ExecutionLog, ExecutionStatus } from "../domain/types";
+import { formatDateTime } from "../domain/format";
 import { client } from "../infra/client";
 import { ElementImage } from "../ui/ElementImage";
+import { IconButton } from "../ui/IconButton";
+import { IconBack, IconSearch } from "../ui/icons";
 
 interface Props {
   alarmId?: string | null;
@@ -11,7 +14,7 @@ interface Props {
 }
 
 export function LogsPage({ alarmId, onBack }: Props) {
-  const { t } = useTranslation(["logs", "common"]);
+  const { t, i18n } = useTranslation(["logs", "common"]);
   const [logs, setLogs] = useState<ExecutionLog[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<ExecutionStatus | "all">("all");
@@ -38,7 +41,11 @@ export function LogsPage({ alarmId, onBack }: Props) {
           <h1>{t("logs:title")}</h1>
         </div>
         <div className="header-actions">
-          <Button size="small" onClick={onBack}>{t("common:back")}</Button>
+          <IconButton
+            label={t("common:back")}
+            icon={<IconBack size={18} />}
+            onClick={onBack}
+          />
         </div>
       </div>
       <div className="app-main">
@@ -53,9 +60,12 @@ export function LogsPage({ alarmId, onBack }: Props) {
             }}
             style={{ minWidth: 240 }}
           />
-          <Button size="small" onClick={() => void refresh()}>
-            {t("common:confirm")}
-          </Button>
+          <IconButton
+            label={t("common:confirm")}
+            icon={<IconSearch size={16} />}
+            variant="primary"
+            onClick={() => void refresh()}
+          />
           <div className="segmented">
             {(["all", "success", "failed", "retrying"] as const).map((s) => (
               <button
@@ -99,7 +109,7 @@ export function LogsPage({ alarmId, onBack }: Props) {
                   </Tag>
                 </div>
                 <div className="meta">
-                  {new Date(log.started_at).toLocaleString()} · {t("logs:duration")}{" "}
+                  {formatDateTime(log.started_at, i18n.language)} · {t("logs:duration")}{" "}
                   {log.duration_ms ?? "—"}ms · {t("logs:retries")} {log.retry_count}
                 </div>
                 <div className="meta">{log.command_preview}</div>
