@@ -10,7 +10,7 @@ name = "callai_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", default-features = false , features = [] }
+tauri-build = { version = "2", default-features = false }
 
 [dependencies]
 # tray + PNG template icon for macOS monochrome tray
@@ -19,7 +19,7 @@ tauri = { version = "2", default-features = false, features = [
   "tray-icon",
   "image-png",
 ] }
-tauri-plugin-dialog = { version = "2", default-features = false }
+tauri-plugin-dialog = { version = "2" }
 tauri-plugin-notification = { version = "2", default-features = false }
 serde = { version = "1", default-features = false, features = ["std", "derive"] }
 serde_json = { version = "1", default-features = false, features = ["std"] }
