@@ -81,20 +81,11 @@ fi
 rm -rf "${ICONSET_TMP}"
 
 
-log "logo → macOS tray template (monochrome)"
-# Black silhouette + alpha for NSImage template (menu bar light/dark adaptive)
-for pair in "18:trayTemplate.png" "36:nathan.k@example.net"; do
-  size="${pair%%:*}"
-  name="${pair##*:}"
-  magick "${LOGO_MASTER}" \
-    -background none -gravity center \
-    -resize "${size}x${size}" -extent "${size}x${size}" \
-    -fill black -colorize 100% \
-    \( +clone -alpha extract -morphology Dilate Disk:0.5 \) \
-    -compose CopyOpacity -composite \
-    "PNG32:${TAURI_ICONS_DIR}/${name}"
-  cp -f "${TAURI_ICONS_DIR}/${name}" "${PUBLIC_ICONS_DIR}/${name}"
-done
+log "logo → macOS tray template (black silhouette, pale-highlight punch)"
+python3 "${SCRIPT_DIR}/make_tray_template.py" "${LOGO_MASTER}" "${TAURI_ICONS_DIR}" 512 0.30
+cp -f "${TAURI_ICONS_DIR}/trayTemplate.png" "${PUBLIC_ICONS_DIR}/trayTemplate.png"
+cp -f "${TAURI_ICONS_DIR}/nathan.k@example.net" "${PUBLIC_ICONS_DIR}/nathan.k@example.net"
+
 
 log "logo → public favicon / icons"
 magick "${LOGO_1024}" -resize 64x64 "${FAVICON}"
