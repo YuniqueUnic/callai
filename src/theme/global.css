@@ -919,3 +919,99 @@ textarea.raw:focus {
   justify-content: flex-end;
   margin-top: 8px;
 }
+
+/* ── Bottom tabs ─────────────────────────────────────── */
+.app-shell.with-tabs .app-main {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+.app-shell.with-tabs .fab {
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+.bottom-tabs {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-top: 2px solid color-mix(in srgb, var(--callai-border) 55%, transparent);
+  background: color-mix(in srgb, var(--callai-surface) 94%, transparent);
+  backdrop-filter: blur(10px);
+  z-index: 40;
+}
+
+.bottom-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 52px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--callai-ink-soft);
+  font-weight: 800;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.bottom-tab.active {
+  color: var(--callai-ink);
+  background: color-mix(in srgb, var(--callai-primary) 16%, var(--callai-bg-soft));
+}
+
+.bottom-tab svg {
+  display: block;
+}
+
+.settings-logs-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 2px dashed color-mix(in srgb, var(--callai-border) 70%, transparent);
+}
+
+.settings-logs-entry .label {
+  font-weight: 800;
+  color: var(--callai-ink);
+  margin-bottom: 2px;
+}
+
+/* Time picker portal: above all cards, no stacking fight */
+.form-panel,
+.alarm-card,
+.settings-card {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+}
+
+.time-picker.is-open {
+  position: relative;
+  z-index: 50;
+}
+
+.time-picker-popup-portal {
+  position: fixed !important;
+  z-index: 10000 !important;
+  top: auto;
+  left: auto;
+  min-width: 260px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-surface);
+  box-shadow: 0 12px 32px rgba(40, 30, 20, 0.28);
+  color: var(--callai-ink);
+}
+
+/* Keep absolute popup rule from applying badly */
+.time-picker-popup:not(.time-picker-popup-portal) {
+  z-index: 100;
+}

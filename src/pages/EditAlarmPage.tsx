@@ -126,7 +126,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
     draft.schedule.mode === "daily" ? draft.schedule.times : ["08:00", "13:00", "18:00"];
 
   return (
-    <div className="app-shell">
+    <>
       <div className="app-header">
         <div className="header-brand">
           <div>
@@ -400,6 +400,6 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           </div>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

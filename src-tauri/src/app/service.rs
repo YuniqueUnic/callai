@@ -61,15 +61,15 @@ impl AlarmService {
     }
 
     pub fn delete_alarm(&self, id: &str) -> DomainResult<()> {
-        let alarm = self.get_alarm(id)?;
+        let mut alarm = self.get_alarm(id)?;
+        // If a previous run left a stale "running" flag (app crash), unlock then delete.
         if matches!(
             alarm.lifecycle,
             AlarmLifecycle::Running | AlarmLifecycle::Retrying { .. }
         ) {
-            return Err(DomainError::new(
-                ErrorCode::AlarmBusy,
-                "cannot delete while running",
-            ));
+            // Soft unlock: treat as idle so user is never stuck forever.
+            alarm.mark_idle();
+            self.store.upsert_alarm(&alarm)?;
         }
         self.store.delete_alarm(id)?;
         self.sync_export()?;
@@ -241,6 +241,39 @@ impl AlarmService {
         alarm.mark_idle();
         self.store.upsert_alarm(&alarm)?;
         Ok(log)
+    }
+
+    /// Import alarms from config.toml into SQLite (by name upsert semantics: create new drafts).
+    pub fn import_toml_alarms(&self) -> DomainResult<usize> {
+        let Some((drafts, settings)) = self.backup.import_toml_if_needed()? else {
+            return Ok(0);
+        };
+        let _ = self.store.save_settings(&settings);
+        let mut n = 0;
+        for draft in drafts {
+            // skip if same name exists
+            let exists = self
+                .store
+                .list_alarms()?
+                .into_iter()
+                .any(|a| a.name == draft.name);
+            if exists {
+                continue;
+            }
+            let alarm = Alarm::from_draft(draft)?;
+            self.store.upsert_alarm(&alarm)?;
+            n += 1;
+        }
+        self.sync_export()?;
+        Ok(n)
+    }
+
+    pub fn find_alarm_by_name(&self, name: &str) -> DomainResult<Alarm> {
+        self.store
+            .list_alarms()?
+            .into_iter()
+            .find(|a| a.name == name || a.id == name)
+            .ok_or_else(|| DomainError::new(ErrorCode::AlarmNotFound, format!("alarm not found: {name}")))
     }
 
     pub fn bootstrap(&self) -> DomainResult<()> {

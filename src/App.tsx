@@ -8,6 +8,7 @@ import { HomePage } from "./pages/HomePage";
 import { EditAlarmPage } from "./pages/EditAlarmPage";
 import { LogsPage } from "./pages/LogsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { BottomTabs } from "./ui/BottomTabs";
 import { applyTheme, readStoredTheme } from "./theme/theme";
 
 export default function App() {
@@ -48,9 +49,11 @@ export default function App() {
     };
   }, []);
 
+  const showTabs = page === "home" || page === "settings";
+
   return (
     <Cursor>
-      <div className="app-shell">
+      <div className={`app-shell ${showTabs ? "with-tabs" : ""}`}>
         {page === "home" && (
           <HomePage
             onCreate={() => {
@@ -65,21 +68,37 @@ export default function App() {
               setLogAlarmId(alarmId ?? null);
               setPage("logs");
             }}
-            onSettings={() => setPage("settings")}
           />
         )}
         {page === "edit" && (
           <EditAlarmPage
             alarmId={editId}
             onBack={() => setPage("home")}
-            onSaved={() => setPage("home")}
+            onSaved={() => {
+              // toast already fired in EditAlarmPage; just return home
+              setPage("home");
+            }}
           />
         )}
         {page === "logs" && (
-          <LogsPage alarmId={logAlarmId} onBack={() => setPage("home")} />
+          <LogsPage
+            alarmId={logAlarmId}
+            onBack={() => setPage("settings")}
+          />
         )}
         {page === "settings" && (
-          <SettingsPage onBack={() => setPage("home")} />
+          <SettingsPage
+            onOpenLogs={() => {
+              setLogAlarmId(null);
+              setPage("logs");
+            }}
+          />
+        )}
+        {showTabs && (
+          <BottomTabs
+            active={page === "settings" ? "settings" : "home"}
+            onChange={(tab) => setPage(tab)}
+          />
         )}
       </div>
     </Cursor>

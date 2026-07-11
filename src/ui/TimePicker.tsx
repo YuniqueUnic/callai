@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
 
@@ -41,9 +42,7 @@ function WheelColumn({
     const el = ref.current;
     if (!el) return;
     const idx = items.indexOf(value);
-    if (idx >= 0) {
-      el.scrollTop = idx * itemH;
-    }
+    if (idx >= 0) el.scrollTop = idx * itemH;
   }, [value, items]);
 
   return (
@@ -92,30 +91,96 @@ export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
   const parsed = useMemo(() => parse(value), [value]);
   const [h, setH] = useState(parsed.h);
   const [m, setM] = useState(parsed.m);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 280 });
 
   useEffect(() => {
     setH(parsed.h);
     setM(parsed.m);
   }, [parsed.h, parsed.m]);
 
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const width = Math.max(260, Math.min(320, rect.width + 120));
+    let top = rect.bottom + 8;
+    // if near bottom, open above
+    if (top + 240 > window.innerHeight) {
+      top = Math.max(8, rect.top - 240);
+    }
+    setPos({
+      top,
+      left: Math.min(rect.left, window.innerWidth - width - 8),
+      width,
+    });
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    const onDoc = (e: Event) => {
+      const node = e.target as Node;
+      if (triggerRef.current?.contains(node)) return;
+      if (popupRef.current?.contains(node)) return;
+      setOpen(false);
     };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    // capture phase so card click/focus cannot steal and thrash the popup
+    document.addEventListener("pointerdown", onDoc, true);
+    return () => {
+      document.removeEventListener("pointerdown", onDoc, true);
+    };
   }, [open]);
 
   function commit(nextH = h, nextM = m) {
     onChange(`${pad(nextH)}:${pad(nextM)}`);
   }
 
+  const popup =
+    open &&
+    createPortal(
+      <div
+        ref={popupRef}
+        className="time-picker-popup time-picker-popup-portal"
+        role="dialog"
+        aria-label={t("pickTime")}
+        style={{ top: pos.top, left: pos.left, width: pos.width }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="time-wheels">
+          <WheelColumn
+            items={HOURS}
+            value={h}
+            label="hour"
+            onChange={(v) => {
+              setH(v);
+              commit(v, m);
+            }}
+          />
+          <div className="time-wheel-colon">:</div>
+          <WheelColumn
+            items={MINUTES}
+            value={m}
+            label="minute"
+            onChange={(v) => {
+              setM(v);
+              commit(h, v);
+            }}
+          />
+        </div>
+        <div className="time-picker-actions">
+          <Button size="small" type="primary" onClick={() => setOpen(false)}>
+            {t("donePick")}
+          </Button>
+        </div>
+      </div>,
+      document.body,
+    );
+
   return (
-    <div className="time-picker" ref={rootRef}>
+    <div className={`time-picker ${open ? "is-open" : ""}`}>
       <div className="time-picker-row">
         <button
+          ref={triggerRef}
           type="button"
           className="time-picker-trigger"
           onClick={() => setOpen((v) => !v)}
@@ -133,43 +198,14 @@ export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
             onClick={() => {
               commit();
               onAdd();
+              setOpen(false);
             }}
           >
             {addLabel ?? t("addTime")}
           </Button>
         )}
       </div>
-
-      {open && (
-        <div className="time-picker-popup" role="dialog" aria-label={t("pickTime")}>
-          <div className="time-wheels">
-            <WheelColumn
-              items={HOURS}
-              value={h}
-              label="hour"
-              onChange={(v) => {
-                setH(v);
-                commit(v, m);
-              }}
-            />
-            <div className="time-wheel-colon">:</div>
-            <WheelColumn
-              items={MINUTES}
-              value={m}
-              label="minute"
-              onChange={(v) => {
-                setM(v);
-                commit(h, v);
-              }}
-            />
-          </div>
-          <div className="time-picker-actions">
-            <Button size="small" onClick={() => setOpen(false)}>
-              {t("donePick")}
-            </Button>
-          </div>
-        </div>
-      )}
+      {popup}
     </div>
   );
 }

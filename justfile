@@ -198,6 +198,8 @@ help:
     @echo "  just paths          show config/data locations"
     @echo "  just brand          regenerate logo + element UI assets"
     @echo "  just brand-qa       background residue QA"
+    @echo "  just cli-list       CLI: list alarms"
+    @echo "  just cli-run        CLI: headless scheduler"
     @echo ""
     @echo "Run \`just --list\` for the full recipe list."
 
@@ -228,3 +230,30 @@ brand-check:
 # Background residue / grayscale QA for logo + elements
 brand-qa:
     ./scripts/brand/qa_background.sh
+
+
+# ── CLI (headless, DESIGN.md) ──────────────────────────────────────
+
+# Build debug callai binary (GUI + CLI)
+cli-build:
+    cargo build --manifest-path {{tauri_manifest}}
+
+# List alarms
+cli-list: cli-build
+    ./src-tauri/target/debug/callai list
+
+# Start headless scheduler
+cli-run: cli-build
+    ./src-tauri/target/debug/callai run
+
+# Run one alarm by name/id: just cli-run-once morning-warmup
+cli-run-once name: cli-build
+    ./src-tauri/target/debug/callai run-once {{name}}
+
+# Validate config.toml
+cli-validate: cli-build
+    ./src-tauri/target/debug/callai validate
+
+# Write callai.example.toml
+cli-example: cli-build
+    ./src-tauri/target/debug/callai generate-example --out callai.example.toml

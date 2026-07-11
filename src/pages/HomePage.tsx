@@ -10,10 +10,9 @@ interface Props {
   onCreate: () => void;
   onEdit: (id: string) => void;
   onLogs: (alarmId?: string) => void;
-  onSettings: () => void;
 }
 
-export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
+export function HomePage({ onCreate, onEdit, onLogs }: Props) {
   const { t } = useTranslation(["alarms", "common"]);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +20,7 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
   const [confirmRun, setConfirmRun] = useState<Alarm | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Alarm | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function refresh() {
     setLoading(true);
@@ -56,6 +56,9 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
     try {
       await client.setEnabled(alarm.id, enabled);
       await refresh();
+      Notification.success({
+        message: enabled ? t("alarms:resumeSuccess") : t("alarms:pauseSuccess"),
+      });
     } catch (err) {
       Notification.warning({
         message: t("alarms:ERR_INTERNAL"),
@@ -67,13 +70,26 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
   async function runNow(alarm: Alarm) {
     setBusyId(alarm.id);
     try {
-      await client.runNow(alarm.id);
-      Notification.success({ message: t("common:success") });
+      const log = await client.runNow(alarm.id);
+      if (log.status === "success") {
+        Notification.success({ message: t("alarms:runSuccess") });
+      } else {
+        Notification.warning({
+          message: t("alarms:ERR_EXECUTION_FAILED"),
+          description: log.stderr || undefined,
+          btn: (
+            <Button size="small" onClick={() => onLogs(alarm.id)}>
+              {t("alarms:viewLogs")}
+            </Button>
+          ),
+        });
+      }
       await refresh();
     } catch (err) {
       const code = (err as { code?: string })?.code;
       Notification.error({
         message: t(`alarms:ERR_${code ?? "INTERNAL"}` as "alarms:ERR_INTERNAL"),
+        description: String((err as { message?: string })?.message ?? err),
       });
     } finally {
       setBusyId(null);
@@ -82,30 +98,45 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
   }
 
   async function remove(alarm: Alarm) {
+    setDeleting(true);
     try {
       await client.deleteAlarm(alarm.id);
-      Notification.success({ message: t("common:success") });
+      // optimistic local update so UI is instantly correct even if list lags
+      setAlarms((prev) => prev.filter((a) => a.id !== alarm.id));
+      Notification.success({ message: t("alarms:deleteSuccess") });
       await refresh();
     } catch (err) {
+      const code = (err as { code?: string })?.code;
       Notification.error({
-        message: t("alarms:ERR_ALARM_BUSY"),
+        message:
+          code === "ALARM_BUSY" || code === "ErrAlarmBusy"
+            ? t("alarms:ERR_ALARM_BUSY")
+            : t("alarms:ERR_INTERNAL"),
         description: String((err as { message?: string })?.message ?? err),
       });
     } finally {
+      setDeleting(false);
       setConfirmDelete(null);
     }
   }
 
   async function setAll(enabled: boolean) {
-    await client.setAllEnabled(enabled);
-    await refresh();
-    Notification.success({
-      message: enabled ? t("alarms:resumeAll") : t("alarms:pauseAll"),
-    });
+    try {
+      await client.setAllEnabled(enabled);
+      await refresh();
+      Notification.success({
+        message: enabled ? t("alarms:resumeSuccess") : t("alarms:pauseSuccess"),
+      });
+    } catch (err) {
+      Notification.error({
+        message: t("alarms:ERR_INTERNAL"),
+        description: String((err as { message?: string })?.message ?? err),
+      });
+    }
   }
 
   return (
-    <div className="app-shell">
+    <>
       <div className="app-header">
         <div className="header-brand">
           <ElementImage id="hero-perch" size={44} alt="" />
@@ -120,12 +151,6 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
           </Button>
           <Button size="small" onClick={() => void setAll(true)}>
             {t("alarms:resumeAll")}
-          </Button>
-          <Button size="small" onClick={() => onLogs()}>
-            {t("common:logs")}
-          </Button>
-          <Button size="small" type="primary" onClick={onSettings}>
-            {t("common:settings")}
           </Button>
         </div>
       </div>
@@ -190,26 +215,29 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
                     </Tag>
                   </div>
                   <div className="card-actions">
-                    <Button
-                      size="small"
-                      type="primary"
-                      loading={busyId === alarm.id}
-                      onClick={() => setConfirmRun(alarm)}
-                    >
-                      {t("alarms:runNow")}
+                    {/* Order: edit, logs, delete, run — delete left of run */}
+                    <Button size="small" onClick={() => onEdit(alarm.id)}>
+                      {t("common:edit")}
                     </Button>
                     <Button size="small" onClick={() => onLogs(alarm.id)}>
                       {t("alarms:viewLogs")}
                     </Button>
-                    <Button size="small" onClick={() => onEdit(alarm.id)}>
-                      {t("common:edit")}
-                    </Button>
                     <Button
                       size="small"
                       danger
+                      disabled={running || deleting}
                       onClick={() => setConfirmDelete(alarm)}
                     >
                       {t("common:delete")}
+                    </Button>
+                    <Button
+                      size="small"
+                      type="primary"
+                      loading={busyId === alarm.id}
+                      disabled={running}
+                      onClick={() => setConfirmRun(alarm)}
+                    >
+                      {t("alarms:runNow")}
                     </Button>
                   </div>
                 </Card>
@@ -219,7 +247,12 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
         )}
       </div>
 
-      <button className="fab" type="button" aria-label={t("alarms:create")} onClick={onCreate}>
+      <button
+        className="fab"
+        type="button"
+        aria-label={t("alarms:create")}
+        onClick={onCreate}
+      >
         +
       </button>
 
@@ -228,7 +261,9 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
         title={t("alarms:runNow")}
         typewriter={false}
         onClose={() => setConfirmRun(null)}
-        onOk={() => confirmRun && void runNow(confirmRun)}
+        onOk={() => {
+          if (confirmRun) void runNow(confirmRun);
+        }}
       >
         {t("alarms:runConfirm")}
       </Modal>
@@ -237,11 +272,18 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
         open={!!confirmDelete}
         title={t("common:delete")}
         typewriter={false}
-        onClose={() => setConfirmDelete(null)}
-        onOk={() => confirmDelete && void remove(confirmDelete)}
+        onClose={() => !deleting && setConfirmDelete(null)}
+        onOk={() => {
+          if (confirmDelete) void remove(confirmDelete);
+        }}
       >
         {t("alarms:deleteConfirm")}
+        {confirmDelete ? (
+          <div className="meta" style={{ marginTop: 8 }}>
+            {confirmDelete.name}
+          </div>
+        ) : null}
       </Modal>
-    </div>
+    </>
   );
 }

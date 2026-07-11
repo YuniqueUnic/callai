@@ -1,4 +1,5 @@
 mod app;
+pub mod cli;
 mod commands;
 mod domain;
 mod infra;

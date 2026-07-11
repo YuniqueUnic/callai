@@ -46,6 +46,36 @@ bun run tauri dev
 bun run dev
 ```
 
+
+
+#### CLI（与桌面 App 共用数据）
+
+不带子命令时启动 **GUI**；带子命令时走 **CLI**（同一套 SQLite + `config.toml`）。
+
+```bash
+# 构建
+cargo build --manifest-path src-tauri/Cargo.toml
+
+# 或 just
+just cli-list
+just cli-run
+just cli-run-once morning-warmup
+just cli-validate
+just cli-example
+```
+
+```bash
+./src-tauri/target/debug/callai list
+./src-tauri/target/debug/callai run                 # 前台调度（无 GUI）
+./src-tauri/target/debug/callai run --import-toml   # 先从 config.toml 导入缺失闹钟
+./src-tauri/target/debug/callai run-once <name|id>
+./src-tauri/target/debug/callai validate
+./src-tauri/target/debug/callai generate-example --out callai.example.toml
+./src-tauri/target/debug/callai app                 # 显式启动 GUI
+```
+
+环境变量（可选）：沿用系统 `PATH` 查找 binary；数据目录见上文「数据位置」。
+
 #### 质量门禁
 
 ```bash

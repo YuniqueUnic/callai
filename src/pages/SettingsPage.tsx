@@ -24,16 +24,17 @@ async function ensureNotifyPermission(): Promise<boolean> {
   }
 }
 
-
 interface Props {
-  onBack: () => void;
+  onOpenLogs: () => void;
 }
 
-export function SettingsPage({ onBack }: Props) {
-  const { t, i18n } = useTranslation(["settings", "common"]);
+export function SettingsPage({ onOpenLogs }: Props) {
+  const { t, i18n } = useTranslation(["settings", "common", "alarms"]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [backups, setBackups] = useState<string[]>([]);
-  const [confirmDeleteBackup, setConfirmDeleteBackup] = useState<string | null>(null);
+  const [confirmDeleteBackup, setConfirmDeleteBackup] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     void (async () => {
@@ -57,15 +58,13 @@ export function SettingsPage({ onBack }: Props) {
   }
 
   return (
-    <div className="app-shell">
+    <>
       <div className="app-header">
         <div className="header-brand">
           <div>
             <h1>{t("settings:title")}</h1>
+            <p>{t("common:tagline")}</p>
           </div>
-        </div>
-        <div className="header-actions">
-          <Button size="small" onClick={onBack}>{t("common:back")}</Button>
         </div>
       </div>
 
@@ -228,7 +227,9 @@ export function SettingsPage({ onBack }: Props) {
                       size="small"
                       onClick={async () => {
                         await client.restoreBackup(b);
-                        Notification.success({ message: t("settings:restore") });
+                        Notification.success({
+                          message: t("settings:restore"),
+                        });
                       }}
                     >
                       {t("settings:restore")}
@@ -245,6 +246,17 @@ export function SettingsPage({ onBack }: Props) {
               ))
             )}
           </div>
+
+          {/* Logs entry at bottom of settings */}
+          <div className="settings-logs-entry">
+            <div>
+              <div className="label">{t("alarms:openLogsFromSettings")}</div>
+              <div className="hint">{t("alarms:logsHint")}</div>
+            </div>
+            <Button type="primary" size="small" onClick={onOpenLogs}>
+              {t("common:logs")}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -259,11 +271,15 @@ export function SettingsPage({ onBack }: Props) {
             try {
               await client.deleteBackup(confirmDeleteBackup);
               setBackups(await client.listBackups());
-              Notification.success({ message: t("settings:deleteBackupSuccess") });
+              Notification.success({
+                message: t("settings:deleteBackupSuccess"),
+              });
             } catch (err) {
               Notification.error({
                 message: t("settings:deleteBackup"),
-                description: String((err as { message?: string })?.message ?? err),
+                description: String(
+                  (err as { message?: string })?.message ?? err,
+                ),
               });
             } finally {
               setConfirmDeleteBackup(null);
@@ -278,6 +294,6 @@ export function SettingsPage({ onBack }: Props) {
           </div>
         ) : null}
       </Modal>
-    </div>
+    </>
   );
 }

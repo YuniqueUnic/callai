@@ -32,7 +32,7 @@ export function LogsPage({ alarmId, onBack }: Props) {
   }, [alarmId, status]);
 
   return (
-    <div className="app-shell">
+    <>
       <div className="app-header">
         <div>
           <h1>{t("logs:title")}</h1>
@@ -128,6 +128,6 @@ export function LogsPage({ alarmId, onBack }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
