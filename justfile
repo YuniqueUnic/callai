@@ -261,3 +261,13 @@ cli-validate: cli-build
 # Write callai.example.toml
 cli-example: cli-build
     ./src-tauri/target/debug/callai generate-example --out callai.example.toml
+
+
+# ── Version / CI helpers ───────────────────────────────────────────
+
+# Ensure package.json / tauri.conf / Cargo.toml versions match
+check-versions:
+    ./scripts/check_versions.sh
+
+# Local CI-ish gate + version check
+ci: check-versions gate

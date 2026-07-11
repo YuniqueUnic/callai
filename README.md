@@ -143,3 +143,23 @@ just brand-check    # 校验产物
 #### 许可说明
 
 前端使用 `animal-island-ui`（CC BY-NC 4.0）。该组件库声明禁止商业用途；本项目当前定位为内部 / 非商业学习与自用工具。若要商业分发，需替换 UI 库或取得授权。
+
+
+#### CI / Release
+
+- **CI** (`.github/workflows/ci.yml`): typecheck, frontend tests/build, `cargo fmt` / `test` / `clippy`, release CLI smoke on every PR/push to `main`.
+- **Release** (`.github/workflows/release.yml`): [release-please](https://github.com/googleapis/release-please) (semver + Conventional Commits) opens a Release PR; when merged it creates a GitHub Release and builds:
+  - **Desktop**: macOS arm64/x64, Linux, Windows via [tauri-action](https://github.com/tauri-apps/tauri-action)
+  - **CLI**: same matrix, uploaded as `callai-cli-<target>[.exe]`
+- Version sources (must stay in sync; release-please updates them):
+  - `package.json`
+  - `src-tauri/tauri.conf.json`
+  - `src-tauri/Cargo.toml`
+  - `.release-please-manifest.json`
+
+```bash
+./scripts/check_versions.sh
+just ci
+```
+
+Commit messages should follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, …) so release-please can bump semver correctly.

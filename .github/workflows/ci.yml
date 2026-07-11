@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: gate
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Linux Tauri deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev
+
+      - name: Install JS deps
+        run: bun install --frozen-lockfile
+
+      - name: Version consistency
+        run: ./scripts/check_versions.sh
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Frontend tests
+        run: bun test
+
+      - name: Frontend build
+        run: bun run build
+
+      - name: Rust fmt
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+
+      - name: Clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: CLI binary builds
+        run: cargo build --manifest-path src-tauri/Cargo.toml --release
+
+      - name: CLI smoke
+        run: |
+          ./src-tauri/target/release/callai --help
+          ./src-tauri/target/release/callai --version || true
+          ./src-tauri/target/release/callai list || true
