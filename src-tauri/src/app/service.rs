@@ -125,6 +125,10 @@ impl AlarmService {
         self.backup.restore(name)
     }
 
+    pub fn run_alarm_now_blocking(&self, id: &str) -> DomainResult<ExecutionLog> {
+        self.run_alarm_once(id)
+    }
+
     /// Run alarm once with retry policy. Uses injected sleeper between retries.
     pub fn run_alarm_once(&self, id: &str) -> DomainResult<ExecutionLog> {
         let mut alarm = self.get_alarm(id)?;

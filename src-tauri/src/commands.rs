@@ -68,12 +68,55 @@ pub fn set_all_enabled(state: State<'_, AppState>, enabled: bool) -> Result<Vec<
 }
 
 #[tauri::command]
-pub async fn run_alarm_now(state: State<'_, AppState>, id: String) -> Result<ExecutionLog, String> {
-    // Offload to blocking pool so multi-minute retries don't stall the async runtime.
+pub async fn run_alarm_now(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<ExecutionLog, String> {
     let service = Arc::clone(&state.service);
-    tauri::async_runtime::spawn_blocking(move || service.run_alarm_once(&id).map_err(map_err))
+    let run_id = id.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || service.run_alarm_once(&run_id))
         .await
-        .map_err(|e| format!("join error: {e}"))?
+        .map_err(|e| format!("join error: {e}"))?;
+
+    match result {
+        Ok(log) => {
+            if !matches!(log.status, crate::domain::ExecutionStatus::Success) {
+                maybe_notify_failure(&app, &state, &log.alarm_name);
+            }
+            Ok(log)
+        }
+        Err(err) => {
+            let name = state
+                .service
+                .get_alarm(&id)
+                .map(|a| a.name)
+                .unwrap_or_else(|_| id.clone());
+            maybe_notify_failure(&app, &state, &name);
+            Err(map_err(err))
+        }
+    }
+}
+
+fn maybe_notify_failure(app: &tauri::AppHandle, state: &AppState, name: &str) {
+    use tauri_plugin_notification::NotificationExt;
+    let Ok(settings) = state.service.get_settings() else {
+        return;
+    };
+    if !settings.notify_on_failure {
+        return;
+    }
+    let (title, body) = match settings.locale {
+        crate::domain::LocaleCode::En => (
+            "A little task needs care".to_string(),
+            format!("{name} did not finish. Open logs for details."),
+        ),
+        crate::domain::LocaleCode::ZhCn => (
+            "小任务不太顺利".to_string(),
+            format!("「{name}」这次没完成，可以打开日志看看～"),
+        ),
+    };
+    let _ = app.notification().builder().title(title).body(body).show();
 }
 
 #[tauri::command]
@@ -91,10 +134,13 @@ pub fn get_settings(state: State<'_, AppState>) -> Result<AppSettings, String> {
 
 #[tauri::command]
 pub fn save_settings(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     settings: AppSettings,
 ) -> Result<AppSettings, String> {
-    state.service.save_settings(settings).map_err(map_err)
+    let saved = state.service.save_settings(settings).map_err(map_err)?;
+    let _ = rebuild_tray_menu(&app, saved.locale);
+    Ok(saved)
 }
 
 #[tauri::command]
@@ -144,6 +190,32 @@ pub fn next_trigger(state: State<'_, AppState>, id: String) -> Result<Option<Str
         .next_trigger_after(chrono::Local::now())
         .map_err(map_err)?;
     Ok(next.map(|d| d.to_rfc3339()))
+}
+
+
+#[tauri::command]
+pub fn refresh_tray_menu(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    let locale = state
+        .service
+        .get_settings()
+        .map(|s| s.locale)
+        .map_err(map_err)?;
+    rebuild_tray_menu(&app, locale).map_err(|e| e.to_string())
+}
+
+fn rebuild_tray_menu(
+    app: &tauri::AppHandle,
+    locale: crate::domain::LocaleCode,
+) -> tauri::Result<()> {
+    #[allow(unused_imports)]
+    use tauri::Manager;
+    let copy = crate::tray_copy_public(locale);
+    let menu = crate::build_tray_menu_public(app, &copy)?;
+    if let Some(tray) = app.tray_by_id("main-tray") {
+        tray.set_menu(Some(menu))?;
+        let _ = tray.set_tooltip(Some(copy.tooltip.to_string()));
+    }
+    Ok(())
 }
 
 pub struct AppState {

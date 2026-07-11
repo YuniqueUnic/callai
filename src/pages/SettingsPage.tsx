@@ -5,6 +5,25 @@ import type { AppSettings, LocaleCode, ThemeMode } from "../domain/types";
 import { client } from "../infra/client";
 import { applyTheme } from "../theme/theme";
 import { ElementImage } from "../ui/ElementImage";
+import { isTauri } from "../infra/tauriApi";
+
+async function ensureNotifyPermission(): Promise<boolean> {
+  if (!isTauri()) return true;
+  try {
+    const { isPermissionGranted, requestPermission } = await import(
+      "@tauri-apps/plugin-notification"
+    );
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const perm = await requestPermission();
+      granted = perm === "granted";
+    }
+    return granted;
+  } catch {
+    return false;
+  }
+}
+
 
 interface Props {
   onBack: () => void;
@@ -128,9 +147,21 @@ export function SettingsPage({ onBack }: Props) {
             <Switch
               checked={settings.notify_on_failure}
               onChange={(v) => {
-                const next = { ...settings, notify_on_failure: v };
-                setSettings(next);
-                void save(next);
+                void (async () => {
+                  if (v) {
+                    const ok = await ensureNotifyPermission();
+                    if (!ok) {
+                      Notification.warning({
+                        message: t("settings:notifyPermissionTitle"),
+                        description: t("settings:notifyPermissionBody"),
+                      });
+                      return;
+                    }
+                  }
+                  const next = { ...settings, notify_on_failure: v };
+                  setSettings(next);
+                  void save(next);
+                })();
               }}
             />
           </div>

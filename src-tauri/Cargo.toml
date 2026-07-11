@@ -2,7 +2,7 @@
 name = "callai"
 version = "0.1.0"
 description = "callai — a cozy AI window-warming alarm"
-authors = ["Yunxuan Youpin"]
+authors = ["unic <yuniqueunic@gmail.com>"]
 edition = "2021"
 
 [lib]

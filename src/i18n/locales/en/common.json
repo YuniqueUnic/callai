@@ -14,5 +14,14 @@
   "empty": "Nothing here yet.",
   "success": "Done!",
   "language": "Language",
-  "theme": "Theme"
+  "theme": "Theme",
+  "trayShow": "Show window",
+  "trayNew": "New alarm",
+  "trayLogs": "View logs",
+  "trayRunAll": "Run all alarms now",
+  "trayPauseAll": "Pause all",
+  "trayResumeAll": "Resume all",
+  "traySettings": "Settings",
+  "trayQuit": "Quit",
+  "trayTooltip": "callai · cozy AI window alarm"
 }

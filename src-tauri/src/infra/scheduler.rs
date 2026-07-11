@@ -8,7 +8,15 @@ use chrono::Local;
 use tracing::{error, info, warn};
 
 use crate::app::AlarmService;
-use crate::domain::ScheduleSpec;
+use crate::domain::{ExecutionStatus, ScheduleSpec};
+use std::sync::OnceLock;
+
+/// Optional hook: (alarm_name) when a scheduled run ends in failure.
+static FAILURE_HOOK: OnceLock<Box<dyn Fn(String) + Send + Sync>> = OnceLock::new();
+
+pub fn set_failure_hook(hook: impl Fn(String) + Send + Sync + 'static) {
+    let _ = FAILURE_HOOK.set(Box::new(hook));
+}
 
 /// Polls due alarms and runs them on a single worker thread.
 /// - one worker avoids unbounded thread growth during multi-minute retries
@@ -120,9 +128,25 @@ impl AlarmScheduler {
                     }
 
                     info!("worker running alarm {id}");
-                    // Production path: sleeper is SystemSleeper so retries actually wait.
-                    if let Err(err) = service.run_alarm_once(&id) {
-                        error!("worker run failed {id}: {}", err.message);
+                    match service.run_alarm_once(&id) {
+                        Ok(log) => {
+                            if !matches!(log.status, ExecutionStatus::Success) {
+                                if let Some(hook) = FAILURE_HOOK.get() {
+                                    hook(log.alarm_name);
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            error!("worker run failed {id}: {}", err.message);
+                            if let Some(hook) = FAILURE_HOOK.get() {
+                                // best-effort name
+                                let name = service
+                                    .get_alarm(&id)
+                                    .map(|a| a.name)
+                                    .unwrap_or_else(|_| id.clone());
+                                hook(name);
+                            }
+                        }
                     }
 
                     {

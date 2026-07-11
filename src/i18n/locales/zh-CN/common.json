@@ -14,5 +14,14 @@
   "empty": "还没有内容哦～",
   "success": "完成啦～",
   "language": "语言",
-  "theme": "主题"
+  "theme": "主题",
+  "trayShow": "显示主窗口",
+  "trayNew": "新建闹钟",
+  "trayLogs": "查看日志",
+  "trayRunAll": "立即执行全部闹钟",
+  "trayPauseAll": "暂停所有闹钟",
+  "trayResumeAll": "恢复所有闹钟",
+  "traySettings": "设置",
+  "trayQuit": "退出",
+  "trayTooltip": "callai · 帮你照顾 AI 的小闹钟"
 }

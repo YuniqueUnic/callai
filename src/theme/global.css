@@ -26,22 +26,74 @@
 }
 
 [data-theme="dark"] {
-  --callai-bg: #1a2420;
-  --callai-bg-soft: #24302a;
-  --callai-surface: #2c3a33;
-  --callai-ink: #f4ebdc;
-  --callai-ink-soft: #d9cbb4;
-  --callai-ink-muted: #c4b49a;
-  --callai-border: #6a7d72;
-  --callai-primary: #3dd4c6;
-  --callai-primary-ink: #063d38;
-  --callai-success: #8fd45a;
-  --callai-warn: #f0c84a;
-  --callai-danger: #f08a7a;
-  --callai-card-shadow: 0 4px 0 0 #152019, 0 8px 18px rgba(0, 0, 0, 0.35);
-  --callai-fab: #2bb8aa;
+  --callai-bg: #121a17;
+  --callai-bg-soft: #1c2823;
+  --callai-surface: #24332c;
+  /* High-contrast parchment text on dark green */
+  --callai-ink: #fff6e8;
+  --callai-ink-soft: #f0e0c8;
+  --callai-ink-muted: #e2d0b4;
+  --callai-border: #8a9e93;
+  --callai-primary: #5ee0d2;
+  --callai-primary-ink: #042f2b;
+  --callai-success: #a6e86a;
+  --callai-warn: #ffd666;
+  --callai-danger: #ff9b8a;
+  --callai-card-shadow: 0 4px 0 0 #0c1411, 0 8px 18px rgba(0, 0, 0, 0.45);
+  --callai-fab: #3dcec0;
   --callai-fab-shadow: #0e6b62;
-  --callai-focus: #f0c84a;
+  --callai-focus: #ffd666;
+}
+
+/* Library buttons / inputs on dark: force readable ink */
+[data-theme="dark"] .header-actions button,
+[data-theme="dark"] .header-actions .animal-btn-QoKe1,
+[data-theme="dark"] .animal-btn-default-L7yE6,
+[data-theme="dark"] .animal-btn-primary-9tMG9 {
+  color: #3a2714 !important;
+}
+
+[data-theme="dark"] .animal-btn-primary-9tMG9 {
+  background: #f8f3e6 !important;
+  border-color: #f8f3e6 !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .animal-input,
+[data-theme="dark"] [class*="animal-input"] {
+  color: #2a1c0e !important;
+  -webkit-text-fill-color: #2a1c0e !important;
+  caret-color: #2a1c0e;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #7a6548 !important;
+  -webkit-text-fill-color: #7a6548 !important;
+  opacity: 1;
+}
+
+[data-theme="dark"] .settings-card,
+[data-theme="dark"] .form-panel,
+[data-theme="dark"] .alarm-card,
+[data-theme="dark"] .log-card {
+  color: var(--callai-ink) !important;
+}
+
+[data-theme="dark"] .meta,
+[data-theme="dark"] .field .hint,
+[data-theme="dark"] .empty-state p {
+  color: var(--callai-ink-soft) !important;
+}
+
+[data-theme="dark"] .settings-row > span,
+[data-theme="dark"] .field label,
+[data-theme="dark"] .field .label,
+[data-theme="dark"] .panel-head h3,
+[data-theme="dark"] .app-header h1,
+[data-theme="dark"] .app-header p {
+  color: var(--callai-ink) !important;
 }
 
 *,
@@ -721,4 +773,149 @@ textarea.raw:focus {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ── Time picker (scroll wheels) ─────────────────────── */
+.time-picker {
+  position: relative;
+  width: 100%;
+}
+
+.time-picker-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.time-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 132px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-bg-soft);
+  color: var(--callai-ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.time-picker-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.time-picker-caret {
+  opacity: 0.7;
+  font-size: 0.85rem;
+}
+
+.time-picker-popup {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: min(100%, 280px);
+  padding: 12px;
+  border-radius: 18px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-surface);
+  box-shadow: var(--callai-card-shadow);
+}
+
+.time-wheels {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+  height: 180px;
+}
+
+.time-wheel-col {
+  position: relative;
+  width: 72px;
+  height: 180px;
+  overflow: hidden;
+}
+
+.time-wheel-scroller {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.time-wheel-pad {
+  height: 72px;
+}
+
+.time-wheel-item {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--callai-ink-soft);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+  cursor: pointer;
+  scroll-snap-align: center;
+}
+
+.time-wheel-item.active {
+  color: var(--callai-ink);
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+
+.time-wheel-colon {
+  font-weight: 900;
+  font-size: 1.25rem;
+  color: var(--callai-ink);
+  padding-bottom: 2px;
+}
+
+.time-wheel-highlight {
+  pointer-events: none;
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 36px;
+  margin-top: -18px;
+  border-radius: 12px;
+  border: 2px solid color-mix(in srgb, var(--callai-primary) 55%, var(--callai-border));
+  background: color-mix(in srgb, var(--callai-primary) 12%, transparent);
+}
+
+.time-wheel-fade {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  z-index: 2;
+}
+
+.time-wheel-fade-top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--callai-surface), transparent);
+}
+
+.time-wheel-fade-bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--callai-surface), transparent);
+}
+
+.time-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }

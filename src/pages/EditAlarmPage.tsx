@@ -19,6 +19,7 @@ import {
 import { client } from "../infra/client";
 import { pickBinaryFile } from "../infra/dialog";
 import { ElementImage } from "../ui/ElementImage";
+import { TimePicker } from "../ui/TimePicker";
 
 interface Props {
   alarmId?: string | null;
@@ -237,24 +238,18 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                   </span>
                 ))}
               </div>
-              <div className="row" style={{ marginTop: 8 }}>
-                <Input
-                  type="time"
+              <div style={{ marginTop: 8 }}>
+                <TimePicker
                   value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
-                  style={{ width: 140 }}
-                />
-                <Button
-                  size="small"
-                  onClick={() => {
+                  onChange={setNewTime}
+                  addLabel={t("alarms:addTime")}
+                  onAdd={() => {
                     if (!newTime) return;
                     if (!dailyTimes.includes(newTime)) {
                       updateDailyTimes([...dailyTimes, newTime].sort());
                     }
                   }}
-                >
-                  {t("alarms:addTime")}
-                </Button>
+                />
               </div>
             </div>
           ) : (

@@ -49,5 +49,9 @@
   "ERR_BINARY_NOT_FOUND": "We couldn't find that command on this machine.",
   "ERR_ALARM_BUSY": "This alarm is busy. Try again when it finishes.",
   "ERR_EXECUTION_FAILED": "That run didn't finish cleanly. We'll try again.",
-  "ERR_INTERNAL": "Something small went wrong. Please try again."
+  "ERR_INTERNAL": "Something small went wrong. Please try again.",
+  "pickTime": "Pick time",
+  "donePick": "Done",
+  "hour": "Hour",
+  "minute": "Minute"
 }

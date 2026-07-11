@@ -12,5 +12,9 @@
   "backupNow": "Backup now",
   "backups": "Config backups",
   "restore": "Restore",
-  "saved": "Settings saved."
+  "saved": "Settings saved.",
+  "notifyPermissionTitle": "Notifications",
+  "notifyPermissionBody": "Allow callai to notify you when a task needs care.",
+  "failureNotifyTitle": "A little task needs care",
+  "failureNotifyBody": "“{{name}}” did not finish. Open logs for details."
 }
