@@ -75,9 +75,17 @@ pub fn run() {
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &new_i, &pause_i, &resume_i, &quit_i])?;
 
+            // macOS menu-bar template icon (black silhouette; system recolors for light/dark).
             let mut tray_builder = TrayIconBuilder::new().menu(&menu);
-            if let Some(icon) = app.default_window_icon() {
-                tray_builder = tray_builder.icon(icon.clone());
+            match tauri::image::Image::from_bytes(include_bytes!("../icons/trayTemplate.png")) {
+                Ok(icon) => {
+                    tray_builder = tray_builder.icon(icon).icon_as_template(true);
+                }
+                Err(_) => {
+                    if let Some(icon) = app.default_window_icon() {
+                        tray_builder = tray_builder.icon(icon.clone());
+                    }
+                }
             }
             let _tray = tray_builder
                 .tooltip("callai")

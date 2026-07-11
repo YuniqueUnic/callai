@@ -105,7 +105,7 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
   }
 
   return (
-    <div>
+    <div className="app-shell">
       <div className="app-header">
         <div className="header-brand">
           <ElementImage id="hero-perch" size={44} alt="" />
@@ -146,7 +146,7 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
               return (
                 <Card
                   key={alarm.id}
-                  color={alarm.enabled ? "app-teal" : "default"}
+                  color="default"
                   className={`alarm-card ${alarm.enabled ? "" : "paused"}`}
                 >
                   <div className="alarm-card-top">
@@ -170,16 +170,16 @@ export function HomePage({ onCreate, onEdit, onLogs, onSettings }: Props) {
                   </div>
                   <div className="row">
                     {!alarm.enabled && (
-                      <span className="row">
-                        <ElementImage id="paused-sleep" size={28} alt="" />
+                      <span className="status-inline">
+                        <ElementImage id="paused-sleep" size={26} alt="" />
                         <Tag color="brown" size="small">
                           {t("alarms:paused")}
                         </Tag>
                       </span>
                     )}
                     {running && (
-                      <span className="row">
-                        <ElementImage id="running" size={28} alt="" />
+                      <span className="status-inline">
+                        <ElementImage id="running" size={26} alt="" />
                         <Tag color="app-yellow" size="small">
                           {t("alarms:running")}
                         </Tag>

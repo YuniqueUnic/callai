@@ -6,7 +6,6 @@ import {
   Collapse,
   Input,
   Notification,
-  Radio,
   Select,
   Switch,
   Tag,
@@ -126,22 +125,24 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
     draft.schedule.mode === "daily" ? draft.schedule.times : ["08:00", "13:00", "18:00"];
 
   return (
-    <div>
+    <div className="app-shell">
       <div className="app-header">
-        <div>
-          <h1>{alarmId ? t("alarms:edit") : t("alarms:create")}</h1>
-          <p>{t("common:tagline")}</p>
+        <div className="header-brand">
+          <div>
+            <h1>{alarmId ? t("alarms:edit") : t("alarms:create")}</h1>
+            <p>{t("common:tagline")}</p>
+          </div>
         </div>
         <div className="header-actions">
-          <Button onClick={onBack}>{t("common:back")}</Button>
-          <Button type="primary" loading={saving} onClick={() => void save()}>
+          <Button size="small" onClick={onBack}>{t("common:back")}</Button>
+          <Button size="small" type="primary" loading={saving} onClick={() => void save()}>
             {t("common:save")}
           </Button>
         </div>
       </div>
 
       <div className="app-main form-stack">
-        <Card>
+        <Card color="default" className="form-panel">
           <div className="field">
             <label>{t("alarms:template")}</label>
             <Select
@@ -177,25 +178,31 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           </div>
         </Card>
 
-        <Card color="app-yellow">
-          <ElementImage id="set-time" size={72} className="section-illus" alt="" />
+        <Card color="default" className="form-panel">
+          <div className="panel-head">
+            <h3>{t("alarms:schedule")}</h3>
+            <ElementImage id="set-time" size={64} className="section-illus" alt="" />
+          </div>
           <div className="field">
-            <label>{t("alarms:schedule")}</label>
-            <Radio
-              value={scheduleMode}
-              options={[
-                { value: "daily", label: t("alarms:daily") },
-                { value: "cron", label: t("alarms:cron") },
-              ]}
-              onChange={(v) => {
-                const mode = String(v) as "daily" | "cron";
-                setScheduleMode(mode);
-                if (mode === "daily") {
+            <div className="schedule-mode" role="radiogroup" aria-label={t("alarms:schedule")}>
+              <button
+                type="button"
+                className={scheduleMode === "daily" ? "active" : ""}
+                onClick={() => {
+                  setScheduleMode("daily");
                   setDraft((d) => ({
                     ...d,
                     schedule: { mode: "daily", times: dailyTimes },
                   }));
-                } else {
+                }}
+              >
+                {t("alarms:daily")}
+              </button>
+              <button
+                type="button"
+                className={scheduleMode === "cron" ? "active" : ""}
+                onClick={() => {
+                  setScheduleMode("cron");
                   setDraft((d) => ({
                     ...d,
                     schedule: {
@@ -206,9 +213,11 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                           : "0 8,13,18 * * *",
                     },
                   }));
-                }
-              }}
-            />
+                }}
+              >
+                {t("alarms:cron")}
+              </button>
+            </div>
           </div>
 
           {scheduleMode === "daily" ? (
@@ -265,9 +274,11 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           )}
         </Card>
 
-        <Card color="app-blue">
-          <ElementImage id="task-checklist" size={72} className="section-illus" alt="" />
-          <h3 style={{ marginTop: 0 }}>{t("alarms:task")}</h3>
+        <Card color="default" className="form-panel">
+          <div className="panel-head">
+            <h3>{t("alarms:task")}</h3>
+            <ElementImage id="task-checklist" size={64} className="section-illus" alt="" />
+          </div>
           <div className="field">
             <label>{t("alarms:binary")}</label>
             <div className="row">
@@ -370,9 +381,9 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           />
         </Card>
 
-        <Card>
+        <Card color="default" className="form-panel">
           <div className="field">
-            <label>{t("alarms:retry")}</label>
+            <label className="label">{t("alarms:retry")}</label>
             <div className="segmented">
               {INTERVALS.map((interval) => (
                 <button

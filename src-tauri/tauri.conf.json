@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "callai",
-        "width": 980,
-        "height": 720,
-        "minWidth": 720,
-        "minHeight": 520,
+        "width": 420,
+        "height": 740,
+        "minWidth": 386,
+        "minHeight": 217,
         "resizable": true
       }
     ],

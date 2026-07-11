@@ -37,23 +37,28 @@ export function SettingsPage({ onBack }: Props) {
   }
 
   return (
-    <div>
+    <div className="app-shell">
       <div className="app-header">
-        <div>
-          <h1>{t("settings:title")}</h1>
+        <div className="header-brand">
+          <div>
+            <h1>{t("settings:title")}</h1>
+          </div>
         </div>
         <div className="header-actions">
-          <Button onClick={onBack}>{t("common:back")}</Button>
+          <Button size="small" onClick={onBack}>{t("common:back")}</Button>
         </div>
       </div>
+
       <div className="app-main">
         <div className="settings-card">
           <div className="field">
-            <label className="row" style={{ gap: 10 }}>
-              <ElementImage id="theme-light" size={36} alt="" />
-              <ElementImage id="theme-dark" size={36} alt="" />
-              <span>{t("common:theme")}</span>
-            </label>
+            <div className="panel-head">
+              <label className="label">{t("common:theme")}</label>
+              <span className="row">
+                <ElementImage id="theme-light" size={32} alt="" />
+                <ElementImage id="theme-dark" size={32} alt="" />
+              </span>
+            </div>
             <div className="segmented">
               {(
                 [
@@ -79,10 +84,10 @@ export function SettingsPage({ onBack }: Props) {
           </div>
 
           <div className="field">
-            <label className="row" style={{ gap: 10 }}>
-              <ElementImage id="chat-global" size={36} alt="" />
-              <span>{t("common:language")}</span>
-            </label>
+            <div className="panel-head">
+              <label className="label">{t("common:language")}</label>
+              <ElementImage id="chat-global" size={32} alt="" />
+            </div>
             <div className="segmented">
               {(
                 [
@@ -106,7 +111,8 @@ export function SettingsPage({ onBack }: Props) {
             </div>
           </div>
 
-          <div className="field row">
+          <div className="settings-row">
+            <span>{t("settings:launchMinimized")}</span>
             <Switch
               checked={settings.launch_minimized}
               onChange={(v) => {
@@ -115,10 +121,10 @@ export function SettingsPage({ onBack }: Props) {
                 void save(next);
               }}
             />
-            <span>{t("settings:launchMinimized")}</span>
           </div>
 
-          <div className="field row">
+          <div className="settings-row">
+            <span>{t("settings:notifyFailure")}</span>
             <Switch
               checked={settings.notify_on_failure}
               onChange={(v) => {
@@ -127,10 +133,10 @@ export function SettingsPage({ onBack }: Props) {
                 void save(next);
               }}
             />
-            <span>{t("settings:notifyFailure")}</span>
           </div>
 
-          <div className="field row">
+          <div className="settings-row">
+            <span>{t("settings:autoBackup")}</span>
             <Switch
               checked={settings.auto_backup_on_start}
               onChange={(v) => {
@@ -139,11 +145,10 @@ export function SettingsPage({ onBack }: Props) {
                 void save(next);
               }}
             />
-            <span>{t("settings:autoBackup")}</span>
           </div>
 
           <div className="field">
-            <label>{t("settings:logRetention")}</label>
+            <label className="label">{t("settings:logRetention")}</label>
             <Input
               type="number"
               value={String(settings.log_retention_days)}
@@ -152,13 +157,14 @@ export function SettingsPage({ onBack }: Props) {
                 setSettings({ ...settings, log_retention_days: n });
               }}
               onBlur={() => void save(settings)}
-              style={{ width: 120 }}
+              style={{ width: "100%", maxWidth: 160 }}
             />
           </div>
 
           <div className="field">
             <Button
               type="primary"
+              block
               onClick={async () => {
                 const name = await client.backupNow();
                 setBackups(await client.listBackups());
@@ -173,13 +179,15 @@ export function SettingsPage({ onBack }: Props) {
           </div>
 
           <div className="field">
-            <label>{t("settings:backups")}</label>
+            <label className="label">{t("settings:backups")}</label>
             {backups.length === 0 ? (
               <div className="meta">{t("common:empty")}</div>
             ) : (
               backups.map((b) => (
-                <div className="row" key={b} style={{ marginBottom: 6 }}>
-                  <span className="meta">{b}</span>
+                <div className="backup-item" key={b}>
+                  <span className="meta" title={b}>
+                    {b}
+                  </span>
                   <Button
                     size="small"
                     onClick={async () => {

@@ -32,13 +32,13 @@ export function LogsPage({ alarmId, onBack }: Props) {
   }, [alarmId, status]);
 
   return (
-    <div>
+    <div className="app-shell">
       <div className="app-header">
         <div>
           <h1>{t("logs:title")}</h1>
         </div>
         <div className="header-actions">
-          <Button onClick={onBack}>{t("common:back")}</Button>
+          <Button size="small" onClick={onBack}>{t("common:back")}</Button>
         </div>
       </div>
       <div className="app-main">
