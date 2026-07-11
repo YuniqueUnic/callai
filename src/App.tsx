@@ -1,21 +1,22 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Cursor } from "animal-island-ui";
+import { Cursor, Drawer, Tabs } from "animal-island-ui";
 import type { PageId } from "./domain/types";
 import { client } from "./infra/client";
 import { onNavigate } from "./infra/events";
 import { HomePage } from "./pages/HomePage";
 import { EditAlarmPage } from "./pages/EditAlarmPage";
-import { LogsPage } from "./pages/LogsPage";
+import { LogsPanel } from "./pages/LogsPanel";
 import { SettingsPage } from "./pages/SettingsPage";
-import { BottomTabs } from "./ui/BottomTabs";
 import { applyTheme, readStoredTheme } from "./theme/theme";
+import { SeaMarquee } from "./ui/SeaMarquee";
 
 export default function App() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation(["common", "alarms", "logs"]);
   const [page, setPage] = useState<PageId>("home");
   const [editId, setEditId] = useState<string | null>(null);
   const [logAlarmId, setLogAlarmId] = useState<string | null>(null);
+  const [logsOpen, setLogsOpen] = useState(false);
 
   useEffect(() => {
     applyTheme(readStoredTheme());
@@ -27,6 +28,21 @@ export default function App() {
     });
   }, [i18n]);
 
+  const openLogs = useCallback((alarmId?: string | null) => {
+    setLogAlarmId(alarmId ?? null);
+    setLogsOpen(true);
+  }, []);
+
+  const onCreate = useCallback(() => {
+    setEditId(null);
+    setPage("edit");
+  }, []);
+
+  const onEdit = useCallback((id: string) => {
+    setEditId(id);
+    setPage("edit");
+  }, []);
+
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     void onNavigate((target) => {
@@ -37,7 +53,7 @@ export default function App() {
         setPage("home");
       } else if (target === "logs") {
         setLogAlarmId(null);
-        setPage("logs");
+        setLogsOpen(true);
       } else if (target === "settings") {
         setPage("settings");
       }
@@ -49,57 +65,78 @@ export default function App() {
     };
   }, []);
 
-  const showTabs = page === "home" || page === "settings";
+  const tabItems = useMemo(
+    () => [
+      {
+        key: "home",
+        label: t("common:tabAlarms"),
+        children: (
+          <HomePage onCreate={onCreate} onEdit={onEdit} onLogs={openLogs} />
+        ),
+      },
+      {
+        key: "settings",
+        label: t("common:tabSettings"),
+        children: <SettingsPage onOpenLogs={() => openLogs(null)} />,
+      },
+    ],
+    [t, onCreate, onEdit, openLogs],
+  );
+
+  const inTabs = page === "home" || page === "settings";
+  const tabKey = page === "settings" ? "settings" : "home";
 
   return (
-    <Cursor>
-      <div className={`app-shell ${showTabs ? "with-tabs" : ""}`}>
-        {page === "home" && (
-          <HomePage
-            onCreate={() => {
-              setEditId(null);
-              setPage("edit");
-            }}
-            onEdit={(id) => {
-              setEditId(id);
-              setPage("edit");
-            }}
-            onLogs={(alarmId) => {
-              setLogAlarmId(alarmId ?? null);
-              setPage("logs");
-            }}
-          />
-        )}
-        {page === "edit" && (
+    <Cursor
+      className="callai-cursor"
+      style={{
+        display: "block",
+        height: "100%",
+        maxHeight: "100dvh",
+        minHeight: "100%",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        className={`app-shell ${inTabs ? "with-tabs" : "immersive-edit"} ${logsOpen ? "drawer-open" : ""}`}
+      >
+        {page === "edit" ? (
           <EditAlarmPage
             alarmId={editId}
             onBack={() => setPage("home")}
-            onSaved={() => {
-              // toast already fired in EditAlarmPage; just return home
-              setPage("home");
-            }}
+            onSaved={() => setPage("home")}
           />
+        ) : (
+          <>
+            <div className="app-body">
+              <Tabs
+                className="main-tabs"
+                activeKey={tabKey}
+                onChange={(key) => {
+                  if (key === "home" || key === "settings") setPage(key);
+                }}
+                leafAnimation
+                shadow={false}
+                items={tabItems}
+                aria-label={t("common:appName")}
+              />
+            </div>
+            <div className="app-footer-band" aria-hidden>
+              <SeaMarquee />
+            </div>
+          </>
         )}
-        {page === "logs" && (
-          <LogsPage
-            alarmId={logAlarmId}
-            onBack={() => setPage("settings")}
-          />
-        )}
-        {page === "settings" && (
-          <SettingsPage
-            onOpenLogs={() => {
-              setLogAlarmId(null);
-              setPage("logs");
-            }}
-          />
-        )}
-        {showTabs && (
-          <BottomTabs
-            active={page === "settings" ? "settings" : "home"}
-            onChange={(tab) => setPage(tab)}
-          />
-        )}
+
+        <Drawer
+          open={logsOpen}
+          title={t("logs:title")}
+          placement="right"
+          width="min(420px, 92vw)"
+          pushBackground
+          onClose={() => setLogsOpen(false)}
+        >
+          {logsOpen ? <LogsPanel alarmId={logAlarmId} /> : null}
+        </Drawer>
       </div>
     </Cursor>
   );

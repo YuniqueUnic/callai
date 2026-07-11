@@ -60,25 +60,29 @@ export function SettingsPage({ onOpenLogs }: Props) {
   }
 
   return (
-    <>
-      <div className="app-header">
-        <div className="header-brand">
-          <ElementImage id="multi-device" size={40} alt="" />
-          <div>
-            <h1>{t("settings:title")}</h1>
-            <p>{t("common:tagline")}</p>
-          </div>
-        </div>
-      </div>
+    <div className="settings-page">
+      {/* Bold decorative bird — absolute corner, not inline chrome */}
+      <ElementImage
+        id="multi-device"
+        size={120}
+        alt=""
+        motion="breathe"
+        className="settings-hero-deco"
+      />
 
-      <div className="app-main">
+      <header className="settings-hero">
+        <h1>{t("settings:title")}</h1>
+        <p>{t("common:tagline")}</p>
+      </header>
+
+      <div className="app-main settings-main">
         <div className="settings-card">
           <div className="field">
             <div className="panel-head">
               <label className="label">{t("common:theme")}</label>
-              <span className="row">
-                <ElementImage id="theme-light" size={28} alt="" />
-                <ElementImage id="theme-dark" size={28} alt="" />
+              <span className="row deco-mini">
+                <ElementImage id="theme-light" size={26} alt="" />
+                <ElementImage id="theme-dark" size={26} alt="" />
               </span>
             </div>
             <div className="segmented">
@@ -108,7 +112,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
           <div className="field">
             <div className="panel-head">
               <label className="label">{t("common:language")}</label>
-              <ElementImage id="chat-global" size={28} alt="" />
+              <ElementImage id="chat-global" size={26} alt="" className="deco-mini" />
             </div>
             <div className="segmented">
               {(
@@ -300,6 +304,6 @@ export function SettingsPage({ onOpenLogs }: Props) {
           </div>
         ) : null}
       </Modal>
-    </>
+    </div>
   );
 }

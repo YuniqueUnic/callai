@@ -242,9 +242,13 @@ cli-build:
 cli-list: cli-build
     ./src-tauri/target/debug/callai list
 
-# Start headless scheduler
+# Start headless scheduler (keep-alive)
 cli-run: cli-build
     ./src-tauri/target/debug/callai run
+
+# Alias: headless daemon keep-alive
+cli-daemon: cli-build
+    ./src-tauri/target/debug/callai daemon
 
 # Run one alarm by name/id: just cli-run-once morning-warmup
 cli-run-once name: cli-build

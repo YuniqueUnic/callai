@@ -127,31 +127,41 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
     draft.schedule.mode === "daily" ? draft.schedule.times : ["08:00", "13:00", "18:00"];
 
   return (
-    <>
-      <div className="app-header">
-        <div className="header-brand">
-          <div>
+    <div className="edit-page">
+      <ElementImage
+        id="create-alarm"
+        size={120}
+        alt=""
+        motion="breathe"
+        className="edit-hero-deco"
+      />
+
+      <header className="edit-hero">
+        <div className="edit-hero-main">
+          <div className="edit-hero-copy">
             <h1>{alarmId ? t("alarms:edit") : t("alarms:create")}</h1>
             <p>{t("common:tagline")}</p>
           </div>
+          <div className="edit-hero-actions header-actions">
+            <IconButton
+              label={t("common:back")}
+              icon={<IconBack size={18} />}
+              tooltipPlacement="bottom"
+              onClick={onBack}
+            />
+            <IconButton
+              label={t("common:save")}
+              icon={<IconSave size={18} />}
+              variant="primary"
+              loading={saving}
+              tooltipPlacement="bottom"
+              onClick={() => void save()}
+            />
+          </div>
         </div>
-        <div className="header-actions">
-          <IconButton
-            label={t("common:back")}
-            icon={<IconBack size={18} />}
-            onClick={onBack}
-          />
-          <IconButton
-            label={t("common:save")}
-            icon={<IconSave size={18} />}
-            variant="primary"
-            loading={saving}
-            onClick={() => void save()}
-          />
-        </div>
-      </div>
+      </header>
 
-      <div className="app-main form-stack">
+      <div className="app-main form-stack edit-main">
         <Card color="default" className="form-panel">
           <div className="field">
             <label>{t("alarms:template")}</label>
@@ -179,7 +189,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
             />
           </div>
 
-          <div className="field" style={{ marginTop: 12 }}>
+          <div className="field field-row" style={{ marginTop: 12 }}>
             <label>{t("alarms:enabled")}</label>
             <Switch
               checked={draft.enabled}
@@ -191,7 +201,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
         <Card color="default" className="form-panel">
           <div className="panel-head">
             <h3>{t("alarms:schedule")}</h3>
-            <ElementImage id="set-time" size={64} className="section-illus" alt="" />
+            <ElementImage id="set-time" size={44} className="section-illus" alt="" />
           </div>
           <div className="field">
             <div className="schedule-mode" role="radiogroup" aria-label={t("alarms:schedule")}>
@@ -281,7 +291,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
         <Card color="default" className="form-panel">
           <div className="panel-head">
             <h3>{t("alarms:task")}</h3>
-            <ElementImage id="task-checklist" size={64} className="section-illus" alt="" />
+            <ElementImage id="task-checklist" size={44} className="section-illus" alt="" />
           </div>
           <div className="field">
             <label>{t("alarms:binary")}</label>
@@ -406,6 +416,6 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           </div>
         </Card>
       </div>
-    </>
+    </div>
   );
 }

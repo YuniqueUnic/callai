@@ -23,6 +23,27 @@ export function scheduleLabel(schedule: ScheduleSpec, dailyPrefix: string): stri
   return schedule.expression;
 }
 
+/** Visible time chips + overflow count for Tag UI. */
+export function scheduleTimeChips(
+  schedule: ScheduleSpec,
+  maxVisible = 2,
+): { visible: string[]; overflow: number; kind: "daily" | "cron" } {
+  if (schedule.mode === "daily") {
+    const times = [...schedule.times].sort();
+    if (times.length <= maxVisible) {
+      return { visible: times, overflow: 0, kind: "daily" };
+    }
+    return {
+      visible: times.slice(0, maxVisible),
+      overflow: times.length - maxVisible,
+      kind: "daily",
+    };
+  }
+  const expr = schedule.expression.trim();
+  const short = expr.length > 18 ? `${expr.slice(0, 16)}…` : expr;
+  return { visible: [short], overflow: 0, kind: "cron" };
+}
+
 export function isAlarmRunning(lifecycle: unknown): boolean {
   if (lifecycle === "running" || lifecycle === "Running") return true;
   if (typeof lifecycle === "object" && lifecycle !== null) {

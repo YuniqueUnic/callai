@@ -66,7 +66,8 @@ just cli-example
 
 ```bash
 ./src-tauri/target/debug/callai list
-./src-tauri/target/debug/callai run                 # 前台调度（无 GUI）
+./src-tauri/target/debug/callai run                 # 前台调度保活（无 GUI）
+./src-tauri/target/debug/callai daemon              # run 的别名（daemon 保活）
 ./src-tauri/target/debug/callai run --import-toml   # 先从 config.toml 导入缺失闹钟
 ./src-tauri/target/debug/callai run-once <name|id>
 ./src-tauri/target/debug/callai validate

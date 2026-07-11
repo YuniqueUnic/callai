@@ -1,12 +1,24 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Card, Modal, Notification, Switch, Tag } from "animal-island-ui";
+import {
+  Button,
+  Modal,
+  Notification,
+  Progress,
+  Switch,
+  Tag,
+} from "animal-island-ui";
 import type { Alarm } from "../domain/types";
-import { isAlarmRunning, scheduleLabel } from "../domain/alarmRules";
-import { formatDateTime } from "../domain/format";
+import { isAlarmRunning, scheduleTimeChips } from "../domain/alarmRules";
+import {
+  formatDateTime,
+  nextTriggerProgress,
+  remainingLabel,
+} from "../domain/format";
 import { client } from "../infra/client";
 import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
+import { IslandTime } from "../ui/IslandTime";
 import {
   IconBolt,
   IconEdit,
@@ -32,9 +44,11 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
   const [confirmDelete, setConfirmDelete] = useState<Alarm | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [tick, setTick] = useState(0);
 
-  async function refresh() {
-    setLoading(true);
+  async function refresh(opts?: { silent?: boolean }) {
+    const silent = Boolean(opts?.silent);
+    if (!silent) setLoading(true);
     try {
       const list = await client.listAlarms();
       setAlarms(list);
@@ -50,18 +64,30 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
       );
       setNextMap(Object.fromEntries(entries));
     } catch (err) {
-      Notification.error({
-        message: t("alarms:ERR_INTERNAL"),
-        description: String((err as { message?: string })?.message ?? err),
-      });
+      if (!silent) {
+        Notification.error({
+          message: t("alarms:ERR_INTERNAL"),
+          description: String((err as { message?: string })?.message ?? err),
+        });
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => {
     void refresh();
   }, []);
+
+  // progress tick + lifecycle refresh (running birds stay in sync)
+  useEffect(() => {
+    const ms = busyId ? 2_000 : 12_000;
+    const id = window.setInterval(() => {
+      setTick((n) => n + 1);
+      void refresh({ silent: true });
+    }, ms);
+    return () => window.clearInterval(id);
+  }, [busyId]);
 
   async function toggle(alarm: Alarm, enabled: boolean) {
     try {
@@ -145,37 +171,53 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
     }
   }
 
+  void tick; // re-render progress
+
+  const anyRunning =
+    Boolean(busyId) || alarms.some((a) => isAlarmRunning(a.lifecycle));
+  const heroMotion = anyRunning ? "sway" : "breathe";
+
   return (
-    <>
-      <div className="app-header">
-        <div className="header-brand">
-          <ElementImage id="hero-perch" size={44} alt="" />
-          <div>
+    <div className="home-page">
+      <header className="home-hero">
+        <div className="home-hero-brand">
+          <ElementImage
+            id="hero-perch"
+            size={108}
+            alt=""
+            motion={heroMotion}
+            className="home-hero-deco"
+          />
+          <div className="home-hero-copy">
             <h1>{t("alarms:title")}</h1>
             <p>{t("common:tagline")}</p>
           </div>
         </div>
-        <div className="header-actions">
-          <IconButton
-            label={t("alarms:pauseAll")}
-            icon={<IconPause size={18} />}
-            onClick={() => void setAll(false)}
-          />
-          <IconButton
-            label={t("alarms:resumeAll")}
-            icon={<IconPlay size={18} />}
-            variant="primary"
-            onClick={() => void setAll(true)}
-          />
-        </div>
-      </div>
 
-      <div className="app-main">
+        <div className="home-hero-tools">
+          <IslandTime />
+          <div className="header-actions home-hero-actions">
+            <IconButton
+              label={t("alarms:pauseAll")}
+              icon={<IconPause size={18} />}
+              onClick={() => void setAll(false)}
+            />
+            <IconButton
+              label={t("alarms:resumeAll")}
+              icon={<IconPlay size={18} />}
+              variant="primary"
+              onClick={() => void setAll(true)}
+            />
+          </div>
+        </div>
+      </header>
+
+      <div className="app-main home-main">
         {loading ? (
           <p className="meta">{t("common:loading")}</p>
         ) : alarms.length === 0 ? (
           <div className="empty-state">
-            <ElementImage id="create-alarm" size={160} alt="" />
+            <ElementImage id="create-alarm" size={160} alt="" motion="hop" />
             <h2>{t("alarms:emptyTitle")}</h2>
             <p>{t("alarms:emptyHint")}</p>
           </div>
@@ -183,17 +225,50 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
           <div className="alarm-grid">
             {alarms.map((alarm) => {
               const running = isAlarmRunning(alarm.lifecycle);
+              const next = nextMap[alarm.id];
+              const pct = alarm.enabled
+                ? nextTriggerProgress(next || null)
+                : 0;
               return (
-                <Card
+                <article
                   key={alarm.id}
-                  color="default"
-                  className={`alarm-card ${alarm.enabled ? "" : "paused"}`}
+                  className={`alarm-card ${alarm.enabled ? "" : "paused"} ${running ? "is-running" : ""} ${busyId === alarm.id ? "is-busy" : ""}`}
                 >
                   <div className="alarm-card-top">
                     <div className="alarm-card-title">
                       <h3>{alarm.name}</h3>
-                      <div className="meta">
-                        {scheduleLabel(alarm.schedule, t("alarms:daily"))}
+                      <div className="schedule-tags">
+                        {(() => {
+                          const chips = scheduleTimeChips(alarm.schedule, 2);
+                          return (
+                            <>
+                              {chips.kind === "daily" ? (
+                                <Tag color="brown" size="small" variant="outlined">
+                                  {t("alarms:daily")}
+                                </Tag>
+                              ) : (
+                                <Tag color="purple" size="small" variant="outlined">
+                                  {t("alarms:cron")}
+                                </Tag>
+                              )}
+                              {chips.visible.map((time) => (
+                                <Tag
+                                  key={time}
+                                  color="app-teal"
+                                  size="small"
+                                  variant="outlined"
+                                >
+                                  {time}
+                                </Tag>
+                              ))}
+                              {chips.overflow > 0 ? (
+                                <Tag color="app-orange" size="small" variant="dashed">
+                                  +{chips.overflow}
+                                </Tag>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                     <Switch
@@ -204,18 +279,36 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                   </div>
 
                   <div className="alarm-next">
-                    <span className="alarm-next-label">{t("alarms:nextTrigger")}</span>
-                    <strong>
-                      {nextMap[alarm.id]
-                        ? formatDateTime(nextMap[alarm.id], i18n.language)
-                        : "—"}
+                    <div className="alarm-next-row">
+                      <span className="alarm-next-label">
+                        {t("alarms:nextTrigger")}
+                      </span>
+                      <span className="alarm-next-remain">
+                        {alarm.enabled
+                          ? remainingLabel(next || null, i18n.language)
+                          : t("alarms:paused")}
+                      </span>
+                    </div>
+                    <strong className="alarm-next-when">
+                      {next ? formatDateTime(next, i18n.language) : "—"}
                     </strong>
+                    {alarm.enabled && next ? (
+                      <Progress
+                        percent={pct}
+                        size="small"
+                        showInfo
+                        infoPosition="right"
+                        infoFormat={(p) => `${p}%`}
+                        duration={0.4}
+                        className="alarm-progress"
+                      />
+                    ) : null}
                   </div>
 
                   <div className="row alarm-status-row">
                     {!alarm.enabled && (
                       <span className="status-inline">
-                        <ElementImage id="paused-sleep" size={22} alt="" />
+                        <ElementImage id="paused-sleep" size={22} alt="" motion="breathe" />
                         <Tag color="brown" size="small">
                           {t("alarms:paused")}
                         </Tag>
@@ -223,7 +316,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                     )}
                     {running && (
                       <span className="status-inline">
-                        <ElementImage id="running" size={22} alt="" />
+                        <ElementImage id="running" size={22} alt="" motion="hop" />
                         <Tag color="app-yellow" size="small">
                           {t("alarms:running")}
                         </Tag>
@@ -261,7 +354,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                       onClick={() => setConfirmRun(alarm)}
                     />
                   </div>
-                </Card>
+                </article>
               );
             })}
           </div>
@@ -306,6 +399,6 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
           </div>
         ) : null}
       </Modal>
-    </>
+    </div>
   );
 }

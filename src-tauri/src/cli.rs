@@ -30,8 +30,14 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// Start the scheduler in the foreground (no GUI)
+    /// Start the scheduler in the foreground (no GUI; keep-alive until Ctrl+C)
     Run {
+        /// Import missing alarms from config.toml before running
+        #[arg(long)]
+        import_toml: bool,
+    },
+    /// Alias of `run` — headless keep-alive daemon (same process, no GUI)
+    Daemon {
         /// Import missing alarms from config.toml before running
         #[arg(long)]
         import_toml: bool,
@@ -62,13 +68,52 @@ pub enum Commands {
 pub fn is_cli_invocation(args: &[String]) -> bool {
     match args.get(1).map(String::as_str) {
         Some(
-            "run" | "list" | "run-once" | "validate" | "generate-example" | "app" | "help"
-            | "--help" | "-h" | "--version" | "-V" | "version",
+            "run"
+            | "daemon"
+            | "list"
+            | "run-once"
+            | "validate"
+            | "generate-example"
+            | "app"
+            | "help"
+            | "--help"
+            | "-h"
+            | "--version"
+            | "-V"
+            | "version",
         ) => true,
         Some(s) if s.starts_with('-') => true,
         _ => false,
     }
 }
+
+
+
+/// On Windows, GUI binaries use `windows_subsystem = "windows"`.
+/// CLI mode re-attaches the parent console (or allocates one) so prints work.
+#[cfg(windows)]
+pub fn ensure_windows_console() {
+    // SAFETY: process-wide console attach once at CLI startup, before stdout use.
+    unsafe {
+        type Bool = i32;
+        type Dword = u32;
+        #[link(name = "kernel32")]
+        extern "system" {
+            fn AttachConsole(dw_process_id: Dword) -> Bool;
+            fn AllocConsole() -> Bool;
+            fn GetConsoleWindow() -> *mut core::ffi::c_void;
+        }
+        const ATTACH_PARENT_PROCESS: Dword = 0xFFFF_FFFF;
+        if GetConsoleWindow().is_null() {
+            if AttachConsole(ATTACH_PARENT_PROCESS) == 0 {
+                let _ = AllocConsole();
+            }
+        }
+    }
+}
+
+#[cfg(not(windows))]
+pub fn ensure_windows_console() {}
 
 pub fn run(args: Vec<String>) -> Result<(), String> {
     // clap wants argv[0]=program
@@ -130,21 +175,27 @@ pub fn run(args: Vec<String>) -> Result<(), String> {
             }
             Ok(())
         }
-        Commands::Run { import_toml } => {
-            let svc = Arc::new(open_service(true).map_err(err_str)?);
-            if import_toml {
-                let n = svc.import_toml_alarms().map_err(err_str)?;
-                println!("imported {n} alarm(s) from config.toml");
-            }
-            let n = svc.list_alarms().map_err(err_str)?.len();
-            println!("callai scheduler running with {n} alarm(s); Ctrl+C to stop");
-            let scheduler = Arc::new(AlarmScheduler::new(Arc::clone(&svc)));
-            scheduler.start();
-            // block forever
-            loop {
-                thread::sleep(Duration::from_secs(3600));
-            }
+        Commands::Run { import_toml } | Commands::Daemon { import_toml } => {
+            run_daemon(import_toml)
         }
+    }
+}
+
+
+fn run_daemon(import_toml: bool) -> Result<(), String> {
+    let svc = Arc::new(open_service(true).map_err(err_str)?);
+    if import_toml {
+        let n = svc.import_toml_alarms().map_err(err_str)?;
+        println!("imported {n} alarm(s) from config.toml");
+    }
+    let n = svc.list_alarms().map_err(err_str)?.len();
+    println!("callai daemon keep-alive: {n} alarm(s); Ctrl+C to stop");
+    println!("shared data: ~/.config/callai + ~/.local/share/callai");
+    let scheduler = Arc::new(AlarmScheduler::new(Arc::clone(&svc)));
+    scheduler.start();
+    // Keep process alive. Scheduler owns worker threads; this park is the supervisor.
+    loop {
+        thread::sleep(Duration::from_secs(3600));
     }
 }
 
