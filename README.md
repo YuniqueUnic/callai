@@ -1,165 +1,214 @@
-### callai —— 给 AI 定闹钟，让你的额度窗口永远保持新鲜
+<p align="center">
+  <img src="docs/assets/callai-logo.png" alt="callai logo" width="144" />
+</p>
 
-#### 核心问题
+<h1 align="center">callai</h1>
 
-Claude、ChatGPT、Codex 等主流 AI 工具普遍采用**滚动窗口（Rolling Window）**的额度限制机制。以 Claude 的 5 小时窗口为例：额度不是固定时间点重置，而是从你第一次发送消息的那一刻开始计算。
+<p align="center">
+  <strong>Ciallo～(∠・ω&lt; )</strong><br />
+  A cozy desktop + CLI alarm that warms AI usage windows.
+</p>
 
-这就导致一个非常现实的痛点：
+<p align="center">
+  <img src="docs/assets/elements/hero-perch.png" alt="hero bird" height="72" />
+  &nbsp;
+  <img src="docs/assets/elements/sprout-fresh.png" alt="fresh sprout" height="72" />
+  &nbsp;
+  <img src="docs/assets/elements/running.png" alt="running task" height="72" />
+  &nbsp;
+  <img src="docs/assets/elements/success-check.png" alt="success" height="72" />
+</p>
 
-> 你每天上午 9:30 开始高强度使用 AI，到 11:30–12:00 就可能把当天的额度用光。
-> 中午吃完饭回来，下午还要等很久才能等到窗口自然滑出之前的消耗。
-> 结果就是：上午高效、下午等待、晚上继续等。
+<p align="center">
+  <a href="./README.zh.md">中文文档</a>
+  ·
+  <a href="https://github.com/YuniqueUnic/callai/releases">Releases</a>
+  ·
+  <a href="./CONTRIBUTING.md">Contributing</a>
+</p>
 
-#### 解决方案：给 AI 定闹钟
+<p align="center">
+  <a href="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
+  <img src="https://img.shields.io/badge/version-0.1.0-88c0d0?logo=github" alt="version 0.1.0" /><!-- x-release-please-version -->
+  <img src="https://img.shields.io/badge/Tauri-2-ffc131?logo=tauri&logoColor=white" alt="Tauri 2" />
+  <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust&logoColor=white" alt="Rust" />
+  <img src="https://img.shields.io/badge/Bun-React-fbf0df?logo=bun&logoColor=black" alt="Bun React" />
+</p>
 
-**callai** 通过定时任务，在特定时间点主动触发一次极轻量任务（比如 `echo hi` 或 `codex exec hi`），提前“占位”并平移滚动窗口的起始时间。
+---
 
-按推荐的 3 次触发配置（例如每天 8:00、13:00、18:00），你可以在黄金工作时段保持更新鲜的额度窗口。
+## Why callai?
 
-#### 技术栈
+<p align="center">
+  <img src="docs/assets/elements/paused-sleep.png" alt="waiting" height="88" />
+  &nbsp;&nbsp;→&nbsp;&nbsp;
+  <img src="docs/assets/elements/set-time.png" alt="set alarm" height="88" />
+  &nbsp;&nbsp;→&nbsp;&nbsp;
+  <img src="docs/assets/elements/sprout-fresh.png" alt="fresh window" height="88" />
+</p>
 
-- 前端：TypeScript + React + Vite 8 + Bun + [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)
-- 后端：Rust + Tauri 2
-- 存储：SQLite（闹钟/日志）+ TOML（可编辑配置 + 备份）
-- i18n：中 / 英
-- 主题：Light / Dark / System
+Claude, ChatGPT, Codex, and friends often use **rolling usage windows**. A common pain:
 
-#### 本地开发
+> You start heavy AI work at 09:30, burn the window by noon, then wait half the afternoon for capacity to slide back.
 
-推荐用 [just](https://github.com/casey/just)（见根目录 `justfile`）：
+**callai** is a tiny, Animal Crossing–inspired alarm: schedule lightweight tasks (`echo hi`, `codex exec hi`, …) so the rolling window starts earlier and stays fresher during your real work hours.
+
+Recommended cadence: a few gentle pings per day (for example 08:00 / 13:00 / 18:00).
+
+## Features
+
+| | Feature | Notes |
+| :---: | --- | --- |
+| <img src="docs/assets/elements/create-alarm.png" height="48" alt="create" /> | **Alarm = task** | Create an alarm and configure binary, args, schedule in one flow |
+| <img src="docs/assets/elements/set-time.png" height="48" alt="schedule" /> | **Cozy schedules** | Human-friendly times + cron-style rules |
+| <img src="docs/assets/elements/running.png" height="48" alt="run" /> | **Desktop + CLI** | Tauri app and headless `run` / `daemon` share the same data |
+| <img src="docs/assets/elements/theme-light.png" height="48" alt="theme" /> | **Theme + i18n** | Light / dark / system · zh-CN + en |
+| <img src="docs/assets/elements/logs-clipboard.png" height="48" alt="logs" /> | **Logs & retries** | Local history, soft retries, failure notifications |
+| <img src="docs/assets/elements/notify-badge.png" height="48" alt="tray" /> | **Tray native** | macOS template tray icon (light/dark adaptive) |
+| <img src="docs/assets/elements/multi-device.png" height="48" alt="cross platform" /> | **Cross-platform** | macOS · Windows · Linux builds via CI |
+
+## Island stickers
+
+These are the same cutouts used inside the app UI (from `callai.elements.png`):
+
+<p align="center">
+  <img src="docs/assets/elements/hero-perch.png" height="64" alt="hero-perch" />
+  <img src="docs/assets/elements/create-alarm.png" height="64" alt="create-alarm" />
+  <img src="docs/assets/elements/set-time.png" height="64" alt="set-time" />
+  <img src="docs/assets/elements/task-checklist.png" height="64" alt="task-checklist" />
+  <img src="docs/assets/elements/running.png" height="64" alt="running" />
+  <img src="docs/assets/elements/sprout-fresh.png" height="64" alt="sprout-fresh" />
+  <img src="docs/assets/elements/theme-light.png" height="64" alt="theme-light" />
+  <img src="docs/assets/elements/theme-dark.png" height="64" alt="theme-dark" />
+  <img src="docs/assets/elements/success-check.png" height="64" alt="success-check" />
+  <img src="docs/assets/elements/logs-clipboard.png" height="64" alt="logs-clipboard" />
+  <img src="docs/assets/elements/notify-badge.png" height="64" alt="notify-badge" />
+  <img src="docs/assets/elements/multi-device.png" height="64" alt="multi-device" />
+</p>
+
+## Stack
+
+| Layer | Tech |
+| --- | --- |
+| Frontend | TypeScript · React · Vite 8 · Bun · [animal-island-ui](https://github.com/guokaigdg/animal-island-ui) |
+| Shell | Tauri 2 |
+| Core | Rust (`domain` / `app` / `infra`) |
+| Storage | SQLite + `config.toml` backups |
+| Release | release-please (semver) + GitHub Actions multi-platform build |
+
+**Current version:** `0.1.0` <!-- x-release-please-version -->
+
+## Quick start
 
 ```bash
-just setup      # bun install + cargo fetch
-just dev        # Tauri 桌面开发
-just dev-web    # 仅前端 mock
-just test       # 前端 + Rust 测试
-just gate       # 完整本地门禁
-just --list     # 全部命令
+# prerequisites: bun, rustup stable, just (optional)
+just setup
+just dev          # desktop
+just dev-web      # frontend mock only
 ```
 
-等价的原始命令：
+Raw commands:
 
 ```bash
 bun install
 bun run tauri dev
-# 仅前端
-bun run dev
 ```
 
-
-
-#### CLI（与桌面 App 共用数据）
-
-不带子命令时启动 **GUI**；带子命令时走 **CLI**（同一套 SQLite + `config.toml`）。
+### CLI (shares GUI data)
 
 ```bash
-# 构建
 cargo build --manifest-path src-tauri/Cargo.toml
-
-# 或 just
-just cli-list
-just cli-run
-just cli-run-once morning-warmup
-just cli-validate
-just cli-example
-```
-
-```bash
 ./src-tauri/target/debug/callai list
-./src-tauri/target/debug/callai run                 # 前台调度保活（无 GUI）
-./src-tauri/target/debug/callai daemon              # run 的别名（daemon 保活）
-./src-tauri/target/debug/callai run --import-toml   # 先从 config.toml 导入缺失闹钟
+./src-tauri/target/debug/callai run                 # headless scheduler keepalive
+./src-tauri/target/debug/callai daemon              # alias of run
 ./src-tauri/target/debug/callai run-once <name|id>
 ./src-tauri/target/debug/callai validate
-./src-tauri/target/debug/callai generate-example --out callai.example.toml
-./src-tauri/target/debug/callai app                 # 显式启动 GUI
+./src-tauri/target/debug/callai app                 # force GUI
 ```
 
-环境变量（可选）：沿用系统 `PATH` 查找 binary；数据目录见上文「数据位置」。
+Or via just: `just cli-list`, `just cli-run`, `just cli-validate`, …
 
-#### 质量门禁
+### Data locations
 
-```bash
-just gate
-# 或分步：
-just typecheck && just test-web && just build-web
-just fmt && just test-rs && just clippy
-```
+| Kind | Path |
+| --- | --- |
+| Config | `~/.config/callai/config.toml` |
+| Backups | `~/.config/callai/backups/` (max 10) |
+| Database | `~/.local/share/callai/callai.db` |
 
-#### 运行时调度
-
-- 轮询线程每 20s 检查 due 闹钟
-- **单 worker 队列**串行执行任务（含真实重试等待），避免线程堆积
-- 同一 alarm 在队列中 / 执行中时不会重复入队
-
-#### 架构
+## Architecture (short)
 
 ```
 src/                 # UI + frontend domain + Tauri bridge
-  domain/            # pure rules (validate, preview, schedule labels)
-  infra/             # tauri invoke + browser mock
-  pages/             # Home / Edit / Logs / Settings
-  i18n/              # zh-CN + en
-  theme/             # dark/light tokens
 src-tauri/
-  src/domain/        # pure Rust domain
+  src/domain/        # pure Rust rules
   src/app/           # use-cases + ports
-  src/infra/         # sqlite / process / toml backup / scheduler
-  src/commands.rs    # Tauri commands
-  src/tests/         # mirrored unit/integration tests
+  src/infra/         # sqlite / process / toml / scheduler
+  src/commands.rs    # Tauri commands + CLI entry
 ```
 
-#### 数据位置
+Dependency rule: **UI → domain ← infra** (ports / DI). Domain stays free of React, HTTP, and filesystem details.
 
-- 配置：`~/.config/callai/config.toml`
-- 备份：`~/.config/callai/backups/`
-- 数据库：`~/.local/share/callai/callai.db`
-
-#### 文档
-
-- [PRODUCT.md](./PRODUCT.md)
-- [DESIGN.md](./DESIGN.md)
-- [usecases/](./usecases/)
-
-#### 品牌素材
-
-- 源图：`callai.logo.png`（应用/托盘 icon）、`callai.elements.png`（UI 插画精灵表）
-- 透明主 icon：`assets/brand/callai-icon-master.png` / `src-tauri/icons/*`
-- UI 切片：`src/assets/elements/*.png`（命名见 `catalog.json`）
-- 生成脚本：`scripts/brand/`（`just brand` / `just brand-check`）
-
-```bash
-just brand          # 全量重生 icons + elements + index.ts
-just brand-logo     # 仅 logo → app/tray icons
-just brand-elements # 仅精灵表切片 + UI 模块
-just brand-check    # 校验产物
-```
-
-#### 桌面交互
-
-- 托盘菜单「New alarm」会显示主窗口并跳到新建页
-- 编辑页 binary 支持「浏览」选择本地可执行文件（Tauri dialog）
-
-#### 许可说明
-
-前端使用 `animal-island-ui`（CC BY-NC 4.0）。该组件库声明禁止商业用途；本项目当前定位为内部 / 非商业学习与自用工具。若要商业分发，需替换 UI 库或取得授权。
-
-
-#### CI / Release
-
-- **CI** (`.github/workflows/ci.yml`): typecheck, frontend tests/build, `cargo fmt` / `test` / `clippy`, release CLI smoke on every PR/push to `main`.
-- **Release** (`.github/workflows/release.yml`): [release-please](https://github.com/googleapis/release-please) (semver + Conventional Commits) opens a Release PR; when merged it creates a GitHub Release and builds:
-  - **Desktop**: macOS arm64/x64, Linux, Windows via [tauri-action](https://github.com/tauri-apps/tauri-action)
-  - **CLI**: same matrix, uploaded as `callai-cli-<target>[.exe]`
-- Version sources (must stay in sync; release-please updates them):
-  - `package.json`
-  - `src-tauri/tauri.conf.json`
-  - `src-tauri/Cargo.toml`
-  - `.release-please-manifest.json`
+## Quality gates
 
 ```bash
 ./scripts/check_versions.sh
+just gate
+# or
 just ci
 ```
 
-Commit messages should follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, …) so release-please can bump semver correctly.
+Gate covers version sync (including README markers), typecheck, frontend tests/build, `cargo fmt` / `test --lib` / `clippy -D warnings`, CLI smoke.
+
+## CI / CD & versioning
+
+- **CI** (`.github/workflows/ci.yml`) — every push/PR to `main`
+- **Release** (`.github/workflows/release.yml`) — [release-please](https://github.com/googleapis/release-please) opens a Release PR from Conventional Commits; merge creates the tag/GitHub Release and builds:
+  - Desktop: macOS arm64/x64, Linux, Windows ([tauri-action](https://github.com/tauri-apps/tauri-action))
+  - CLI: same matrix as `callai-cli-<target>`
+
+Version sources (must stay identical; release-please updates them):
+
+| File | Field |
+| --- | --- |
+| `package.json` | `version` |
+| `src-tauri/tauri.conf.json` | `version` |
+| `src-tauri/Cargo.toml` | `package.version` |
+| `.release-please-manifest.json` | `"."` |
+| `README.md` / `README.zh.md` | version badges + **Current version** lines (`x-release-please-version`) |
+
+Commit style: [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, …).
+
+## Brand tooling
+
+```bash
+just brand          # regenerate icons + element slices
+just brand-logo
+just brand-elements
+just brand-check
+python3 scripts/brand/make_tray_template.py --help
+```
+
+Tray templates are pure black + alpha silhouettes for macOS light/dark menu bars.
+
+## Docs
+
+- [PRODUCT.md](./PRODUCT.md) — product intent
+- [DESIGN.md](./DESIGN.md) — interaction / structure
+- [usecases/](./usecases/) — scenarios
+- [CONTRIBUTING.md](./CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md)
+
+## License
+
+- Application source: [MIT](./LICENSE)
+- UI kit dependency: [`animal-island-ui`](https://github.com/guokaigdg/animal-island-ui) is **CC BY-NC 4.0** (non-commercial). Personal / non-commercial use of callai is fine; commercial redistribution requires replacing that UI stack or obtaining permission. See the third-party notice in `LICENSE`.
+
+---
+
+<p align="center">
+  <img src="docs/assets/elements/hero-perch.png" height="56" alt="bye bird" />
+  <br />
+  <em>Ciallo～(∠・ω&lt; ) — keep your AI windows warm.</em>
+</p>

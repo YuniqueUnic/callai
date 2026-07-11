@@ -41,3 +41,15 @@ assets/brand/elements-raw/
 assets/brand/elements/
 
 assets/brand/callai.iconset/
+
+# Force-track app icons (global ~/.gitignore has Icon? which matches *icon*)
+
+# NOTE: macOS personal global gitignore often contains `Icon?` which matches
+# paths containing "icon" (e.g. src-tauri/icons/*). If icons disappear from
+# `git status`, re-add with: git add -f src-tauri/icons public/icons
+!src-tauri/icons/
+!src-tauri/icons/**
+!public/icons/
+!public/icons/**
+!docs/assets/
+!docs/assets/**

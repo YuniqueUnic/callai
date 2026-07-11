@@ -20,7 +20,9 @@
           "type": "toml",
           "path": "src-tauri/Cargo.toml",
           "jsonpath": "$.package.version"
-        }
+        },
+        "README.md",
+        "README.zh.md"
       ]
     }
   }

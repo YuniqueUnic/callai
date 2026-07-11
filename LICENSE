@@ -1,0 +1,41 @@
+MIT License
+
+Copyright (c) 2026 YuniqueUnic (unic)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+Third-party notice
+
+This project currently depends on `animal-island-ui`
+(https://github.com/guokaigdg/animal-island-ui), which is licensed under
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+
+That component library does not permit commercial use under its license.
+Using callai for personal / non-commercial purposes is fine with the current
+UI dependency. Commercial redistribution of a build that still bundles
+`animal-island-ui` requires either:
+
+1. replacing that UI dependency with a differently licensed stack, or
+2. obtaining a separate commercial license / permission from the library author.
+
+Bundled brand art under `assets/brand/`, `src/assets/elements/`, and
+`src-tauri/icons/` is original project artwork for callai unless noted
+otherwise in those directories.
