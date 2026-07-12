@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/YuniqueUnic/callai/compare/v0.2.0...v0.2.1) (2026-07-12)
+
+
+### Features
+
+* tauri auto-updater, install guide, optimized screenshots ([d8d9182](https://github.com/YuniqueUnic/callai/commit/d8d9182c89536066c27df1a961836139644741a1))
+
 ## [0.2.0](https://github.com/YuniqueUnic/callai/compare/v0.1.0...v0.2.0) (2026-07-11)
 
 
