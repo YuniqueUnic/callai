@@ -20,6 +20,7 @@ import { pickBinaryFile } from "../infra/dialog";
 import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
 import { IconBack, IconFolder, IconPlus, IconSave, IconTrash } from "../ui/icons";
+import { DurationPicker } from "../ui/DurationPicker";
 import { TimePicker } from "../ui/TimePicker";
 
 interface Props {
@@ -412,34 +413,17 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
         <Card color="default" className="form-panel">
           <div className="field">
             <label className="label">{t("alarms:timeout")}</label>
-            <div className="segmented" style={{ flexWrap: "wrap" }}>
-              {[5, 10, 20, 30, 60, 120, 300].map((secs) => (
-                <button
-                  key={secs}
-                  type="button"
-                  className={draft.timeout_secs === secs ? "active" : ""}
-                  onClick={() => setDraft((d) => ({ ...d, timeout_secs: secs }))}
-                >
-                  {secs}
-                  {t("alarms:timeoutUnit")}
-                </button>
-              ))}
-            </div>
-            <div className="row" style={{ marginTop: 8, gap: 8, alignItems: "center" }}>
-              <Input
-                type="number"
-                min={1}
-                max={3600}
-                value={String(draft.timeout_secs ?? 20)}
-                onChange={(e) => {
-                  const n = Math.max(1, Math.min(3600, Number(e.target.value) || 20));
-                  setDraft((d) => ({ ...d, timeout_secs: n }));
-                }}
-                style={{ width: 120 }}
+            <div style={{ marginTop: 8 }}>
+              <DurationPicker
+                value={draft.timeout_secs ?? 20}
+                onChange={(secs) =>
+                  setDraft((d) => ({ ...d, timeout_secs: secs }))
+                }
               />
-              <span className="meta">{t("alarms:timeoutUnit")}</span>
             </div>
-            <div className="hint">{t("alarms:timeoutHint")}</div>
+            <div className="hint" style={{ marginTop: 8 }}>
+              {t("alarms:timeoutHint")}
+            </div>
           </div>
         </Card>
 

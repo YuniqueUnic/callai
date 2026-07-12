@@ -63,7 +63,7 @@
   "openLogsFromSettings": "View run logs",
   "logsHint": "See how your alarms have been doing",
   "timeout": "Run timeout",
-  "timeoutHint": "Kill the process if it runs longer than this (default 20s). Useful for dialogs / say / interactive tools.",
+  "timeoutHint": "Stop the process after this long (default 00:20). Raise for dialogs / say.",
   "timeoutUnit": "seconds",
   "ERR_EXECUTION_TIMEOUT": "This task took too long and was stopped. You can raise the timeout in the alarm settings.",
   "stop": "Stop",
@@ -75,5 +75,8 @@
   "ERR_EXECUTION_CANCELED": "Task was canceled by user.",
   "ERR_INVALID_ARGS": "Some fields look off — check timeout (1–3600s) and env vars.",
   "argsHint": "Shell-style quotes are parsed with shlex. You can paste osascript/say snippets as one line.",
-  "argsShellOk": "Args parsed with shell rules"
+  "argsShellOk": "Args parsed with shell rules",
+  "timeoutMin": "min",
+  "timeoutSec": "sec",
+  "timeoutApply": "Set timeout"
 }

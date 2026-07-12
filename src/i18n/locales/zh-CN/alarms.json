@@ -63,7 +63,7 @@
   "openLogsFromSettings": "查看执行日志",
   "logsHint": "看看小闹钟们最近的工作记录",
   "timeout": "执行超时",
-  "timeoutHint": "超过该时间会结束进程（默认 20 秒）。适合 say / 弹窗 / 可能卡住的交互命令。",
+  "timeoutHint": "超过该时间会结束进程（默认 00:20）。弹窗 / say 请适当加大。",
   "timeoutUnit": "秒",
   "ERR_EXECUTION_TIMEOUT": "这个任务跑太久被停掉啦～ 可以在闹钟设置里把超时时间调大一点哦。",
   "stop": "停止",
@@ -75,5 +75,8 @@
   "ERR_EXECUTION_CANCELED": "任务被手动停掉了。",
   "ERR_INVALID_ARGS": "参数有点不对劲～ 检查一下超时时间（1–3600 秒）和环境变量吧。",
   "argsHint": "支持 shell 风格引号（由 shlex 解析）。osascript / say 可直接粘贴文档里的一行命令参数。",
-  "argsShellOk": "已按 shell 规则解析参数"
+  "argsShellOk": "已按 shell 规则解析参数",
+  "timeoutMin": "分",
+  "timeoutSec": "秒",
+  "timeoutApply": "确认超时"
 }
