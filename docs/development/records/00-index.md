@@ -29,6 +29,7 @@
 | 8 | [08 媒体与 README](./08-media-readme-pipeline.md) | 素材卫生；展示即获客 |
 | 9 | [09 元数据与教学沉淀](./09-docs-meta-and-teaching.md) | 把对话炼成教材 |
 | 10 | [10 CI 现代化与仓库治理](./10-cicd-hardening-and-governance.md) | Node/runner 警告、分支保护、验收剧本 |
+| 11 | [11 包管理器分发](./11-packaging-brew-scoop-winget.md) | brew/scoop/winget GUI+CLI、脚本与 CI |
 
 ### 路径 B · 只学「如何写 prompt」
 

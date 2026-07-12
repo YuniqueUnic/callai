@@ -280,3 +280,12 @@ optimize-screenshots:
 check-media:
     ./scripts/media/check_no_originals.sh
 
+# Validate Homebrew/Scoop/winget manifests
+packaging-validate:
+    ./packaging/scripts/validate_manifests.sh
+
+# Regenerate package manifests from a GitHub release tag (e.g. v0.2.1)
+packaging-generate tag:
+    ./packaging/scripts/generate_from_release.sh {{tag}}
+    ./packaging/scripts/validate_manifests.sh
+
