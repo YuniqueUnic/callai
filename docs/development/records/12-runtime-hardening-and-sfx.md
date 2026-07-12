@@ -386,7 +386,7 @@ display dialog "hi" buttons {"ok"}
 
 | 项 | 状态 |
 | --- | --- |
-| winget PR #401342 | 失败原因：**一个 PR 两个 PackageIdentifier**；已关闭，拆为 #401366 (GUI) + #401367 (CLI)，CLA 通过 |
+| winget PR #401342 | 失败原因：**一个 PR 两个 PackageIdentifier**；已关闭，拆为 #401366 (GUI) + #401367 (CLI)。完整规则与 CLA 签署步骤见 [record 11 §9](./11-packaging-brew-scoop-winget.md#9-winget-pkgs-上游要求必读--投稿-checklist) |
 | 本分支合入 main | 需 push + gate 绿 + rebase merge |
 | 调度器失败音效 | 仅前端手动 run 路径有 SFX；后台 daemon 静音（有意） |
 
