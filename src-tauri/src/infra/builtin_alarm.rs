@@ -164,7 +164,7 @@ fn notify_desktop(title: &str, message: &str) -> Result<bool, String> {
                 .map_err(|e| e.to_string())?;
             return Ok(status.success());
         }
-        return Ok(false);
+        Ok(false)
     }
     #[cfg(target_os = "windows")]
     {
@@ -265,7 +265,7 @@ fn play_attention_sound() -> Result<bool, String> {
             let _ = std::io::Write::flush(&mut std::io::stderr());
             thread::sleep(Duration::from_millis(280));
         }
-        return Ok(true);
+        Ok(true)
     }
     #[cfg(target_os = "windows")]
     {
@@ -336,7 +336,7 @@ fn show_attention_dialog(
             );
         }
         // no modal tool — notification already sent
-        return Ok(DialogResult::Skipped);
+        Ok(DialogResult::Skipped)
     }
     #[cfg(target_os = "windows")]
     {
