@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.4](https://github.com/YuniqueUnic/callai/compare/v0.2.3...v0.2.4) (2026-07-12)
+
+
+### Features
+
+* **autostart:** version-aware macOS login item via auto-launch 0.6 ([deb330a](https://github.com/YuniqueUnic/callai/commit/deb330ad8b8bcbfcc791b1e08d856ff4652539d7))
+
+
+### Bug Fixes
+
+* **ci:** gate macos_launcher behind target_os = macos ([5cf443f](https://github.com/YuniqueUnic/callai/commit/5cf443fd91ce06d930e2caf07dc749e86d0dc7bd))
+* issues [#16](https://github.com/YuniqueUnic/callai/issues/16)–[#19](https://github.com/YuniqueUnic/callai/issues/19) version, dark UI, open backups, autostart ([4387e27](https://github.com/YuniqueUnic/callai/commit/4387e27ed36101c9a1450f3e595116793b8de414)), closes [#17](https://github.com/YuniqueUnic/callai/issues/17) [#18](https://github.com/YuniqueUnic/callai/issues/18)
+* open backups dir from Rust (no opener path scope) ([8cf8cae](https://github.com/YuniqueUnic/callai/commit/8cf8cae756b47ee5d09c9f86ac137e85e12df011))
+
 ## [0.2.3](https://github.com/YuniqueUnic/callai/compare/v0.2.2...v0.2.3) (2026-07-12)
 
 
