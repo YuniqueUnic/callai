@@ -3227,3 +3227,136 @@ body.callai-logs-open [class*="animal-body"] {
   border-color: var(--callai-border) !important;
   color: var(--callai-ink) !important;
 }
+
+
+/* ── Custom title bar (cross-platform, no OS chrome) ── */
+.app-shell.has-titlebar {
+  /* titlebar is first flex child */
+}
+
+.titlebar {
+  flex: 0 0 auto;
+  height: 40px;
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+  background: color-mix(in srgb, var(--callai-surface) 92%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--callai-border) 70%, transparent);
+  color: var(--callai-ink);
+  user-select: none;
+  z-index: 500;
+  position: relative;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.titlebar-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  -webkit-app-region: drag;
+  app-region: drag;
+  cursor: default;
+}
+
+.titlebar-logo {
+  width: 18px;
+  height: 18px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+.titlebar-mark {
+
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background:
+    radial-gradient(circle at 35% 35%, #fff6e8 0 28%, transparent 30%),
+    radial-gradient(circle at 50% 55%, #5ee0d2 0 55%, #0f9f92 56% 100%);
+  box-shadow: 0 1px 0 #0d6f66;
+}
+
+.titlebar-title {
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  color: var(--callai-ink);
+  flex: 0 0 auto;
+}
+
+.titlebar-tagline {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--callai-ink-soft);
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.titlebar-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 30px;
+  height: 28px;
+  border-radius: 10px;
+  border: 2px solid color-mix(in srgb, var(--callai-border) 80%, #000 0%);
+  background: var(--callai-bg-soft);
+  color: var(--callai-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+}
+.titlebar-btn:hover {
+  background: color-mix(in srgb, var(--callai-primary) 22%, var(--callai-bg-soft));
+  border-color: var(--callai-primary);
+}
+.titlebar-btn:active {
+  transform: translateY(1px);
+}
+.titlebar-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.titlebar-close:hover {
+  background: color-mix(in srgb, var(--callai-danger) 28%, var(--callai-bg-soft));
+  border-color: var(--callai-danger);
+  color: #5c1a12;
+}
+
+[data-theme="dark"] .titlebar {
+  background: color-mix(in srgb, var(--callai-surface) 96%, #000 4%);
+}
+[data-theme="dark"] .titlebar-btn {
+  background: #1a2621;
+  border-color: var(--callai-border);
+  color: var(--callai-ink);
+}
+[data-theme="dark"] .titlebar-close:hover {
+  background: color-mix(in srgb, #ff9b8a 35%, #1a2621);
+  color: #fff6e8;
+}
+
+/* Browser mock: keep titlebar for layout parity */
+body:not(.tauri) .titlebar {
+  /* still show for design consistency in vite browser */
+}
