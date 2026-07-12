@@ -338,14 +338,15 @@ Submit callai GUI + CLI to microsoft/winget-pkgs for version X.Y.Z.
 Release 只出资产
     -> packaging-sync（定时/手动）拉 Release 写 monorepo packaging/
     -> 开 PR 合入 main
-    -> 同 workflow 可选 mirror 到 tap/bucket（PACKAGING_MIRROR_TOKEN）
+    -> 同 workflow 可选 mirror 到 tap/bucket（deploy key secrets，勿用 GITHUB_TOKEN）
 ```
 
 本地：
 
 ```bash
 ./packaging/scripts/generate_from_release.sh vX.Y.Z
-MIRROR_TOKEN=... TAG=vX.Y.Z ./packaging/scripts/mirror_to_tap_bucket.sh
+# CI uses PACKAGING_MIRROR_SSH_KEY_HOMEBREW + _SCOOP deploy keys
+TAG=vX.Y.Z ./packaging/scripts/mirror_to_tap_bucket.sh
 gh workflow run packaging-sync.yml -f tag=vX.Y.Z
 ```
 
