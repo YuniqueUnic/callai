@@ -229,6 +229,7 @@ python3 scripts/brand/make_tray_template.py --help
 ```
 
 ## Docs
+- [Development records (teaching)](./docs/development/README.md) — AI coding 实战过程
 
 - [PRODUCT.md](./PRODUCT.md) · [DESIGN.md](./DESIGN.md) · [usecases/](./usecases/)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md)

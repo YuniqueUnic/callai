@@ -275,3 +275,8 @@ ci: check-versions gate
 # Optimize README screenshots + demo video (1.4x)
 optimize-screenshots:
     ./scripts/media/optimize_screenshots.sh
+
+# Fail if original screenshot sources are staged/tracked
+check-media:
+    ./scripts/media/check_no_originals.sh
+

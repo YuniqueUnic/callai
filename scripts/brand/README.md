@@ -94,3 +94,8 @@ just brand-qa
 ```
 
 完整说明与排障步骤见 [docs/background-cleanup-qa.md](./docs/background-cleanup-qa.md)。
+
+## Related
+
+- Screenshot/demo media: [`../media/README.md`](../media/README.md)
+- Scripts index: [`../README.md`](../README.md)

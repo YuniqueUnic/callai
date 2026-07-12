@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Optimize screenshot PNG/WebP + demo video for README.
-# Requires: ffmpeg, magick/cwebp/img2webp, optional python pillow venv.
+# Docs: scripts/media/README.md  |  Entry: just optimize-screenshots
+# Requires: ffmpeg, img2webp (brew webp), python3 (venv+pillow auto).
+# NEVER commit assets/screenshot/original/ (gitignored).
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 src="$root/assets/screenshot"

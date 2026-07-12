@@ -214,6 +214,7 @@ just brand
 ```
 
 ## 文档
+- [开发过程 records（教学）](./docs/development/README.md)
 
 - [PRODUCT.md](./PRODUCT.md) · [DESIGN.md](./DESIGN.md) · [usecases/](./usecases/)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md)
