@@ -54,11 +54,21 @@
 
 ### 截图
 
-| 闹钟列表 | 新建闹钟 |
-| :---: | :---: |
-| <img src="docs/assets/screenshot/alarms.webp" alt="闹钟" width="220" /> | <img src="docs/assets/screenshot/new-alarm.webp" alt="新建" width="220" /> |
-| **日志** | **设置** |
-| <img src="docs/assets/screenshot/logs.webp" alt="日志" width="220" /> | <img src="docs/assets/screenshot/settings.webp" alt="设置" width="220" /> |
+<table>
+<tr>
+  <td align="center" width="25%"><b>闹钟列表</b></td>
+  <td align="center" width="25%"><b>新建闹钟</b></td>
+  <td align="center" width="25%"><b>日志</b></td>
+  <td align="center" width="25%"><b>设置</b></td>
+</tr>
+<tr>
+  <td align="center" width="25%"><img src="docs/assets/screenshot/alarms.webp" alt="闹钟" width="180" /></td>
+  <td align="center" width="25%"><img src="docs/assets/screenshot/new-alarm.webp" alt="新建" width="180" /></td>
+  <td align="center" width="25%"><img src="docs/assets/screenshot/logs.webp" alt="日志" width="180" /></td>
+  <td align="center" width="25%"><img src="docs/assets/screenshot/settings.webp" alt="设置" width="180" /></td>
+</tr>
+</table>
+
 
 ## 为什么需要 callai？
 

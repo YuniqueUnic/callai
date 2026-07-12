@@ -54,11 +54,21 @@
 
 ### Screenshots
 
-| Alarms | New alarm |
-| :---: | :---: |
-| <img src="docs/assets/screenshot/alarms.webp" alt="alarms" width="220" /> | <img src="docs/assets/screenshot/new-alarm.webp" alt="new alarm" width="220" /> |
-| **Logs** | **Settings** |
-| <img src="docs/assets/screenshot/logs.webp" alt="logs" width="220" /> | <img src="docs/assets/screenshot/settings.webp" alt="settings" width="220" /> |
+<table>
+<tr>
+  <td align="center" width="25%"><b>Alarms</b></td>
+  <td align="center" width="25%"><b>New alarm</b></td>
+  <td align="center" width="25%"><b>Logs</b></td>
+  <td align="center" width="25%"><b>Settings</b></td>
+</tr>
+<tr>
+  <td align="center" width="25%"><img src="docs/assets/screenshot/alarms.webp" alt="alarms" width="180" /></td>
+  <td align="center" width="25%"><img src="docs/assets/screenshot/new-alarm.webp" alt="new alarm" width="180" /></td>
+  <td align="center" width="25%"><img src="docs/assets/screenshot/logs.webp" alt="logs" width="180" /></td>
+  <td align="center" width="25%"><img src="docs/assets/screenshot/settings.webp" alt="settings" width="180" /></td>
+</tr>
+</table>
+
 
 ## Why callai?
 
