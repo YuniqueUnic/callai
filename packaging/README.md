@@ -5,6 +5,66 @@
 > 清单默认指向 GitHub Releases 产物（见 [v0.2.1](https://github.com/YuniqueUnic/callai/releases/tag/v0.2.1)）。  
 > 正式进入官方 `homebrew-cask` / `winget-pkgs` 中央仓库，仍需额外提交 PR（本仓库先自托管 / 文档化安装路径）。
 
+
+## Strategy: monorepo truth + independent tap/bucket (UX)
+
+**用户安装要简单** → 保留独立仓库：
+
+| 仓库 | 用户命令 |
+| --- | --- |
+| [homebrew-callai](https://github.com/YuniqueUnic/homebrew-callai) | `brew tap YuniqueUnic/homebrew-callai && brew install --cask callai-app` / `brew install callai` |
+| [scoop-callai](https://github.com/YuniqueUnic/scoop-callai) | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai` |
+
+**元数据真源仍在 monorepo** `packaging/**`（脚本、hash、winget、校验、教学）。  
+独立仓是 **布局镜像**（brew/scoop 要求根目录结构），不是第二套手改版本号的产品。
+
+参考 [xidl/xidl-packaging](https://github.com/xidl/xidl-packaging)：**packaging 侧周期/手动检查 Release 并刷新**，而不是让 app 发版 CI 跨仓硬推。
+
+```text
+callai GitHub Release（只上传二进制 / updater）
+        |
+        v  每日 cron 或 workflow_dispatch
+packaging-sync.yml
+        |  generate_from_release.sh -> packaging/**
+        v
+对本仓开 PR：chore(packaging): sync to vX.Y.Z
+        |  若配置了 PACKAGING_MIRROR_TOKEN
+        v
+镜像 homebrew-callai + scoop-callai（根目录 Casks/Formula 或 JSON）
+```
+
+| 触发 | 行为 |
+| --- | --- |
+| `schedule`（UTC 06:00） | 拉 latest stable；过期则开 monorepo PR + 尝试 mirror |
+| `workflow_dispatch` | 指定 tag / latest；可开关 open_pr、mirror |
+| `release.yml` | **只** build+upload；不写其它仓库 |
+
+### 为何仍要独立 tap/bucket？
+
+| 方案 | 用户体验 | 维护成本 |
+| --- | --- | --- |
+| 仅 monorepo raw URL | 命令长、易抄错 | 最低 |
+| **独立 tap/bucket（推荐）** | `brew tap` / `scoop bucket add` 一行习惯 | 镜像脚本 + 一个 secret |
+| 发版 CI 直接 push 镜像 | 同 UX | 跨仓耦合、半失败难查 |
+
+### Secret
+
+| Name | 用途 |
+| --- | --- |
+| `PACKAGING_MIRROR_TOKEN` | 对 `homebrew-callai` + `scoop-callai` 有 `contents:write` 的 PAT/fine-grained token |
+
+未配置时：monorepo 同步 PR 仍可用；镜像步骤 skip。
+
+### monorepo 内边界（保持干净）
+
+```text
+packaging/          # 仅分发元数据 + scripts（禁止 app 业务）
+  homebrew/ scoop/ winget/ scripts/ mirror/
+src/ · src-tauri/   # 产品
+docs/development/   # 教学过程
+.github/workflows/  # ci · release · packaging.yml · packaging-sync.yml
+```
+
 ## Matrix
 
 | Manager | GUI | CLI | 安装示例 |
@@ -38,43 +98,35 @@ packaging/
 
 ## User install (today)
 
-### Homebrew（推荐自托管路径）
+### Homebrew（独立 tap · 推荐）
 
 ```bash
-# GUI (Cask) — 从本仓库路径直接装
-brew tap YuniqueUnic/callai && brew install --cask callai-app
-
-# CLI (Formula)
-brew tap YuniqueUnic/callai && brew install callai
-
+brew tap YuniqueUnic/homebrew-callai
+brew install --cask callai-app   # GUI
+brew install callai             # CLI
 callai --help
 ```
 
-若你 fork 了独立 tap（例如 `YuniqueUnic/homebrew-callai`），可改为：
+维护者也可从 monorepo 路径试装：
 
 ```bash
-brew tap YuniqueUnic/callai
-brew install --cask callai-app
-brew install callai       # formula (CLI)
+brew install --cask ./packaging/homebrew/Casks/callai-app.rb
+brew install ./packaging/homebrew/Formula/callai.rb
 ```
 
-未公证提示：
-
-```bash
-xattr -dr com.apple.quarantine /Applications/callai.app
-```
-
-### Scoop
+### Scoop（独立 bucket · 推荐）
 
 ```powershell
-# 添加本仓库 bucket（git clone 后）
-scoop bucket add callai <path-or-git-url-to-this-repo>
-# 若用 raw git:
-# scoop bucket add callai https://github.com/YuniqueUnic/callai.git
-# 注意：scoop bucket 需要 bucket 根目录含 manifest；可用 packaging/scoop/bucket 单独仓库，或：
+scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai
+scoop install callai       # GUI
+scoop install callai-cli   # CLI
+```
 
-scoop install ./packaging/scoop/bucket/callai-cli.json
-scoop install ./packaging/scoop/bucket/callai.json
+维护者也可：
+
+```powershell
+scoop install .\packaging\scoop\bucket\callai.json
+scoop install .\packaging\scoop\bucket\callai-cli.json
 ```
 
 ### winget
@@ -137,6 +189,11 @@ winget install --manifest packaging\winget\manifests\y\YuniqueUnic\Callai.CLI\0.
 # 需要 gh + 已发布 tag
 ./packaging/scripts/generate_from_release.sh v0.2.1
 ./packaging/scripts/validate_manifests.sh
+
+# 可选：推送到独立 tap/bucket（需 MIRROR_TOKEN）
+export MIRROR_TOKEN=ghp_xxx
+export TAG=v0.2.1
+./packaging/scripts/mirror_to_tap_bucket.sh
 ```
 
 脚本会：
@@ -147,6 +204,8 @@ winget install --manifest packaging\winget\manifests\y\YuniqueUnic\Callai.CLI\0.
 4. 覆写 Homebrew / Scoop / winget 清单  
 
 ### 2) CI
+
+- `.github/workflows/packaging-sync.yml` — 定时/手动同步 Release → packaging/ → 可选 mirror
 
 `.github/workflows/packaging.yml` 在 PR/main 上校验清单存在且 JSON/Ruby 语法正确；  
 可选在 release 后人工或 workflow_dispatch 跑 generate（避免无资产时硬失败）。
