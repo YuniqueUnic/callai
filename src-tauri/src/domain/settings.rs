@@ -42,6 +42,7 @@ pub struct AppSettings {
     pub launch_minimized: bool,
     pub log_retention_days: u32,
     pub notify_on_failure: bool,
+    pub sound_enabled: bool,
     pub auto_backup_on_start: bool,
     pub backup_keep_count: u32,
 }
@@ -54,6 +55,7 @@ impl Default for AppSettings {
             launch_minimized: false,
             log_retention_days: 30,
             notify_on_failure: false,
+            sound_enabled: true,
             auto_backup_on_start: true,
             backup_keep_count: 10,
         }

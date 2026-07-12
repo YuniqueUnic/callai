@@ -239,6 +239,7 @@ locale = "zh-CN"
 launch_minimized = false
 log_retention_days = 30
 notify_on_failure = false
+sound_enabled = true
 auto_backup_on_start = true
 backup_keep_count = 10
 

@@ -9,6 +9,7 @@ import {
   Tag,
 } from "animal-island-ui";
 import { toast } from "../ui/toast";
+import { playForRunStatus, playSound, unlockAudio } from "../ui/sounds";
 import type { Alarm } from "../domain/types";
 import { isAlarmRunning, scheduleTimeChips } from "../domain/alarmRules";
 import {
@@ -114,8 +115,11 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
     // close confirm dialog immediately on accept, then run
     setConfirmRun(null);
     setBusyId(alarm.id);
+    void unlockAudio();
+    playSound("start");
     try {
       const log = await client.runNow(alarm.id);
+      playForRunStatus(log.status);
       if (log.status === "success") {
         toast.success({
           message: t("alarms:runSuccess"),
