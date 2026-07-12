@@ -128,6 +128,13 @@ jobs:
             echo "PR already open for $BRANCH"
           fi
 
+          # GITHUB_TOKEN commits/PRs do not auto-run pull_request workflows.
+          # Re-dispatch CI + Packaging on the branch tip so required "gate" can pass
+          # without manual approval (this is NOT the fork first-time-contributor policy).
+          echo "Re-triggering CI/Packaging on ${BRANCH}…"
+          gh workflow run CI --ref "$BRANCH" || true
+          gh workflow run Packaging --ref "$BRANCH" || true
+
       - name: Mirror to homebrew-callai + scoop-callai
         if: >-
           steps.diff.outputs.changed == 'true' &&

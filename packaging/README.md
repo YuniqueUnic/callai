@@ -37,6 +37,7 @@ packaging-sync.yml
 | --- | --- |
 | `schedule`（UTC 06:00） | 拉 latest stable；过期则开 monorepo PR + 尝试 mirror |
 | `workflow_dispatch` | 指定 tag / latest；可开关 open_pr、mirror |
+| bot PR CI | `GITHUB_TOKEN` 开的 PR **不会**自动跑 `pull_request` workflows；`packaging-sync` 会在开 PR 后 `gh workflow run CI/Packaging --ref <branch>` 补跑 gate |
 | `release.yml` | **只** build+upload；不写其它仓库 |
 
 ### 为何仍要独立 tap/bucket？
