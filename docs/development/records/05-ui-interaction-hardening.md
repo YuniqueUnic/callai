@@ -162,3 +162,114 @@ drawer: closed ──open──► open（FAB hidden, scroll body）
 
 时区等「长选项」不要用 segmented 堆按钮；与 **TimePicker / DurationPicker** 一致：触发器 + portal 滚轮/列表 + 确认。  
 调度模式扩展（每天/每周/每月/cron）见 record 12 附录 A。
+
+---
+
+## 附录 B · Floating overlay chrome 与「不要分段顶栏」（2026-07 续）
+
+> 证据：`edit-hero` / `home-hero` · `animal-tabList` 浮层 · commits 含 `909a0cb` 及后续 CSS 修正  
+> 口语：`edit header 和 body 分开` · `要直接覆盖下面` · `参考 tabList` · `去掉背景` · `home 顶部分割线/shadow`
+
+### B.1 思想：Chrome 是**叠层**，不是**文档流两段**
+
+用户要的不是「好看 sticky 灰条」，而是：
+
+> **Floating overlay controls over a full-bleed scrolling surface**  
+> （浮层控件叠在整页可滚内容之上；content scrolls underneath）
+
+| 术语 | 含义 | 本项目例子 |
+| --- | --- | --- |
+| Floating chrome | 顶栏/Tab 浮在内容上 | `animal-tabList` 胶囊、`edit-hero` |
+| Overlay header | absolute/fixed 叠内容 | edit 顶栏盖住表单 |
+| Chrome-less / panel-less | 无卡片底、无分割线 | 透明 `edit-hero` / `home-hero` |
+| Sticky section bar | 吸顶但仍像两段布局 | **易错成「和 body 分开」** |
+
+**产品动机：**
+
+1. 动森小窗垂直空间紧——顶栏占流会挤掉表单。  
+2. 与底部 tab 浮层 **同一套空间语言**（上下都是 overlay，不是框中框）。  
+3. 编辑页 immersive：无底部 tab 时，更要用浮层顶栏保持「工具浮在岛上」。
+
+### B.2 原始 prompt 拆解
+
+| 用户原话 | 为什么好 | Agent 应抽出的验收 |
+| --- | --- | --- |
+| 顶部还是和 body 分开 | **否定当前结构**（flex 分栏失败） | 禁止 header/main 上下分栏占流 |
+| 直接覆盖底部的感觉 | **叠盖关系** | `position:absolute` + 内容 `padding-top` |
+| 参考 `#root … animal-tabList` | **金样例**（可抄 CSS 模式） | 对照 tabList 的 absolute + z-index + 透明底可选 |
+| 去掉 header 背景 | **chrome-less** | `background/border/shadow: none` |
+| body 顶 shadow 像 line | **像素级缺陷** + 截图 | 去掉 `border-bottom`/`box-shadow` |
+
+**可复制的专业需求句（以后直接用）：**
+
+```text
+顶栏做 floating overlay、chrome-less；内容 scroll underneath。
+参考 animal-tabList 浮层。不要 sticky 分段面板，不要 card 底。
+```
+
+### B.3 功能 / 结构划分
+
+| 表面 | 布局契约 |
+| --- | --- |
+| `app-shell.with-tabs` | tabList `position:absolute; top…; z-index:300`；content 全高滚动 |
+| `app-shell.immersive-edit` | `edit-page` relative 满高；`edit-hero` absolute 浮层；`edit-main` absolute inset 滚动 |
+| `home-hero` | 可 sticky，但 **无底部分割线**；列表紧贴，不靠阴影「切开」 |
+
+### B.4 推进流程（agent 串行）
+
+```text
+1. 用 DevTools 确认：header 与 main 是 flex 兄弟还是 overlay
+2. 若 flex 分栏 → 改 absolute overlay（对照 tabList）
+3. main 全区域滚动 + padding-top 为浮层让路
+4. 去掉 panel 视觉（bg/border/shadow/blur）
+5. 截图对比用户「分开/盖住」二词
+6. 检查 dark 主题覆盖规则是否又加回背景
+```
+
+### B.5 偏差与调整
+
+| Commit / 改动 | 意图 | 偏差 | 调整 |
+| --- | --- | --- | --- |
+| `909a0cb` | edit 顶栏像 home | 先做成 sticky 灰条，仍「分段」 | 改为 absolute 浮层 + main 全页滚 |
+| 半透明 blur 面板 | 「高级」 | 用户要的是 **透明 HUD** 不是 glass card | 强制 transparent |
+| home sticky + border-bottom | 吸顶可读 | 列表上方出现 **line/shadow** | 去掉 divider/shadow |
+
+### B.6 交互扩展
+
+- **TimezonePicker / DurationPicker / TimePicker**：同一「触发器 + portal + 确认」家族，**禁止** segmented 堆 IANA 列表（见附录·设置控件形态）。  
+- 浮层顶栏按钮必须 `pointer-events: auto`，装饰 `none`。  
+- z-index 阶梯：列表 < 海浪 footer(30) < 浮层顶栏/tab(300) < toast/tooltip(2e4+)。
+
+### B.7 给 AI 的提示模板（顶栏浮层）
+
+```markdown
+## Goal
+Edit/new alarm header as floating overlay chrome (not document-flow section).
+
+## Pattern (copy from tabs)
+- Container: position relative; full height; overflow hidden
+- Header: position absolute; top/left/right inset; high z-index
+- Body: position absolute; inset 0; overflow-y auto; padding-top clears header
+- Header chrome-less: no background, border, box-shadow, backdrop-filter
+
+## Do not
+- flex-column with flex:0 header + flex:1 scroll (looks "split from body")
+- sticky bar with border-bottom divider line
+- card/surface panel behind title
+
+## Reference selectors
+- Floating tabs: .main-tabs [class*="animal-tabList"]
+- Edit: .edit-page > header.edit-hero over .edit-main
+```
+
+### B.8 验收
+
+- [ ] 编辑页滚动时，内容从标题/按钮 **下方穿过**，不是整页被顶栏切开  
+- [ ] 顶栏无实色底、无描边胶囊（除非产品明确要 pill）  
+- [ ] 闹钟列表顶无细线/阴影分割  
+- [ ] 与顶部 tab 浮层同一「叠在内容上」的语言  
+
+### B.9 关键
+
+`src/pages/EditAlarmPage.tsx` · `src/theme/global.css`（`.edit-hero` / `.home-hero` / `.main-tabs … tabList`）
+

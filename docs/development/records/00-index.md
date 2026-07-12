@@ -64,6 +64,7 @@
 | 本教材 | `3f4a97f` + 本轮扩写 | 09 |
 | 包管理 | `68aa339` `d798362` | 11 |
 | 运行时硬化 | `f9cc5ba` `7eaf32d` `0db6b62` `6bc6223` | 12 |
+| UI 浮层顶栏 / 海浪无缝 / 时区墙钟 | `ce863f6` `909a0cb` + SeaMarquee 续 | 04 附录 B · 05 附录 B · 12 附录 A |
 
 ```bash
 git log --oneline --reverse
