@@ -145,12 +145,17 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
-        .plugin(
-            tauri_plugin_autostart::Builder::new()
-                .macos_launcher(tauri_plugin_autostart::MacosLauncher::LaunchAgent)
-                .app_name("callai")
-                .build(),
-        )
+        .plugin({
+            #[allow(unused_mut)]
+            let mut builder = tauri_plugin_autostart::Builder::new().app_name("callai");
+            #[cfg(target_os = "macos")]
+            {
+                builder = builder.macos_launcher(
+                    tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+                );
+            }
+            builder.build()
+        })
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             commands::list_alarms,
