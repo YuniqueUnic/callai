@@ -79,6 +79,7 @@ export interface AppSettings {
   launch_minimized: boolean;
   log_retention_days: number;
   notify_on_failure: boolean;
+  sound_enabled: boolean;
   auto_backup_on_start: boolean;
   backup_keep_count: number;
 }

@@ -2695,3 +2695,13 @@ body.callai-logs-open [class*="animal-body"] {
   border-color: #7ab892;
   color: #eaf6ee;
 }
+
+
+.settings-row {
+  align-items: center;
+  gap: 12px;
+}
+.settings-row > div:first-child {
+  flex: 1;
+  min-width: 0;
+}

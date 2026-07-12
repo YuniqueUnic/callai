@@ -11,6 +11,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { applyTheme, readStoredTheme } from "./theme/theme";
 import { SeaMarquee } from "./ui/SeaMarquee";
 import { warmToast } from "./ui/toast";
+import { setSoundEnabled, unlockAudio } from "./ui/sounds";
 
 export default function App() {
   const { t, i18n } = useTranslation(["common", "alarms", "logs"]);
@@ -24,10 +25,17 @@ export default function App() {
     applyTheme(readStoredTheme());
     void client.getSettings().then((s) => {
       applyTheme(s.theme);
+      setSoundEnabled(s.sound_enabled !== false);
       if (s.locale && s.locale !== i18n.language) {
         void i18n.changeLanguage(s.locale);
       }
     });
+    const unlock = () => {
+      void unlockAudio();
+      window.removeEventListener("pointerdown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    return () => window.removeEventListener("pointerdown", unlock);
   }, [i18n]);
 
   const openLogs = useCallback((alarmId?: string | null) => {

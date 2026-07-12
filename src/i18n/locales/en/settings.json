@@ -31,5 +31,8 @@
   "updateError": "Could not check updates",
   "updateUnsupported": "Updates are available in the desktop app build.",
   "updateSection": "App updates",
-  "updateHint": "Signed update packages are fetched from GitHub Releases."
+  "updateHint": "Signed update packages are fetched from GitHub Releases.",
+  "soundEnabled": "UI sounds",
+  "soundHint": "Soft procedural chimes when a task starts, succeeds, or fails",
+  "soundPreview": "Preview"
 }

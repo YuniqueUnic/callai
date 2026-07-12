@@ -24,8 +24,14 @@ struct TomlSettings {
     launch_minimized: bool,
     log_retention_days: u32,
     notify_on_failure: bool,
+    #[serde(default = "default_true")]
+    sound_enabled: bool,
     auto_backup_on_start: bool,
     backup_keep_count: u32,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -171,6 +177,7 @@ impl ConfigBackup for TomlConfigBackup {
                 launch_minimized: settings.launch_minimized,
                 log_retention_days: settings.log_retention_days,
                 notify_on_failure: settings.notify_on_failure,
+                sound_enabled: settings.sound_enabled,
                 auto_backup_on_start: settings.auto_backup_on_start,
                 backup_keep_count: settings.backup_keep_count,
             },
@@ -229,6 +236,7 @@ impl ConfigBackup for TomlConfigBackup {
             launch_minimized: root.settings.launch_minimized,
             log_retention_days: root.settings.log_retention_days,
             notify_on_failure: root.settings.notify_on_failure,
+            sound_enabled: root.settings.sound_enabled,
             auto_backup_on_start: root.settings.auto_backup_on_start,
             backup_keep_count: root.settings.backup_keep_count,
         };

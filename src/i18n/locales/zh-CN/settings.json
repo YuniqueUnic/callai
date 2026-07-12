@@ -31,5 +31,8 @@
   "updateError": "检查更新失败",
   "updateUnsupported": "自动更新仅在桌面安装包中可用。",
   "updateSection": "应用更新",
-  "updateHint": "更新包从 GitHub Releases 获取，并由 minisign 公钥校验。"
+  "updateHint": "更新包从 GitHub Releases 获取，并由 minisign 公钥校验。",
+  "soundEnabled": "界面音效",
+  "soundHint": "任务开始 / 完成 / 失败时播放轻柔提示音（算法合成，无额外资源）",
+  "soundPreview": "试听"
 }

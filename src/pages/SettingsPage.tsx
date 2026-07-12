@@ -8,6 +8,7 @@ import { applyTheme } from "../theme/theme";
 import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
 import { IconLogs, IconRestore, IconTrash } from "../ui/icons";
+import { playSound, setSoundEnabled, unlockAudio } from "../ui/sounds";
 import { isTauri } from "../infra/tauriApi";
 import { checkForAppUpdate } from "../infra/updater";
 
@@ -176,6 +177,40 @@ export function SettingsPage({ onOpenLogs }: Props) {
                 })();
               }}
             />
+          </div>
+
+
+          <div className="settings-row">
+            <div>
+              <div>{t("settings:soundEnabled")}</div>
+              <div className="hint" style={{ marginTop: 2 }}>
+                {t("settings:soundHint")}
+              </div>
+            </div>
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <Button
+                size="small"
+                onClick={() => {
+                  void unlockAudio().then(() => {
+                    setSoundEnabled(true);
+                    playSound("success");
+                  });
+                }}
+              >
+                {t("settings:soundPreview")}
+              </Button>
+              <Switch
+                checked={settings.sound_enabled !== false}
+                onChange={(v) => {
+                  void unlockAudio();
+                  setSoundEnabled(v);
+                  const next = { ...settings, sound_enabled: v };
+                  setSettings(next);
+                  void save(next);
+                  if (v) playSound("soft");
+                }}
+              />
+            </div>
           </div>
 
           <div className="settings-row">
