@@ -86,7 +86,10 @@ pub fn run_builtin_alarm(
     // 3) Modal attention (may block until user dismisses or timeout).
     let timeout = Duration::from_secs(u64::from(timeout_secs.max(1)));
     let remaining = timeout.saturating_sub(started.elapsed());
-    let dialog_timeout_secs = remaining.as_secs().max(1).min(u64::from(timeout_secs.max(1))) as u32;
+    let dialog_timeout_secs = remaining
+        .as_secs()
+        .max(1)
+        .min(u64::from(timeout_secs.max(1))) as u32;
 
     match show_attention_dialog(&title, &message, dialog_timeout_secs, cancel.clone()) {
         Ok(DialogResult::Ok) => steps.push("dialog=ok".into()),
@@ -146,7 +149,7 @@ fn notify_desktop(title: &str, message: &str) -> Result<bool, String> {
             .stderr(Stdio::null())
             .status()
             .map_err(|e| e.to_string())?;
-        return Ok(status.success());
+        Ok(status.success())
     }
     #[cfg(target_os = "linux")]
     {
@@ -225,16 +228,12 @@ fn play_attention_sound() -> Result<bool, String> {
             }
         } else {
             for _ in 0..2 {
-                let _ = Command::new("osascript")
-                    .args(["-e", "beep 3"])
-                    .status();
+                let _ = Command::new("osascript").args(["-e", "beep 3"]).status();
                 thread::sleep(Duration::from_millis(180));
             }
         }
-        let _ = Command::new("osascript")
-            .args(["-e", "beep 2"])
-            .status();
-        return Ok(true);
+        let _ = Command::new("osascript").args(["-e", "beep 2"]).status();
+        Ok(true)
     }
     #[cfg(target_os = "linux")]
     {
@@ -306,12 +305,7 @@ fn show_attention_dialog(
             msg = apple_str(message),
             title = apple_str(title),
         );
-        return run_cancellable(
-            "osascript",
-            &["-e".into(), script],
-            timeout_secs,
-            cancel,
-        );
+        run_cancellable("osascript", &["-e".into(), script], timeout_secs, cancel)
     }
     #[cfg(target_os = "linux")]
     {
@@ -331,7 +325,12 @@ fn show_attention_dialog(
         if which_exists("kdialog") {
             return run_cancellable(
                 "kdialog",
-                &["--msgbox".into(), message.to_string(), "--title".into(), title.to_string()],
+                &[
+                    "--msgbox".into(),
+                    message.to_string(),
+                    "--title".into(),
+                    title.to_string(),
+                ],
                 timeout_secs,
                 cancel,
             );

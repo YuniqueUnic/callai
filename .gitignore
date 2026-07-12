@@ -64,3 +64,9 @@ assets/screenshot/.venv/
 assets/screenshot/original/
 **/assets/screenshot/original/**
 
+
+# Screenshot pipeline working copies (canonical = docs/assets/screenshot)
+assets/screenshot/*.png
+assets/screenshot/*.webp
+assets/screenshot/*.gif
+assets/screenshot/record.mp4

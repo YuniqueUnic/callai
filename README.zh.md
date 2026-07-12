@@ -54,7 +54,7 @@
 </p>
 
 <p align="center">
-  <em>1.4 倍速预览</em> ·
+  <em>1.7 倍速预览</em> ·
   <a href="docs/assets/screenshot/record-preview.gif">GIF</a> ·
   <a href="docs/assets/screenshot/record.mp4">完整 MP4</a> ·
   <a href="docs/assets/screenshot/record.webp">完整 WebP</a>
@@ -62,22 +62,32 @@
 
 ### 截图
 
+<p align="center">
 <table>
-<tr>
-  <td align="center" width="25%"><b>闹钟列表</b></td>
-  <td align="center" width="25%"><b>新建闹钟</b></td>
-  <td align="center" width="25%"><b>日志</b></td>
-  <td align="center" width="25%"><b>设置</b></td>
-</tr>
-<tr>
-  <td align="center" width="25%"><img src="docs/assets/screenshot/alarms.webp" alt="闹钟" width="180" /></td>
-  <td align="center" width="25%"><img src="docs/assets/screenshot/new-alarm.webp" alt="新建" width="180" /></td>
-  <td align="center" width="25%"><img src="docs/assets/screenshot/logs.webp" alt="日志" width="180" /></td>
-  <td align="center" width="25%"><img src="docs/assets/screenshot/settings.webp" alt="设置" width="180" /></td>
-</tr>
+  <tr>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/alarms.png"><img src="docs/assets/screenshot/alarms.webp" alt="闹钟列表（暗色）" width="160" /></a><br />
+      <sub><b>闹钟</b> · 暗色</sub>
+    </td>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/new-alarm.png"><img src="docs/assets/screenshot/new-alarm.webp" alt="编辑闹钟（浅色）" width="160" /></a><br />
+      <sub><b>编辑</b> · 浅色</sub>
+    </td>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/edit-alarm-dark.png"><img src="docs/assets/screenshot/edit-alarm-dark.webp" alt="编辑闹钟（暗色）" width="160" /></a><br />
+      <sub><b>编辑</b> · 暗色</sub>
+    </td>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/logs.png"><img src="docs/assets/screenshot/logs.webp" alt="日志（浅色）" width="160" /></a><br />
+      <sub><b>日志</b> · 浅色</sub>
+    </td>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/settings.png"><img src="docs/assets/screenshot/settings.webp" alt="设置（浅色）" width="160" /></a><br />
+      <sub><b>设置</b> · 浅色</sub>
+    </td>
+  </tr>
 </table>
-
-
+</p>
 
 ## 安装
 
@@ -348,7 +358,7 @@ just gate
 
 ```bash
 just brand
-./scripts/media/optimize_screenshots.sh
+./scripts/media/optimize_screenshots.sh  # original/* → docs webp/png
 ```
 
 ## 文档
