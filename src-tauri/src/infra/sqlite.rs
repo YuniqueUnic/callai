@@ -1,3 +1,5 @@
+//! SQLite adapter. SQL lives only in this module (constants + helpers);
+//! call sites must not embed ad-hoc SQL strings.
 #![allow(dead_code, clippy::too_many_arguments, clippy::type_complexity)]
 use std::sync::Mutex;
 
@@ -9,6 +11,20 @@ use crate::domain::{
     Alarm, AlarmLifecycle, AppSettings, DomainError, DomainResult, EnvVar, ErrorCode, ExecutionLog,
     ExecutionStatus, LocaleCode, LogFilter, RetryInterval, RetryPolicy, ScheduleSpec, ThemeMode,
 };
+
+const SQL_LIST_ALARMS: &str = concat!(
+    "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json, ",
+    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at ",
+    "FROM alarms ORDER BY created_at DESC"
+);
+const SQL_GET_ALARM: &str = concat!(
+    "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json, ",
+    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at ",
+    "FROM alarms WHERE id = ?1"
+);
+const SQL_DELETE_LOG: &str = "DELETE FROM execution_logs WHERE id = ?1";
+const SQL_DELETE_LOGS_BY_ALARM: &str = "DELETE FROM execution_logs WHERE alarm_id = ?1";
+const SQL_DELETE_ALARM: &str = "DELETE FROM alarms WHERE id = ?1";
 
 pub struct SqliteStore {
     conn: Mutex<Connection>,
@@ -53,6 +69,7 @@ impl SqliteStore {
                 args_json TEXT NOT NULL,
                 env_json TEXT NOT NULL,
                 retry_interval TEXT NOT NULL,
+                timeout_secs INTEGER NOT NULL DEFAULT 20,
                 lifecycle_json TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
@@ -91,6 +108,11 @@ impl SqliteStore {
             "#,
         )
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("migrate: {e}")))?;
+        // Additive columns for existing installs.
+        let _ = conn.execute(
+            "ALTER TABLE alarms ADD COLUMN timeout_secs INTEGER NOT NULL DEFAULT 20",
+            [],
+        );
         Ok(())
     }
 }
@@ -114,6 +136,7 @@ fn alarm_from_row(
     args_json: String,
     env_json: String,
     retry_interval: String,
+    timeout_secs: i64,
     lifecycle_json: String,
     created_at: String,
     updated_at: String,
@@ -135,6 +158,7 @@ fn alarm_from_row(
         args,
         env_vars,
         retry: RetryPolicy::new(RetryInterval::parse(&retry_interval)?),
+        timeout_secs: timeout_secs.clamp(1, 3600) as u32,
         lifecycle,
         created_at: str_to_dt(&created_at)?,
         updated_at: str_to_dt(&updated_at)?,
@@ -145,11 +169,7 @@ impl AlarmStore for SqliteStore {
     fn list_alarms(&self) -> DomainResult<Vec<Alarm>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
-            .prepare(
-                "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json,
-                        retry_interval, lifecycle_json, created_at, updated_at
-                 FROM alarms ORDER BY created_at DESC",
-            )
+            .prepare(SQL_LIST_ALARMS)
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         let rows = stmt
             .query_map([], |row| {
@@ -162,9 +182,10 @@ impl AlarmStore for SqliteStore {
                     row.get::<_, String>(5)?,
                     row.get::<_, String>(6)?,
                     row.get::<_, String>(7)?,
-                    row.get::<_, String>(8)?,
+                    row.get::<_, i64>(8)?,
                     row.get::<_, String>(9)?,
                     row.get::<_, String>(10)?,
+                    row.get::<_, String>(11)?,
                 ))
             })
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
@@ -173,7 +194,7 @@ impl AlarmStore for SqliteStore {
         for r in rows {
             let t = r.map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
             out.push(alarm_from_row(
-                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10,
+                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11,
             )?);
         }
         Ok(out)
@@ -182,32 +203,27 @@ impl AlarmStore for SqliteStore {
     fn get_alarm(&self, id: &str) -> DomainResult<Option<Alarm>> {
         let conn = self.conn.lock().unwrap();
         let row = conn
-            .query_row(
-                "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json,
-                        retry_interval, lifecycle_json, created_at, updated_at
-                 FROM alarms WHERE id = ?1",
-                params![id],
-                |row| {
-                    Ok((
-                        row.get::<_, String>(0)?,
-                        row.get::<_, String>(1)?,
-                        row.get::<_, i64>(2)?,
-                        row.get::<_, String>(3)?,
-                        row.get::<_, String>(4)?,
-                        row.get::<_, String>(5)?,
-                        row.get::<_, String>(6)?,
-                        row.get::<_, String>(7)?,
-                        row.get::<_, String>(8)?,
-                        row.get::<_, String>(9)?,
-                        row.get::<_, String>(10)?,
-                    ))
-                },
-            )
+            .query_row(SQL_GET_ALARM, params![id], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, i64>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                    row.get::<_, String>(5)?,
+                    row.get::<_, String>(6)?,
+                    row.get::<_, String>(7)?,
+                    row.get::<_, i64>(8)?,
+                    row.get::<_, String>(9)?,
+                    row.get::<_, String>(10)?,
+                    row.get::<_, String>(11)?,
+                ))
+            })
             .optional()
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         match row {
             Some(t) => Ok(Some(alarm_from_row(
-                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10,
+                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11,
             )?)),
             None => Ok(None),
         }
@@ -226,8 +242,8 @@ impl AlarmStore for SqliteStore {
         conn.execute(
             "INSERT INTO alarms (
                 id, name, enabled, schedule_json, binary_path, args_json, env_json,
-                retry_interval, lifecycle_json, created_at, updated_at
-             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)
+                retry_interval, timeout_secs, lifecycle_json, created_at, updated_at
+             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)
              ON CONFLICT(id) DO UPDATE SET
                 name=excluded.name,
                 enabled=excluded.enabled,
@@ -236,6 +252,7 @@ impl AlarmStore for SqliteStore {
                 args_json=excluded.args_json,
                 env_json=excluded.env_json,
                 retry_interval=excluded.retry_interval,
+                timeout_secs=excluded.timeout_secs,
                 lifecycle_json=excluded.lifecycle_json,
                 updated_at=excluded.updated_at",
             params![
@@ -247,6 +264,7 @@ impl AlarmStore for SqliteStore {
                 args_json,
                 env_json,
                 alarm.retry.interval.as_str(),
+                alarm.timeout_secs as i64,
                 lifecycle_json,
                 dt_to_str(alarm.created_at),
                 dt_to_str(alarm.updated_at),
@@ -258,13 +276,10 @@ impl AlarmStore for SqliteStore {
 
     fn delete_alarm(&self, id: &str) -> DomainResult<()> {
         let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "DELETE FROM execution_logs WHERE alarm_id = ?1",
-            params![id],
-        )
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
+        conn.execute(SQL_DELETE_LOGS_BY_ALARM, params![id])
+            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         let n = conn
-            .execute("DELETE FROM alarms WHERE id = ?1", params![id])
+            .execute(SQL_DELETE_ALARM, params![id])
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         if n == 0 {
             return Err(DomainError::new(
@@ -392,6 +407,32 @@ impl AlarmStore for SqliteStore {
         Ok(rows)
     }
 
+    fn delete_log(&self, id: i64) -> DomainResult<()> {
+        let conn = self.conn.lock().unwrap();
+        let n = conn
+            .execute(SQL_DELETE_LOG, params![id])
+            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
+        if n == 0 {
+            return Err(DomainError::new(ErrorCode::StorageFailed, "log not found"));
+        }
+        Ok(())
+    }
+
+    fn delete_logs(&self, ids: &[i64]) -> DomainResult<u64> {
+        if ids.is_empty() {
+            return Ok(0);
+        }
+        let conn = self.conn.lock().unwrap();
+        let mut total = 0u64;
+        for id in ids {
+            let n = conn
+                .execute(SQL_DELETE_LOG, params![id])
+                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
+            total += n as u64;
+        }
+        Ok(total)
+    }
+
     fn get_settings(&self) -> DomainResult<AppSettings> {
         let conn = self.conn.lock().unwrap();
         conn.query_row(
@@ -462,6 +503,8 @@ fn status_str(s: ExecutionStatus) -> &'static str {
         ExecutionStatus::Success => "success",
         ExecutionStatus::Failed => "failed",
         ExecutionStatus::Retrying => "retrying",
+        ExecutionStatus::Canceled => "canceled",
+        ExecutionStatus::Timeout => "timeout",
     }
 }
 
@@ -470,6 +513,8 @@ fn parse_status(s: &str) -> ExecutionStatus {
         "success" => ExecutionStatus::Success,
         "failed" => ExecutionStatus::Failed,
         "retrying" => ExecutionStatus::Retrying,
+        "canceled" | "cancelled" => ExecutionStatus::Canceled,
+        "timeout" => ExecutionStatus::Timeout,
         _ => ExecutionStatus::Running,
     }
 }

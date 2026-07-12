@@ -1,11 +1,12 @@
 use std::sync::{Arc, Mutex};
 
 use crate::app::{
-    AlarmService, Clock, ConfigBackup, NoopSleeper, ProcessOutput, ProcessRunner, Sleeper,
-    SystemClock,
+    AlarmService, CancelFlag, Clock, ConfigBackup, NoopSleeper, ProcessOutput, ProcessRunner,
+    Sleeper, SystemClock,
 };
 use crate::domain::{
-    Alarm, AlarmDraft, AppSettings, DomainResult, LogFilter, RetryPolicy, ScheduleSpec,
+    Alarm, AlarmDraft, AppSettings, DomainResult, ExecutionStatus, LogFilter, RetryPolicy,
+    ScheduleSpec,
 };
 use crate::infra::SqliteStore;
 
@@ -19,6 +20,9 @@ impl ProcessRunner for FakeRunner {
         _binary: &str,
         _args: &[String],
         _env: &[(String, String)],
+        _timeout_secs: u32,
+        _cancel: Option<Arc<CancelFlag>>,
+        _on_chunk: Option<&crate::app::OutputChunkFn>,
     ) -> DomainResult<ProcessOutput> {
         let mut g = self.results.lock().unwrap();
         if g.is_empty() {
@@ -27,6 +31,8 @@ impl ProcessRunner for FakeRunner {
                 stdout: "ok".into(),
                 stderr: String::new(),
                 duration_ms: 1,
+                canceled: false,
+                timed_out: false,
             })
         } else {
             Ok(g.remove(0))
@@ -93,6 +99,7 @@ fn draft() -> AlarmDraft {
         args: vec!["hi".into()],
         env_vars: vec![],
         retry: RetryPolicy::default(),
+        timeout_secs: 20,
     }
 }
 
@@ -112,13 +119,12 @@ fn run_success() {
         stdout: "hello".into(),
         stderr: String::new(),
         duration_ms: 3,
+        canceled: false,
+        timed_out: false,
     }]);
     let a = svc.create_alarm(draft()).unwrap();
     let log = svc.run_alarm_once(&a.id).unwrap();
-    assert!(matches!(
-        log.status,
-        crate::domain::ExecutionStatus::Success
-    ));
+    assert!(matches!(log.status, ExecutionStatus::Success));
     assert_eq!(log.stdout, "hello");
 }
 
@@ -129,6 +135,8 @@ fn run_retries_then_fails_and_sleeps() {
         stdout: String::new(),
         stderr: "boom".into(),
         duration_ms: 1,
+        canceled: false,
+        timed_out: false,
     };
     let store = Arc::new(SqliteStore::open_in_memory().unwrap());
     let runner = Arc::new(FakeRunner {
@@ -142,10 +150,72 @@ fn run_retries_then_fails_and_sleeps() {
     let svc = AlarmService::new(store, runner, clock, backup, sleeper.clone());
     let a = svc.create_alarm(draft()).unwrap();
     let log = svc.run_alarm_once(&a.id).unwrap();
-    assert!(matches!(log.status, crate::domain::ExecutionStatus::Failed));
+    assert!(matches!(log.status, ExecutionStatus::Failed));
     assert_eq!(log.retry_count, 2);
-    // two waits between 3 attempts
-    assert_eq!(sleeper.sleeps.lock().unwrap().as_slice(), &[120, 120]);
+    // two waits between 3 attempts; cooperative cancel polls 1s chunks
+    let sleeps = sleeper.sleeps.lock().unwrap().clone();
+    assert_eq!(sleeps.iter().sum::<u64>(), 240);
+    assert!(
+        sleeps.iter().all(|&s| s == 1),
+        "expected 1s cancelable slices, got {sleeps:?}"
+    );
+}
+
+#[test]
+fn timeout_does_not_retry() {
+    let timed = ProcessOutput {
+        exit_code: -1,
+        stdout: String::new(),
+        stderr: "timed out".into(),
+        duration_ms: 20_000,
+        canceled: false,
+        timed_out: true,
+    };
+    let svc = service_with(vec![timed]);
+    let a = svc.create_alarm(draft()).unwrap();
+    let log = svc.run_alarm_once(&a.id).unwrap();
+    assert!(matches!(log.status, ExecutionStatus::Timeout));
+    assert_eq!(log.retry_count, 0);
+}
+
+#[test]
+fn cancel_marks_canceled_status() {
+    let canceled = ProcessOutput {
+        exit_code: -1,
+        stdout: String::new(),
+        stderr: "canceled".into(),
+        duration_ms: 10,
+        canceled: true,
+        timed_out: false,
+    };
+    let svc = service_with(vec![canceled]);
+    let a = svc.create_alarm(draft()).unwrap();
+    let log = svc.run_alarm_once(&a.id).unwrap();
+    assert!(matches!(log.status, ExecutionStatus::Canceled));
+}
+
+#[test]
+fn delete_log_works() {
+    let svc = service_with(vec![ProcessOutput {
+        exit_code: 0,
+        stdout: "x".into(),
+        stderr: String::new(),
+        duration_ms: 1,
+        canceled: false,
+        timed_out: false,
+    }]);
+    let a = svc.create_alarm(draft()).unwrap();
+    let log = svc.run_alarm_once(&a.id).unwrap();
+    svc.delete_log(log.id).unwrap();
+    let logs = svc
+        .list_logs(LogFilter {
+            alarm_id: Some(a.id),
+            status: None,
+            query: None,
+            limit: 10,
+        })
+        .unwrap();
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -164,6 +234,8 @@ fn list_logs_filter() {
         stdout: "x".into(),
         stderr: String::new(),
         duration_ms: 1,
+        canceled: false,
+        timed_out: false,
     }]);
     let a = svc.create_alarm(draft()).unwrap();
     svc.run_alarm_once(&a.id).unwrap();

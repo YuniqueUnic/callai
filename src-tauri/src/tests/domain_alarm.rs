@@ -13,6 +13,7 @@ fn sample_draft() -> AlarmDraft {
         args: vec!["hi {{date}}".into()],
         env_vars: vec![],
         retry: RetryPolicy::default(),
+        timeout_secs: 20,
     }
 }
 

@@ -9,6 +9,7 @@ export function defaultDraft(): AlarmDraft {
     args: ["callai warmup {{date}}"],
     env_vars: [],
     retry: { interval: "2m", max_attempts: 3 },
+    timeout_secs: 20,
   };
 }
 
@@ -62,5 +63,7 @@ export function validateDraft(draft: AlarmDraft): string | null {
   if (draft.schedule.mode === "cron" && !draft.schedule.expression.trim()) {
     return "INVALID_CRON";
   }
+  const t = draft.timeout_secs ?? 20;
+  if (!Number.isFinite(t) || t < 1 || t > 3600) return "INVALID_ARGS";
   return null;
 }

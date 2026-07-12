@@ -267,6 +267,7 @@ impl ConfigBackup for TomlConfigBackup {
                     retry: RetryPolicy::new(
                         RetryInterval::parse(&a.retry_interval).unwrap_or_default(),
                     ),
+                    timeout_secs: 20,
                 }
             })
             .collect();

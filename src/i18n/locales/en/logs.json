@@ -11,5 +11,11 @@
   "stdout": "stdout",
   "stderr": "stderr",
   "command": "Command",
-  "exitCode": "Exit code"
+  "exitCode": "Exit code",
+  "delete": "Delete",
+  "deleteOneConfirm": "Delete this log entry?",
+  "deleteSuccess": "Log deleted.",
+  "deleteSelected": "Delete selected",
+  "canceled": "Canceled",
+  "timeout": "Timeout"
 }

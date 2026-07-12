@@ -1,8 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use crate::app::{
-    AlarmService, Clock, ConfigBackup, NoopSleeper, ProcessOutput, ProcessRunner, Sleeper,
-    SystemClock,
+    AlarmService, CancelFlag, Clock, ConfigBackup, NoopSleeper, ProcessOutput, ProcessRunner,
+    Sleeper, SystemClock,
 };
 use crate::domain::{Alarm, AlarmDraft, AppSettings, DomainResult, RetryPolicy, ScheduleSpec};
 use crate::infra::{AlarmScheduler, SqliteStore};
@@ -17,6 +17,9 @@ impl ProcessRunner for HangRunner {
         _binary: &str,
         _args: &[String],
         _env: &[(String, String)],
+        _timeout_secs: u32,
+        _cancel: Option<Arc<CancelFlag>>,
+        _on_chunk: Option<&crate::app::OutputChunkFn>,
     ) -> DomainResult<ProcessOutput> {
         *self.started.lock().unwrap() += 1;
         // Simulate a long-running task without sleeping minutes.
@@ -26,6 +29,8 @@ impl ProcessRunner for HangRunner {
             stdout: "ok".into(),
             stderr: String::new(),
             duration_ms: 80,
+            canceled: false,
+            timed_out: false,
         })
     }
 
@@ -84,6 +89,7 @@ fn enqueue_dedupes_while_running() {
             args: vec!["x".into()],
             env_vars: vec![],
             retry: RetryPolicy::default(),
+            timeout_secs: 20,
         })
         .unwrap();
 

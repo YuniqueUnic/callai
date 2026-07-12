@@ -27,6 +27,7 @@ import {
   IconPause,
   IconPlay,
   IconPlus,
+  IconStop,
   IconTrash,
 } from "../ui/icons";
 
@@ -43,7 +44,9 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
   const [nextMap, setNextMap] = useState<Record<string, string>>({});
   const [confirmRun, setConfirmRun] = useState<Alarm | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Alarm | null>(null);
+  const [confirmStop, setConfirmStop] = useState<Alarm | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [stoppingId, setStoppingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [tick, setTick] = useState(0);
 
@@ -119,6 +122,22 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
           key: "alarm-run",
           duration: 3.2,
         });
+      } else if (log.status === "canceled") {
+        toast.warning({
+          message: t("alarms:stopSuccess"),
+          key: "alarm-stop",
+          duration: 3.0,
+        });
+      } else if (log.status === "timeout") {
+        toast.warning({
+          message: t("alarms:ERR_EXECUTION_TIMEOUT"),
+          description: log.stderr || undefined,
+          btn: (
+            <Button size="small" onClick={() => onLogs(alarm.id)}>
+              {t("alarms:viewLogs")}
+            </Button>
+          ),
+        });
       } else {
         toast.warning({
           message: t("alarms:ERR_EXECUTION_FAILED"),
@@ -139,6 +158,32 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
       });
     } finally {
       setBusyId(null);
+      setStoppingId(null);
+    }
+  }
+
+  async function stopNow(alarm: Alarm) {
+    setConfirmStop(null);
+    setStoppingId(alarm.id);
+    try {
+      const ok = await client.cancelAlarmRun(alarm.id);
+      if (!ok) {
+        toast.warning({ message: t("alarms:stopMiss"), duration: 2.6 });
+        setStoppingId(null);
+        return;
+      }
+      toast.success({
+        message: t("alarms:stopRequested"),
+        key: "alarm-stop-req",
+        duration: 2.4,
+      });
+      // keep busy/running UI until backend finishes; poll will clear lifecycle
+    } catch (err) {
+      setStoppingId(null);
+      toast.error({
+        message: t("alarms:ERR_INTERNAL"),
+        description: String((err as { message?: string })?.message ?? err),
+      });
     }
   }
 
@@ -356,18 +401,28 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                       disabled={running || deleting || busyId === alarm.id}
                       onClick={() => setConfirmDelete(alarm)}
                     />
-                    <IconButton
-                      label={
-                        busyId === alarm.id
-                          ? t("alarms:running")
-                          : t("alarms:runNow")
-                      }
-                      icon={<IconBolt size={16} />}
-                      variant="primary"
-                      loading={busyId === alarm.id}
-                      disabled={running || busyId === alarm.id || !!busyId}
-                      onClick={() => setConfirmRun(alarm)}
-                    />
+                    {running || busyId === alarm.id ? (
+                      <IconButton
+                        label={
+                          stoppingId === alarm.id
+                            ? t("alarms:stopping")
+                            : t("alarms:stop")
+                        }
+                        icon={<IconStop size={16} />}
+                        variant="danger"
+                        loading={stoppingId === alarm.id}
+                        disabled={stoppingId === alarm.id}
+                        onClick={() => setConfirmStop(alarm)}
+                      />
+                    ) : (
+                      <IconButton
+                        label={t("alarms:runNow")}
+                        icon={<IconBolt size={16} />}
+                        variant="primary"
+                        disabled={!!busyId}
+                        onClick={() => setConfirmRun(alarm)}
+                      />
+                    )}
                   </div>
                 </article>
               );
@@ -402,6 +457,26 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
         }}
       >
         {t("alarms:runConfirm")}
+      </Modal>
+
+
+      <Modal
+        open={!!confirmStop}
+        title={t("alarms:stop")}
+        typewriter={false}
+        onClose={() => {
+          if (!stoppingId) setConfirmStop(null);
+        }}
+        onOk={() => {
+          if (confirmStop && !stoppingId) void stopNow(confirmStop);
+        }}
+      >
+        {t("alarms:stopConfirm")}
+        {confirmStop ? (
+          <div className="meta" style={{ marginTop: 8 }}>
+            {confirmStop.name}
+          </div>
+        ) : null}
       </Modal>
 
       <Modal

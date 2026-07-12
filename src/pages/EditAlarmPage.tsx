@@ -53,6 +53,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           args: a.args,
           env_vars: a.env_vars,
           retry: a.retry,
+          timeout_secs: a.timeout_secs ?? 20,
         };
         setDraft(d);
         setArgsText(a.args.join("\n"));
@@ -350,23 +351,31 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
             answer={
               <div>
                 {draft.env_vars.map((env, idx) => (
-                  <div className="row" key={`${env.key}-${idx}`} style={{ marginBottom: 8 }}>
+                  <div className="row" key={`env-row-${idx}`} style={{ marginBottom: 8 }}>
                     <Input
                       value={env.key}
                       placeholder="KEY"
                       onChange={(e) => {
-                        const env_vars = [...draft.env_vars];
-                        env_vars[idx] = { ...env_vars[idx], key: e.target.value };
-                        setDraft((d) => ({ ...d, env_vars }));
+                        const key = e.target.value;
+                        setDraft((d) => {
+                          const env_vars = d.env_vars.map((row, i) =>
+                            i === idx ? { ...row, key } : row,
+                          );
+                          return { ...d, env_vars };
+                        });
                       }}
                     />
                     <Input
                       value={env.value}
                       placeholder="value"
                       onChange={(e) => {
-                        const env_vars = [...draft.env_vars];
-                        env_vars[idx] = { ...env_vars[idx], value: e.target.value };
-                        setDraft((d) => ({ ...d, env_vars }));
+                        const value = e.target.value;
+                        setDraft((d) => {
+                          const env_vars = d.env_vars.map((row, i) =>
+                            i === idx ? { ...row, value } : row,
+                          );
+                          return { ...d, env_vars };
+                        });
                       }}
                     />
                     <IconButton
@@ -397,7 +406,42 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           />
         </Card>
 
+        
         <Card color="default" className="form-panel">
+          <div className="field">
+            <label className="label">{t("alarms:timeout")}</label>
+            <div className="segmented" style={{ flexWrap: "wrap" }}>
+              {[5, 10, 20, 30, 60, 120, 300].map((secs) => (
+                <button
+                  key={secs}
+                  type="button"
+                  className={draft.timeout_secs === secs ? "active" : ""}
+                  onClick={() => setDraft((d) => ({ ...d, timeout_secs: secs }))}
+                >
+                  {secs}
+                  {t("alarms:timeoutUnit")}
+                </button>
+              ))}
+            </div>
+            <div className="row" style={{ marginTop: 8, gap: 8, alignItems: "center" }}>
+              <Input
+                type="number"
+                min={1}
+                max={3600}
+                value={String(draft.timeout_secs ?? 20)}
+                onChange={(e) => {
+                  const n = Math.max(1, Math.min(3600, Number(e.target.value) || 20));
+                  setDraft((d) => ({ ...d, timeout_secs: n }));
+                }}
+                style={{ width: 120 }}
+              />
+              <span className="meta">{t("alarms:timeoutUnit")}</span>
+            </div>
+            <div className="hint">{t("alarms:timeoutHint")}</div>
+          </div>
+        </Card>
+
+<Card color="default" className="form-panel">
           <div className="field">
             <label className="label">{t("alarms:retry")}</label>
             <div className="segmented">

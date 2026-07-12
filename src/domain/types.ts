@@ -32,6 +32,7 @@ export interface Alarm {
   args: string[];
   env_vars: EnvVar[];
   retry: RetryPolicy;
+  timeout_secs: number;
   lifecycle: AlarmLifecycle | { Retrying: { attempt: number } } | string;
   created_at: string;
   updated_at: string;
@@ -45,9 +46,10 @@ export interface AlarmDraft {
   args: string[];
   env_vars: EnvVar[];
   retry: RetryPolicy;
+  timeout_secs: number;
 }
 
-export type ExecutionStatus = "running" | "success" | "failed" | "retrying";
+export type ExecutionStatus = "running" | "success" | "failed" | "retrying" | "canceled" | "timeout";
 
 export interface ExecutionLog {
   id: number;

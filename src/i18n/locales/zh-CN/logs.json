@@ -11,5 +11,11 @@
   "stdout": "标准输出",
   "stderr": "错误输出",
   "command": "完整命令",
-  "exitCode": "退出码"
+  "exitCode": "退出码",
+  "delete": "删除",
+  "deleteOneConfirm": "删除这条日志吗？",
+  "deleteSuccess": "日志已删除～",
+  "deleteSelected": "删除所选",
+  "canceled": "已取消",
+  "timeout": "超时"
 }
