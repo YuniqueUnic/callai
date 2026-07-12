@@ -489,11 +489,28 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ### 修复
 
 1. **墙钟求值**：`next_trigger_after_in_tz` 把目标时区的 civil time 当作 pseudo-UTC 喂给 cron，再映射回真实 `Tz`。  
-2. **设置 `timezone`**：`system`（`iana-time-zone` 检测）或 IANA 名；UI 用 `TimezonePicker`（与 TimePicker 同交互），不是 segmented 长列表。  
-3. **调度扩展**：`daily` / `weekly` / `monthly` / `cron`；weekly=星期几+时间，monthly=日期+时间；cron 仍为完整 5/6 字段（经 `cron` crate）。
+2. **设置 `timezone`**：`system`（`iana-time-zone` 检测）或 IANA 名。  
+3. **TimezonePicker 浮层**（非 segmented）：触发器显示「跟随系统 · Asia/Shanghai」或 IANA；portal 滚轮列表 + 确认——与 TimePicker/DurationPicker **同一控件家族**（详见 record 05 附录 B）。  
+4. **调度扩展**：`daily` / `weekly` / `monthly` / `cron`；weekly=星期几(0=Sun..6=Sat)+时间，monthly=日期+时间；cron 完整 5/6 字段（`cron` crate；注意 DOW 数字与 UI 约定的映射要测）。  
+
+### 需求为何出现「21:00」
+
+用户配置的是 **本地生活时间**（上下班/额度窗口），不是 UTC 运维 cron。  
+库默认 UTC 字段会在 UTC+8 固定 **+8 小时** 偏移——这是典型的「能跑但不对」bug，必须用 **墙钟时区** 验收，不能只看 exit code。
+
+### 给 agent 的短提示
+
+```markdown
+Schedule times are wall-clock in settings.timezone (system|IANA).
+Never evaluate daily hour fields as UTC.
+UI timezone control = picker portal, not segmented chips.
+Extend schedule modes: daily|weekly|monthly|cron (cron full-featured).
+Test: Asia/Shanghai daily 08,13,18 → after 12:00 next is 13:00 local, not 21:00.
+```
 
 ### 验收
 
 - 上海时区、每天 08/13/18：中午过后下次必为 **13:00**（不是 21:00）。  
-- 设置里改 `America/New_York` 后 next 标签随之变化。  
-- 每周一 09:00：周日之后 next 落在周一 09:00。
+- 设置里 TimezonePicker 改 `America/New_York` 后 next 标签随之变化。  
+- 每周一 09:00：周日之后 next 落在周一 09:00。  
+- 编辑页顶栏 floating overlay + 透明（record 05 附录 B）；海浪无缝（record 04 附录 B）。

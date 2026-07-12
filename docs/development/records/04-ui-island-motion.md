@@ -149,3 +149,117 @@ list < sea layers < floating tabs < FAB < modal < toast < drawer
 ## 9. 关键
 
 `src/pages/*` · animal-island-ui docs · `usecases/basic.md`
+
+---
+
+## 附录 B · 海浪无缝滚动与缓动速度包络（2026-07 续）
+
+> 证据代码：`src/ui/SeaMarquee.tsx` · `src/theme/global.css`（`.app-footer-band` / `.sea-layer-*`）  
+> 相关口语：`TODO` / 会话 —「海浪没动 / 方向反 / 远近景 / 接缝空隙 / 宽屏右侧缺口 / 远景一条一条隔 400px / 要 bezier 时缓时急」
+
+### B.1 思想：氛围层是**连续材质**，不是装饰碎片
+
+海浪属于 **ambient layer**（氛围层）：
+
+- **职责**：品牌情绪、深度（近/远）、与列表叠盖（scroll-under / overlay）  
+- **非职责**：承载点击、表达业务状态（running 由鸟 motion / Tag 负责）
+
+用户骂「一条一条 SVG」时，本质不是画得丑，而是 **平铺契约破了**：
+
+> 无缝滚动 =「可平铺素材 + 边对边邻接 + 按单瓦片宽度取模」三件套。  
+> 少一件就会出现缝、空带、宽屏露白。
+
+### B.2 原始 prompt 拆解（为什么好）
+
+| 用户说法 | 可执行信息 | 若只说「好看一点」会丢什么 |
+| --- | --- | --- |
+| 远景隔了约 400px | **量级线索**（tile 宽度/份数问题） | 只会乱加 opacity |
+| 前景 1400px 宽后右侧缺口 | **视口依赖** → copies 必须随 `innerWidth` | 固定 3 张永远不够 |
+| 远景用前景同款无缝 | **算法统一** 近/远同一 tiling 模型 | 远景另写一套容易再裂 |
+| 时缓时急 + 贝塞尔 | **速度包络**，不是匀速 `px/s` | 只会改 base speed 常数 |
+| `#root > … > .app-footer-band` | **真实 DOM 路径**（查透明底、裁剪） | 改错容器 |
+
+**好 prompt 结构（提炼）：**
+
+```text
+1) 现象 + 视口条件（宽屏/远景）
+2) 对比「谁是对的」（前景够长 / 远景不够）
+3) 约束：同算法、无缝、曲线变速
+4) 可选：DevTools 选择器
+```
+
+### B.3 为什么会有这些需求
+
+1. **动森气质**：静止 footer 像 PPT；连续海浪像「岛还活着」。  
+2. **信息密度**：列表要滚到底，海浪必须 **overlay** 而不是占文档流推高空白。  
+3. **双层深度**：远景更淡、更高、反向漂，近景带船——没有无缝远景会「穿帮成贴纸」。  
+4. **性能与可维护**：CSS `animation` 难做非匀速包络；`rAF` + 取模更可控。
+
+### B.4 功能拆解
+
+| 模块 | 职责 |
+| --- | --- |
+| `tileW = tileH × (1440/186)` | 保持 SVG 宽高比；**禁止**横向单独 stretch |
+| `copies = ceil(viewportW / tileW) + 2` | 覆盖视口 + wrap 余量；resize 重算 |
+| `x = modular(-tileW, 0]` | 无缝循环（瓦片边对齐时） |
+| `seaSpeedPxPerSec` + cubic-bezier 包络 | 时缓时急；近/远 `phase` 错开 |
+| `.sea-layer-far/near` | 仅高度/透明度/滤镜/底边偏移不同 |
+
+### B.5 真实偏差链（教学重点）
+
+| 次序 | 错误尝试 | 为何糟 | 纠偏 |
+| --- | --- | --- | --- |
+| 1 | 远景 `widthScale=1.35` 拉长 | **破坏可平铺接缝** → 条带间隔 | 取消非等比缩放 |
+| 2 | 固定 3～5 张 copy | 宽屏覆盖不足 | 视口驱动 copies |
+| 3 | 远景 `left:-18%` 硬 bleed | 像补丁，仍可能裁切 | 与近景同「全宽 + 动态份数」 |
+| 4 | 匀速 `speed` 常数 | 机械传送带 | bezier 分段包络 + 次级 ripple |
+| 5 | 只改 CSS animation | 难做变速与双层相位 | `requestAnimationFrame` |
+
+**用户验收句（最终）：**「现在没问题了」——远近都无缝，宽屏不露缺口。
+
+### B.6 给 AI agent 的提示模板（海浪 / 无缝条带）
+
+```markdown
+## Goal
+Seamless dual-layer sea marquee at app footer.
+
+## Hard rules
+1. Tile width MUST preserve SVG aspect ratio (no non-uniform widthScale).
+2. copies = ceil(viewportWidth / tileWidth) + 2; recompute on resize.
+3. Scroll with rAF; wrap x into (-tileWidth, 0] (one-tile modular).
+4. Near/far share the same tiling algorithm; only height/opacity/filter/y-offset differ.
+5. Speed uses cubic-bezier envelopes (calm→push→settle), phase-shift layers.
+6. Footer band: fixed bottom, transparent, pointer-events: none; list has padding-bottom.
+
+## Anti-patterns
+- Stretching tiles horizontally to "look longer"
+- Fixed copy count (3) on desktop 1400px+
+- Separate far/near scroll math
+
+## Verify
+- Far layer has no 300–400px empty gaps between tiles
+- At width≥1400, scroll 30s without right-side hole
+- prefers-reduced-motion: static ok
+```
+
+### B.7 专业描述词汇（给产品/设计同步）
+
+见会话约定，可在评审里直接用：
+
+- **seamless infinite strip / modular marquee**  
+- **ambient overlay**（氛围叠层）  
+- **content scrolls underneath**（内容从装饰下穿过）  
+- **speed envelope / easing profile**（速度包络）  
+
+### B.8 验收清单（海浪）
+
+- [ ] 远景连续，无「一条一条」空带  
+- [ ] 近景宽屏长时间滚动无右侧缺口  
+- [ ] 近/远反向 + 相位不同，但都无缝  
+- [ ] footer 透明、不挡卡片点击（`pointer-events: none`）  
+- [ ] reduce-motion 可静止  
+
+### B.9 关键
+
+`src/ui/SeaMarquee.tsx` · `.app-footer-band` · `public/brand/footer-sea.svg`
+
