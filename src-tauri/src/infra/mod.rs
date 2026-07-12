@@ -1,5 +1,6 @@
 pub mod autostart;
 pub mod backup;
+pub mod builtin_alarm;
 pub mod paths;
 pub mod process;
 pub mod scheduler;

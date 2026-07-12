@@ -21,6 +21,7 @@ tauri = { version = "2", default-features = false, features = [
   "wry",
   "tray-icon",
   "image-png",
+  "macos-private-api",
 ] }
 tauri-plugin-dialog = { version = "2" }
 tauri-plugin-notification = { version = "2", default-features = false }

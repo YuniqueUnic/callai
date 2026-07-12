@@ -30,5 +30,12 @@
   "windowMinimize": "Minimize",
   "windowMaximize": "Maximize",
   "windowRestore": "Restore",
-  "windowClose": "Close"
+  "windowClose": "Close",
+  "windowExtras": "Window extras",
+  "windowPin": "Pin on top",
+  "windowUnpin": "Unpin",
+  "windowFullscreen": "Fullscreen",
+  "windowExitFullscreen": "Exit fullscreen",
+  "windowPinnedBadge": "Pinned",
+  "windowFullscreenBadge": "Fullscreen"
 }

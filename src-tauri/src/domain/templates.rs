@@ -1,4 +1,6 @@
-use super::{AlarmDraft, RetryPolicy, ScheduleSpec};
+use super::{
+    AlarmDraft, RetryPolicy, ScheduleSpec, BUILTIN_ALARM_BINARY, DEFAULT_TIMEOUT_SECS,
+};
 
 /// Built-in task templates for quick fill.
 pub struct TaskTemplate {
@@ -10,6 +12,14 @@ pub struct TaskTemplate {
 }
 
 pub const TEMPLATES: &[TaskTemplate] = &[
+    TaskTemplate {
+        id: "cozy_alarm",
+        name_zh: "小闹钟提醒",
+        name_en: "Cozy alarm clock",
+        // Portable built-in — same config on macOS/Windows/Linux.
+        binary: BUILTIN_ALARM_BINARY,
+        args: &["叮咚～闹钟响啦！现在是 callai 小闹钟提醒你一下。", "callai 小闹钟"],
+    },
     TaskTemplate {
         id: "codex_hi",
         name_zh: "Codex 轻量占位",
@@ -49,7 +59,28 @@ pub const TEMPLATES: &[TaskTemplate] = &[
     },
 ];
 
+fn cozy_alarm_draft() -> AlarmDraft {
+    AlarmDraft {
+        name: "小闹钟提醒".into(),
+        enabled: true,
+        schedule: ScheduleSpec::Daily {
+            times: vec!["07:30".into(), "12:00".into(), "21:00".into()],
+        },
+        binary: BUILTIN_ALARM_BINARY.into(),
+        args: vec![
+            "叮咚～闹钟响啦！现在是 callai 小闹钟提醒你一下。".into(),
+            "callai 小闹钟".into(),
+        ],
+        env_vars: vec![],
+        retry: RetryPolicy::default(),
+        timeout_secs: 120,
+    }
+}
+
 pub fn draft_from_template(template_id: &str) -> Option<AlarmDraft> {
+    if template_id == "cozy_alarm" {
+        return Some(cozy_alarm_draft());
+    }
     let t = TEMPLATES.iter().find(|x| x.id == template_id)?;
     Some(AlarmDraft {
         name: t.name_zh.to_string(),
@@ -61,7 +92,7 @@ pub fn draft_from_template(template_id: &str) -> Option<AlarmDraft> {
         args: t.args.iter().map(|s| (*s).to_string()).collect(),
         env_vars: vec![],
         retry: RetryPolicy::default(),
-        timeout_secs: super::DEFAULT_TIMEOUT_SECS,
+        timeout_secs: DEFAULT_TIMEOUT_SECS,
     })
 }
 

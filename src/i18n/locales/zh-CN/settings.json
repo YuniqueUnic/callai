@@ -45,5 +45,17 @@
   "autostartFail": "设置失败",
   "aboutSection": "关于",
   "appVersion": "v{{version}}",
-  "cliVersionHint": "callai --version"
+  "cliVersionHint": "callai --version",
+  "aboutAuthor": "作者",
+  "aboutAuthorName": "unic",
+  "aboutGithub": "GitHub",
+  "aboutGithubRepo": "YuniqueUnic/callai",
+  "aboutHomepage": "项目主页",
+  "aboutIssues": "问题反馈",
+  "aboutLicense": "许可证",
+  "aboutLicenseValue": "MIT",
+  "openLinkFail": "无法打开链接",
+  "updateConfirmTitle": "安装更新？",
+  "updateConfirmBody": "发现新版本 v{{version}}，现在下载并安装吗？",
+  "updateNoPending": "请先检查更新"
 }

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
+import { playTick, unlockAudio } from "./sounds";
 
 interface Props {
   /** IANA name, or "system" */
@@ -190,7 +191,10 @@ export function TimezonePicker({ value, detected, onChange }: Props) {
             items={items}
             value={draft}
             label={t("settings:timezone")}
-            onChange={setDraft}
+            onChange={(z) => {
+              setDraft(z);
+              playTick();
+            }}
           />
         </div>
         <div className="time-picker-actions">
@@ -218,7 +222,10 @@ export function TimezonePicker({ value, detected, onChange }: Props) {
           ref={triggerRef}
           type="button"
           className="time-picker-trigger timezone-picker-trigger"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            void unlockAudio();
+            setOpen((v) => !v);
+          }}
           aria-expanded={open}
         >
           <span className="time-picker-value timezone-picker-value">{display}</span>

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Cursor, Drawer, Tabs } from "animal-island-ui";
 import type { PageId } from "./domain/types";
-import { client } from "./infra/client";
 import { onNavigate } from "./infra/events";
 import { HomePage } from "./pages/HomePage";
 import { EditAlarmPage } from "./pages/EditAlarmPage";
@@ -13,6 +12,9 @@ import { SeaMarquee } from "./ui/SeaMarquee";
 import { TitleBar } from "./ui/TitleBar";
 import { warmToast } from "./ui/toast";
 import { setSoundEnabled, unlockAudio } from "./ui/sounds";
+import { ensureDetectedTimezone } from "./infra/timezoneCache";
+import { getSettingsCached, warmSettingsSecondary } from "./infra/settingsCache";
+import { invalidateAlarmsCache, warmAlarmsCache } from "./infra/alarmsCache";
 
 export default function App() {
   const { t, i18n } = useTranslation(["common", "alarms", "logs"]);
@@ -24,12 +26,17 @@ export default function App() {
   useEffect(() => {
     warmToast();
     applyTheme(readStoredTheme());
-    void client.getSettings().then((s) => {
+    // Warm timezone cache off the critical path (Settings reads cache only).
+    void ensureDetectedTimezone();
+    void warmAlarmsCache();
+    void getSettingsCached().then((s) => {
       applyTheme(s.theme);
       setSoundEnabled(s.sound_enabled !== false);
       if (s.locale && s.locale !== i18n.language) {
         void i18n.changeLanguage(s.locale);
       }
+      // Prefetch settings secondaries so first Settings open is warm.
+      warmSettingsSecondary();
     });
     const unlock = () => {
       void unlockAudio();
@@ -81,22 +88,13 @@ export default function App() {
     };
   }, []);
 
+  // Labels only — page trees stay mounted (Tabs remounts children every switch).
   const tabItems = useMemo(
     () => [
-      {
-        key: "home",
-        label: t("common:tabAlarms"),
-        children: (
-          <HomePage onCreate={onCreate} onEdit={onEdit} onLogs={openLogs} />
-        ),
-      },
-      {
-        key: "settings",
-        label: t("common:tabSettings"),
-        children: <SettingsPage onOpenLogs={() => openLogs(null)} />,
-      },
+      { key: "home", label: t("common:tabAlarms"), children: null },
+      { key: "settings", label: t("common:tabSettings"), children: null },
     ],
-    [t, onCreate, onEdit, openLogs],
+    [t],
   );
 
   const inTabs = page === "home" || page === "settings";
@@ -117,32 +115,65 @@ export default function App() {
         className={`app-shell has-titlebar ${inTabs ? "with-tabs" : "immersive-edit"} ${logsOpen ? "drawer-open" : ""}`}
       >
         <TitleBar />
-        {page === "edit" ? (
-          <EditAlarmPage
-            alarmId={editId}
-            onBack={() => setPage("home")}
-            onSaved={() => setPage("home")}
+        {/* Main shell always mounted — unmounting Home on edit was a 1–2s remount stall
+            (listAlarms + N×nextTrigger + SeaMarquee restart). Edit overlays on top. */}
+        <div
+          className="app-body"
+          hidden={page === "edit"}
+          aria-hidden={page === "edit"}
+        >
+          <Tabs
+            className="main-tabs"
+            activeKey={tabKey}
+            onChange={(key) => {
+              if (key === "home" || key === "settings") setPage(key);
+            }}
+            leafAnimation={false}
+            shadow={false}
+            items={tabItems}
+            aria-label={t("common:appName")}
           />
-        ) : (
-          <>
-            <div className="app-body">
-              <Tabs
-                className="main-tabs"
-                activeKey={tabKey}
-                onChange={(key) => {
-                  if (key === "home" || key === "settings") setPage(key);
-                }}
-                leafAnimation
-                shadow={false}
-                items={tabItems}
-                aria-label={t("common:appName")}
+          <div className="tab-panes">
+            <div
+              className={`tab-pane ${tabKey === "home" ? "is-active" : ""}`}
+              hidden={tabKey !== "home"}
+              aria-hidden={tabKey !== "home"}
+            >
+              <HomePage
+                onCreate={onCreate}
+                onEdit={onEdit}
+                onLogs={openLogs}
               />
             </div>
-            <div className="app-footer-band" aria-hidden>
-              <SeaMarquee />
+            <div
+              className={`tab-pane ${tabKey === "settings" ? "is-active" : ""}`}
+              hidden={tabKey !== "settings"}
+              aria-hidden={tabKey !== "settings"}
+            >
+              <SettingsPage onOpenLogs={() => openLogs(null)} />
             </div>
-          </>
-        )}
+          </div>
+        </div>
+        <div
+          className="app-footer-band"
+          aria-hidden
+          hidden={page === "edit"}
+        >
+          <SeaMarquee />
+        </div>
+        {page === "edit" ? (
+          <div className="edit-overlay">
+            <EditAlarmPage
+              alarmId={editId}
+              onBack={() => setPage("home")}
+              onSaved={() => {
+                invalidateAlarmsCache();
+                window.dispatchEvent(new Event("callai:alarms-changed"));
+                setPage("home");
+              }}
+            />
+          </div>
+        ) : null}
 
         <Drawer
           open={logsOpen}

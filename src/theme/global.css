@@ -23,6 +23,7 @@
   --callai-header-gap: 12px;
   --callai-radius: 18px;
   --callai-content-max: 920px;
+  --callai-window-radius: 16px;
 }
 
 [data-theme="dark"] {
@@ -43,6 +44,7 @@
   --callai-fab: #3dcec0;
   --callai-fab-shadow: #0e6b62;
   --callai-focus: #ffd666;
+  --callai-window-radius: 16px;
 }
 
 /* Library buttons / inputs on dark: readable ink without washing primary teal */
@@ -120,12 +122,74 @@ body,
   overflow: hidden;
 }
 
+
+/* ── Window chrome: rounded undeco frame ── */
+html,
+body {
+  background: transparent !important;
+}
+
+html.tauri,
+body.tauri,
+body.tauri #root {
+  background: transparent !important;
+}
+
+#root {
+  background: transparent !important;
+  height: 100%;
+}
+
+/* Outer shell is the visible rounded window surface */
+.app-shell.has-titlebar {
+  border-radius: var(--callai-window-radius, 16px);
+  overflow: hidden;
+  background: var(--callai-bg);
+  border: 2px solid color-mix(in srgb, var(--callai-border) 75%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #000 8%, transparent),
+    0 18px 40px rgba(0, 0, 0, 0.22);
+  /* fill transparent window */
+  height: 100% !important;
+  max-height: 100dvh !important;
+  min-height: 100% !important;
+}
+
+/* When maximized, drop radius so edges meet monitors cleanly */
+.app-shell.has-titlebar.is-maximized {
+  border-radius: 0;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Titlebar follows top window corners */
+.app-shell.has-titlebar > .titlebar {
+  border-top-left-radius: calc(var(--callai-window-radius, 16px) - 2px);
+  border-top-right-radius: calc(var(--callai-window-radius, 16px) - 2px);
+  /* overlay HUD: no painted plate; radius only for hit-area alignment */
+}
+.app-shell.has-titlebar.is-maximized > .titlebar {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* Browser preview (no transparent host): keep soft radius for design parity */
+body:not(.tauri) .app-shell.has-titlebar {
+  border-radius: var(--callai-window-radius, 16px);
+}
+
+
+
 body {
   font-family: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
-  background: var(--callai-bg);
+  /* opaque page fill is on .app-shell only — keep host transparent for rounded window */
+  background: transparent;
   color: var(--callai-ink);
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+}
+body:not(.tauri) {
+  background: var(--callai-bg);
 }
 
 * {
@@ -167,6 +231,7 @@ body,
   max-height: 100dvh;
   min-height: 100%;
   overflow: hidden;
+  background: transparent;
 }
 
 /* animal Cursor may wrap children — force fill */
@@ -1522,9 +1587,11 @@ button.icon-btn {
 /* app-footer-band rules live with sea-marquee below */
 
 
-/* Sea overlays alarm list (fixed bottom, no solid band, no list cutoff) */
+/* Sea overlays alarm list at shell bottom.
+   IMPORTANT: use absolute (not fixed) so waves clip to rounded window corners.
+   fixed is viewport-relative and paints rectangular "ears" under transparent corners. */
 .app-footer-band {
-  position: fixed !important;
+  position: absolute !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
@@ -1533,7 +1600,7 @@ button.icon-btn {
   margin: 0 !important;
   padding: 0 !important;
   line-height: 0;
-  overflow: visible !important;
+  overflow: hidden !important; /* clip wave tiles to shell radius */
   pointer-events: none !important;
   z-index: 30 !important;
   flex: none !important;
@@ -1541,13 +1608,21 @@ button.icon-btn {
   background-color: transparent !important;
   box-shadow: none !important;
   border: none !important;
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+/* Shell must be positioning context for absolute sea */
+.app-shell,
+.app-shell.has-titlebar {
+  position: relative !important;
 }
 
 .sea-marquee {
   position: relative;
   width: 100%;
   height: 80px;
-  overflow: visible !important;
+  overflow: hidden !important;
   background: transparent !important;
   background-color: transparent !important;
   /* soft top fade so cards underneath remain readable */
@@ -2923,18 +2998,20 @@ body.callai-logs-open [class*="animal-body"] {
   opacity: 1;
 }
 
-/* Select trigger + popup list */
+/* Select trigger + popup list — dark surface tokens (refined in v2 block) */
 [data-theme="dark"] .edit-page [class*="animal-select"],
 [data-theme="dark"] .edit-page [class*="animal-Select"],
-[data-theme="dark"] .field-template [class*="animal-"] {
-  color: #1f1408 !important;
+[data-theme="dark"] .field-template [class*="animal-wrapper"],
+[data-theme="dark"] .field-template [class*="animal-trigger"],
+[data-theme="dark"] .field-template [class*="animal-value"] {
+  color: #fffaf0 !important;
 }
 
 [data-theme="dark"] [class*="animal-dropdown"],
 [data-theme="dark"] [class*="animal-dropdown"] *,
 [data-theme="dark"] [class*="animal-select-popup"],
 [data-theme="dark"] [class*="animal-option"] {
-  color: #1f1408 !important;
+  color: #f0e0c8 !important;
 }
 
 [data-theme="dark"] .edit-page .icon-btn,
@@ -2951,18 +3028,52 @@ body.callai-logs-open [class*="animal-body"] {
   color: #5c1a12 !important;
 }
 
-.env-row {
+/* ENV editor: desktop = KEY | value | trash (one row);
+   narrow = KEY full width, then value + trash (two rows) */
+.env-editor {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.env-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.9fr) minmax(0, 1.4fr) auto;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
+  margin-bottom: 0;
 }
-
 .env-row .env-input,
 .env-row [class*="animal-input"] {
-  flex: 1 1 120px;
+  width: 100%;
   min-width: 0;
+}
+.env-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+.env-add {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 2px;
+}
+@media (max-width: 520px) {
+  .env-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "key key"
+      "val act";
+  }
+  .env-row .env-key {
+    grid-area: key;
+  }
+  .env-row .env-value {
+    grid-area: val;
+  }
+  .env-row .env-actions {
+    grid-area: act;
+  }
 }
 
 /* Settings about / version badge */
@@ -2997,11 +3108,89 @@ body.callai-logs-open [class*="animal-body"] {
   color: var(--callai-ink-soft) !important;
 }
 
-/* Collapse / env section labels on dark */
-[data-theme="dark"] .edit-page [class*="animal-collapse"],
-[data-theme="dark"] .edit-page [class*="animal-Collapse"],
-[data-theme="dark"] .edit-page [class*="collapse"] {
+/* Collapse (ENV section): library uses warm FAQ tokens that wash out on dark cards.
+   Force high-contrast header text + readable open panel; keep inputs parchment. */
+[data-theme="dark"] .edit-page [class*="animal-faqCard"],
+[data-theme="dark"] .edit-page [class*="faqCard"] {
+  background: #1a2621 !important;
+  border-color: #6a7f74 !important;
   color: var(--callai-ink) !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-questionHeader"],
+[data-theme="dark"] .edit-page [class*="questionHeader"] {
+  color: var(--callai-ink) !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-questionText"],
+[data-theme="dark"] .edit-page [class*="questionText"] {
+  color: #fff6e8 !important;
+  -webkit-text-fill-color: #fff6e8 !important;
+  font-weight: 800 !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-questionIcon"],
+[data-theme="dark"] .edit-page [class*="questionIcon"] {
+  background: #5ee0d2 !important;
+  color: #042f2b !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-leafDecoration"],
+[data-theme="dark"] .edit-page [class*="leafDecoration"] {
+  color: #5ee0d2 !important;
+  opacity: 0.85 !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-answerContent"],
+[data-theme="dark"] .edit-page [class*="answerContent"],
+[data-theme="dark"] .edit-page [class*="animal-answerWrapper"],
+[data-theme="dark"] .edit-page [class*="answerWrapper"] {
+  color: var(--callai-ink-soft) !important;
+}
+/* ENV rows inside collapse stay high-contrast fields */
+[data-theme="dark"] .edit-page .env-editor,
+[data-theme="dark"] .edit-page .env-row {
+  color: var(--callai-ink) !important;
+}
+[data-theme="dark"] .edit-page .env-row .env-input,
+[data-theme="dark"] .edit-page .env-row input,
+[data-theme="dark"] .edit-page .env-row [class*="animal-input"] {
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+  background: #fff8ea !important;
+  border-color: #c4a574 !important;
+  caret-color: #1f1408 !important;
+}
+[data-theme="dark"] .edit-page .env-row input::placeholder {
+  color: #6b5640 !important;
+  -webkit-text-fill-color: #6b5640 !important;
+  opacity: 1 !important;
+}
+/* Delete / add icon buttons: light parchment plate + dark ink (not washed teal) */
+[data-theme="dark"] .edit-page .env-actions .icon-btn,
+[data-theme="dark"] .edit-page .env-add .icon-btn,
+[data-theme="dark"] .edit-page .env-row .icon-btn {
+  color: #2a1c0e !important;
+  background: #fff1d6 !important;
+  border-color: #d4b48a !important;
+}
+[data-theme="dark"] .edit-page .env-actions .icon-btn svg,
+[data-theme="dark"] .edit-page .env-add .icon-btn svg,
+[data-theme="dark"] .edit-page .env-row .icon-btn svg {
+  color: #2a1c0e !important;
+}
+[data-theme="dark"] .edit-page .env-actions .icon-btn[class*="danger"],
+[data-theme="dark"] .edit-page .env-row .icon-btn[class*="danger"] {
+  color: #5c1a12 !important;
+  background: #ffd4c8 !important;
+  border-color: #e08a72 !important;
+}
+[data-theme="dark"] .edit-page .env-actions .icon-btn[class*="danger"] svg,
+[data-theme="dark"] .edit-page .env-row .icon-btn[class*="danger"] svg {
+  color: #5c1a12 !important;
+}
+
+/* light mode: make sure ENV collapse title is brown on parchment (library default) */
+[data-theme="light"] .edit-page [class*="animal-questionText"],
+:root:not([data-theme="dark"]) .edit-page [class*="animal-questionText"] {
+  color: #5a3d1e;
+  font-weight: 700;
 }
 
 
@@ -3074,73 +3263,111 @@ body.callai-logs-open [class*="animal-body"] {
   color: #5a3d1e !important;
 }
 
-/* Logs Drawer panel (same parchment language) */
-[data-theme="dark"] [class*="animal-panel"] {
-  background: #f7f3df !important;
-  color: #5a3d1e !important;
+/* Logs Drawer: follow app theme (dark = dark surface, not forced warm parchment) */
+[data-theme="dark"] [class*="animal-panel"],
+[data-theme="dark"] body.callai-logs-open [class*="animal-panel"] {
+  background: var(--callai-surface) !important; /* #24332c */
+  color: var(--callai-ink) !important; /* #fff6e8 */
+  border-color: var(--callai-border) !important;
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.45) !important;
 }
 [data-theme="dark"] [class*="animal-panel"] [class*="animal-title"],
-[data-theme="dark"] [class*="animal-panel"] [class*="title"] {
-  color: #5a3d1e !important;
+[data-theme="dark"] [class*="animal-panel"] [class*="title"],
+[data-theme="dark"] body.callai-logs-open [class*="animal-header"] {
+  color: var(--callai-ink) !important;
 }
-[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] {
-  color: #6b5640 !important;
-}
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"],
 [data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] p,
-[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] span:not([class*="animal-tag"]),
 [data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] label,
 [data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] .meta,
-[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] .label {
-  color: #6b5640 !important;
-}
-[data-theme="dark"] [class*="animal-panel"] [class*="animal-close"] {
-  color: #725d42 !important;
-}
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] .label,
 [data-theme="dark"] [class*="animal-panel"] .meta,
 [data-theme="dark"] [class*="animal-panel"] .label,
-[data-theme="dark"] [class*="animal-panel"] .log-card,
-[data-theme="dark"] [class*="animal-panel"] .empty-state p {
-  color: #6b5640 !important;
+[data-theme="dark"] [class*="animal-panel"] .empty-state p,
+[data-theme="dark"] [class*="animal-panel"] .empty-state h2 {
+  color: var(--callai-ink-soft) !important;
 }
-/* log cards inside drawer keep readable parchment plate */
-[data-theme="dark"] [class*="animal-panel"] .log-card,
-[data-theme="dark"] [class*="animal-panel"] [class*="animal-card"] {
-  background: #fffaf0 !important;
-  border-color: #c4b89e !important;
-  color: #5a3d1e !important;
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-close"] {
+  color: var(--callai-ink-soft) !important;
 }
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-close"]:hover {
+  color: var(--callai-ink) !important;
+  background: rgba(255, 246, 232, 0.1) !important;
+}
+
+/* log cards on dark drawer */
+[data-theme="dark"] [class*="animal-panel"] .log-card,
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-card"],
+[data-theme="dark"] .logs-panel .log-card {
+  background: #1a2621 !important;
+  border-color: #6a7f74 !important;
+  color: var(--callai-ink) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] .log-card.success,
+[data-theme="dark"] .logs-panel .log-card.success {
+  border-color: color-mix(in srgb, var(--callai-success) 55%, #6a7f74) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] .log-card.failed,
+[data-theme="dark"] .logs-panel .log-card.failed {
+  border-color: color-mix(in srgb, var(--callai-danger) 55%, #6a7f74) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] .log-card .meta,
+[data-theme="dark"] .logs-panel .log-card .meta {
+  color: var(--callai-ink-soft) !important;
+}
+
+/* search input: high-contrast parchment field on dark drawer (same as edit env inputs) */
 [data-theme="dark"] [class*="animal-panel"] input,
-[data-theme="dark"] [class*="animal-panel"] [class*="animal-input"] {
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-input"],
+[data-theme="dark"] .logs-panel input,
+[data-theme="dark"] .logs-panel [class*="animal-input"] {
   color: #1f1408 !important;
   -webkit-text-fill-color: #1f1408 !important;
   background: #fff8ea !important;
   border-color: #c4a574 !important;
+  caret-color: #1f1408 !important;
+}
+[data-theme="dark"] [class*="animal-panel"] input::placeholder,
+[data-theme="dark"] .logs-panel input::placeholder {
+  color: #6b5640 !important;
+  -webkit-text-fill-color: #6b5640 !important;
 }
 
-/* Time / timezone / duration pickers (portaled or absolute) */
-[data-theme="dark"] .time-picker-popup,
-[data-theme="dark"] .time-picker-popup-portal,
-[data-theme="dark"] .timezone-picker-popup,
-[data-theme="dark"] [class*="time-picker-popup"] {
-  background: #f7f3df !important;
-  border-color: #c4b89e !important;
-  color: #5a3d1e !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
+/* segmented filter in logs drawer */
+[data-theme="dark"] .logs-panel .segmented,
+[data-theme="dark"] [class*="animal-panel"] .segmented {
+  background: #1a2621 !important;
+  border-color: #6a7f74 !important;
 }
-[data-theme="dark"] .time-picker-popup *,
-[data-theme="dark"] .time-picker-popup-portal *,
-[data-theme="dark"] .timezone-picker-popup *,
-[data-theme="dark"] .duration-presets button {
-  color: #5a3d1e !important;
+[data-theme="dark"] .logs-panel .segmented button,
+[data-theme="dark"] [class*="animal-panel"] .segmented button {
+  color: var(--callai-ink-soft) !important;
 }
-[data-theme="dark"] .duration-presets button {
-  background: #fff8ea !important;
-  border-color: #c4b89e !important;
+[data-theme="dark"] .logs-panel .segmented button.active,
+[data-theme="dark"] [class*="animal-panel"] .segmented button.active {
+  background: #5ee0d2 !important;
+  color: #042f2b !important;
+  border-color: #3bb8ab !important;
 }
-[data-theme="dark"] .duration-presets button.active {
-  background: #8fbf9f !important;
-  border-color: #5f8f72 !important;
-  color: #1f3d2a !important;
+
+/* icon buttons inside dark drawer */
+[data-theme="dark"] [class*="animal-panel"] .icon-btn,
+[data-theme="dark"] .logs-panel .icon-btn {
+  color: #2a1c0e !important;
+}
+[data-theme="dark"] [class*="animal-panel"] .icon-btn svg,
+[data-theme="dark"] .logs-panel .icon-btn svg {
+  color: inherit !important;
+}
+
+/* tags in dark drawer: filled chips with dark ink (same as alarm cards) */
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-tag"],
+[data-theme="dark"] .logs-panel [class*="animal-tag"] {
+  background: #fff1d6 !important;
+  border-color: #d4b48a !important;
+  color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
+  font-weight: 800 !important;
 }
 
 /* Portaled tooltips: stay parchment + dark ink */
@@ -3150,27 +3377,138 @@ body.callai-logs-open [class*="animal-body"] {
   color: #5a3d1e !important;
 }
 
-/* Select / dropdown popups: parchment plate + dark ink (already partially set) */
+/* Select / dropdown popups: dark plate + cream ink */
 [data-theme="dark"] [class*="animal-dropdown"],
 [data-theme="dark"] [class*="animal-select-popup"] {
-  background: #f7f3df !important;
-  border-color: #c4b89e !important;
-  color: #1f1408 !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4) !important;
+  background: #101814 !important;
+  border-color: #b7d0c4 !important;
+  color: #fffaf0 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
 }
 
-/* Tags on dark page cards: keep readable (library default brown on soft chip) */
-[data-theme="dark"] [class*="animal-tag"],
-[data-theme="dark"] [class*="animal-Tag"] {
+/* Tags on dark page cards: soft filled chips (never pale outline-on-dark) */
+[data-theme="dark"] .alarm-card [class*="animal-tag"],
+[data-theme="dark"] .log-card [class*="animal-tag"],
+[data-theme="dark"] .settings-card [class*="animal-tag"],
+[data-theme="dark"] .form-panel [class*="animal-tag"],
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-tag"] {
+  font-weight: 800 !important;
+  border-width: 1.5px !important;
+  /* default filled parchment chip */
+  background: #fff1d6 !important;
+  border-color: #d4b48a !important;
   color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
 }
 
-/* Collapse answer area on edit (env vars) */
-[data-theme="dark"] [class*="animal-collapse"] [class*="answer"],
-[data-theme="dark"] [class*="animal-Collapse"] [class*="answer"],
-[data-theme="dark"] .edit-page [class*="collapse"] {
+/* color-coded solids stay vivid but force dark ink for yellow/teal pastels */
+[data-theme="dark"] .alarm-card [class*="app-yellow"],
+[data-theme="dark"] .alarm-card [class*="animal-color-app-yellow"] {
+  background: #f7cd67 !important;
+  border-color: #e0b020 !important;
+  color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
+}
+[data-theme="dark"] .alarm-card [class*="app-teal"],
+[data-theme="dark"] .alarm-card [class*="animal-color-app-teal"] {
+  background: #82d5bb !important;
+  border-color: #3a9f86 !important;
+  color: #14352c !important;
+  -webkit-text-fill-color: #14352c !important;
+}
+[data-theme="dark"] .alarm-card [class*="app-orange"],
+[data-theme="dark"] .alarm-card [class*="animal-color-app-orange"] {
+  background: #e59266 !important;
+  border-color: #c46a3e !important;
+  color: #2a1408 !important;
+  -webkit-text-fill-color: #2a1408 !important;
+}
+[data-theme="dark"] .alarm-card [class*="app-blue"],
+[data-theme="dark"] .alarm-card [class*="animal-color-app-blue"] {
+  background: #889df0 !important;
+  border-color: #5a6fd0 !important;
+  color: #0f1638 !important;
+  -webkit-text-fill-color: #0f1638 !important;
+}
+[data-theme="dark"] .alarm-card [class*="purple"],
+[data-theme="dark"] .alarm-card [class*="animal-color-purple"] {
+  background: #b77dee !important;
+  border-color: #8a4fc4 !important;
+  color: #1a0a2a !important;
+  -webkit-text-fill-color: #1a0a2a !important;
+}
+[data-theme="dark"] .alarm-card [class*="brown"],
+[data-theme="dark"] .alarm-card [class*="animal-color-brown"] {
+  background: #c4a574 !important;
+  border-color: #8a6a3e !important;
+  color: #2a1c0e !important;
+  -webkit-text-fill-color: #2a1c0e !important;
+}
+
+/* Alarm card dark surface hierarchy */
+[data-theme="dark"] .alarm-card,
+[data-theme="dark"] .alarm-card[class*="animal-"] {
+  background: #24332c !important;
+  border-color: #8a9e93 !important;
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .alarm-card h3,
+[data-theme="dark"] .alarm-card .alarm-next-when,
+[data-theme="dark"] .alarm-card .alarm-next strong {
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .alarm-card .alarm-next-label {
+  color: #e2d0b4 !important;
+}
+[data-theme="dark"] .alarm-card .alarm-next-remain {
+  color: #5ee0d2 !important;
+}
+[data-theme="dark"] .alarm-card.paused {
+  opacity: 0.88;
+  filter: grayscale(0.08) brightness(0.96);
+}
+[data-theme="dark"] .alarm-card.is-running,
+[data-theme="dark"] .alarm-card.is-busy {
+  border-color: color-mix(in srgb, #5ee0d2 55%, #8a9e93) !important;
+  box-shadow:
+    0 4px 0 0 #0c1411,
+    0 8px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 3px color-mix(in srgb, #5ee0d2 18%, transparent) !important;
+}
+
+/* Progress on dark alarm cards: light track + readable % */
+[data-theme="dark"] .alarm-card [class*="animal-progress"] [class*="animal-info"],
+[data-theme="dark"] .alarm-card [class*="animal-progress"] [class*="info"] {
+  color: #fff6e8 !important;
+  -webkit-text-fill-color: #fff6e8 !important;
+  font-weight: 800 !important;
+}
+[data-theme="dark"] .alarm-card [class*="animal-track"],
+[data-theme="dark"] .alarm-card [class*="track"] {
+  background: #1a2621 !important;
+  border-color: #6a7f74 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme="dark"] .alarm-card [class*="animal-fill"],
+[data-theme="dark"] .alarm-card [class*="fill"] {
+  /* keep teal stripe fill */
+  filter: saturate(1.15) brightness(1.05);
+}
+
+/* status row spacing */
+[data-theme="dark"] .alarm-card .status-inline {
+  color: #fff6e8;
+}
+
+/* Home hero text on dark */
+[data-theme="dark"] .home-hero-copy h1,
+[data-theme="dark"] .home-hero-copy p {
   color: var(--callai-ink) !important;
 }
+[data-theme="dark"] .home-hero-copy p {
+  color: var(--callai-ink-soft) !important;
+}
+
 
 /* Switch row labels already covered; ensure Switch track text if any */
 [data-theme="dark"] [class*="animal-switch"] {
@@ -3229,28 +3567,56 @@ body.callai-logs-open [class*="animal-body"] {
 }
 
 
-/* ── Custom title bar (cross-platform, no OS chrome) ── */
+/* ── Custom title bar (cross-platform, no OS chrome) ──
+   Pitfalls fixed:
+   - drag via data-tauri-drag-region only (no -webkit-app-region)
+   - controls/extras OUTSIDE drag region
+   - transparent host + single painted shell for true rounded corners
+   - flat chrome when maximized/fullscreen
+*/
 .app-shell.has-titlebar {
-  /* titlebar is first flex child */
+  position: relative;
 }
 
+/* HUD overlay titlebar — content scrolls underneath (same idea as floating tab pill) */
 .titlebar {
-  flex: 0 0 auto;
-  height: 40px;
-  min-height: 40px;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  flex: none !important;
+  height: 42px;
+  min-height: 42px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  padding: 0 8px 0 12px;
-  background: color-mix(in srgb, var(--callai-surface) 92%, transparent);
-  border-bottom: 2px solid color-mix(in srgb, var(--callai-border) 70%, transparent);
+  padding: 0 8px 0 10px;
+  /* transparent HUD: only soft scrim + blur, no solid band */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--callai-bg) 55%, transparent) 0%,
+    color-mix(in srgb, var(--callai-bg) 22%, transparent) 70%,
+    transparent 100%
+  ) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
   color: var(--callai-ink);
   user-select: none;
-  z-index: 500;
-  position: relative;
-  -webkit-app-region: drag;
-  app-region: drag;
+  z-index: 520 !important;
+  pointer-events: none; /* band itself passes scroll; children re-enable */
+}
+.titlebar > * {
+  pointer-events: auto;
+}
+
+.titlebar.controls-right {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.titlebar.controls-left {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding-left: 8px;
 }
 
 .titlebar-drag {
@@ -3259,8 +3625,6 @@ body.callai-logs-open [class*="animal-body"] {
   gap: 8px;
   min-width: 0;
   height: 100%;
-  -webkit-app-region: drag;
-  app-region: drag;
   cursor: default;
 }
 
@@ -3272,11 +3636,11 @@ body.callai-logs-open [class*="animal-body"] {
   pointer-events: none;
 }
 .titlebar-mark {
-
   width: 18px;
   height: 18px;
   border-radius: 50%;
   flex: 0 0 auto;
+  overflow: hidden;
   background:
     radial-gradient(circle at 35% 35%, #fff6e8 0 28%, transparent 30%),
     radial-gradient(circle at 50% 55%, #5ee0d2 0 55%, #0f9f92 56% 100%);
@@ -3302,20 +3666,34 @@ body.callai-logs-open [class*="animal-body"] {
   min-width: 0;
 }
 
-.titlebar-controls {
+.titlebar-pill {
+  flex: 0 0 auto;
+  font-size: 0.66rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--callai-primary) 45%, var(--callai-border));
+  background: color-mix(in srgb, var(--callai-primary) 16%, var(--callai-bg-soft));
+  color: var(--callai-ink);
+}
+.titlebar-pill.is-focus {
+  border-color: color-mix(in srgb, var(--callai-warn) 55%, var(--callai-border));
+  background: color-mix(in srgb, var(--callai-warn) 20%, var(--callai-bg-soft));
+}
+
+.titlebar-controls,
+.titlebar-extras {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex: 0 0 auto;
-  -webkit-app-region: no-drag;
-  app-region: no-drag;
 }
 
 .titlebar-btn {
   width: 30px;
   height: 28px;
   border-radius: 10px;
-  border: 2px solid color-mix(in srgb, var(--callai-border) 80%, #000 0%);
+  border: 2px solid color-mix(in srgb, var(--callai-border) 80%, transparent);
   background: var(--callai-bg-soft);
   color: var(--callai-ink);
   display: inline-flex;
@@ -3323,7 +3701,11 @@ body.callai-logs-open [class*="animal-body"] {
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .titlebar-btn:hover {
   background: color-mix(in srgb, var(--callai-primary) 22%, var(--callai-bg-soft));
@@ -3336,6 +3718,11 @@ body.callai-logs-open [class*="animal-body"] {
   opacity: 0.45;
   cursor: default;
 }
+.titlebar-btn.is-active {
+  background: color-mix(in srgb, var(--callai-primary) 28%, var(--callai-bg-soft));
+  border-color: var(--callai-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--callai-primary) 40%, transparent);
+}
 
 .titlebar-close:hover {
   background: color-mix(in srgb, var(--callai-danger) 28%, var(--callai-bg-soft));
@@ -3343,20 +3730,809 @@ body.callai-logs-open [class*="animal-body"] {
   color: #5c1a12;
 }
 
+/* macOS-like traffic lights (still custom, same API) */
+.titlebar-btn.is-traffic {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border-width: 1px;
+  padding: 0;
+}
+.titlebar-btn.is-traffic .traffic-dot {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+}
+.titlebar-close.is-traffic {
+  background: #ff5f57;
+  border-color: #e0443e;
+}
+.titlebar-min.is-traffic {
+  background: #febc2e;
+  border-color: #d19e1a;
+}
+.titlebar-max.is-traffic {
+  background: #28c840;
+  border-color: #1a9f2e;
+}
+.titlebar-btn.is-traffic:hover {
+  filter: brightness(1.06);
+  transform: none;
+}
+.titlebar.controls-left .titlebar-controls {
+  padding-left: 4px;
+  gap: 8px;
+}
+
 [data-theme="dark"] .titlebar {
-  background: color-mix(in srgb, var(--callai-surface) 96%, #000 4%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--callai-bg) 62%, transparent) 0%,
+    color-mix(in srgb, var(--callai-bg) 28%, transparent) 70%,
+    transparent 100%
+  ) !important;
+  border-bottom: none !important;
 }
-[data-theme="dark"] .titlebar-btn {
-  background: #1a2621;
-  border-color: var(--callai-border);
-  color: var(--callai-ink);
+/* Dark: only rectangular chrome buttons — never wash traffic lights */
+[data-theme="dark"] .titlebar-btn:not(.is-traffic) {
+  background: #2a3a33;
+  border-color: #a8bdb2;
+  color: #fff6e8;
 }
-[data-theme="dark"] .titlebar-close:hover {
-  background: color-mix(in srgb, #ff9b8a 35%, #1a2621);
+[data-theme="dark"] .titlebar-close:not(.is-traffic):hover {
+  background: color-mix(in srgb, #ff9b8a 42%, #2a3a33);
+  border-color: #ff9b8a;
   color: #fff6e8;
 }
 
-/* Browser mock: keep titlebar for layout parity */
-body:not(.tauri) .titlebar {
-  /* still show for design consistency in vite browser */
+/* Traffic lights: force saturated system colors on both themes (esp. dark titlebar) */
+.titlebar-btn.is-traffic,
+[data-theme="dark"] .titlebar-btn.is-traffic {
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
+  border-radius: 50% !important;
+  border-width: 1px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.22) !important;
+  filter: none !important;
+}
+.titlebar-close.is-traffic,
+[data-theme="dark"] .titlebar-close.is-traffic,
+[data-theme="dark"] .titlebar-close.is-traffic:hover {
+  background: #ff5f57 !important;
+  border-color: #e0443e !important;
+  color: transparent !important;
+}
+.titlebar-min.is-traffic,
+[data-theme="dark"] .titlebar-min.is-traffic,
+[data-theme="dark"] .titlebar-min.is-traffic:hover {
+  background: #febc2e !important;
+  border-color: #d19e1a !important;
+  color: transparent !important;
+}
+.titlebar-max.is-traffic,
+[data-theme="dark"] .titlebar-max.is-traffic,
+[data-theme="dark"] .titlebar-max.is-traffic:hover {
+  background: #28c840 !important;
+  border-color: #1a9f2e !important;
+  color: transparent !important;
+}
+
+/* Hover glyphs for contrast/affordance (macOS-like) */
+.titlebar-btn.is-traffic {
+  position: relative;
+}
+.titlebar-btn.is-traffic .traffic-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.titlebar-btn.is-traffic:hover .traffic-dot::before {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  color: rgba(40, 20, 10, 0.72);
+  -webkit-text-fill-color: rgba(40, 20, 10, 0.72);
+}
+.titlebar-close.is-traffic:hover .traffic-dot::before {
+  content: "×";
+  font-size: 11px;
+}
+.titlebar-min.is-traffic:hover .traffic-dot::before {
+  content: "−";
+  font-size: 12px;
+}
+.titlebar-max.is-traffic:hover .traffic-dot::before {
+  content: "+";
+  font-size: 11px;
+}
+
+[data-theme="dark"] .titlebar-pill {
+  color: #1f1408;
+  -webkit-text-fill-color: #1f1408;
+}
+
+/* Edge resize grips for decorations:false */
+.window-resize-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+.window-resize-grip {
+  position: absolute;
+  pointer-events: auto;
+  background: transparent;
+}
+.grip-n { top: 0; left: 10px; right: 10px; height: 5px; cursor: ns-resize; }
+.grip-s { bottom: 0; left: 10px; right: 10px; height: 5px; cursor: ns-resize; }
+.grip-e { top: 10px; right: 0; bottom: 10px; width: 5px; cursor: ew-resize; }
+.grip-w { top: 10px; left: 0; bottom: 10px; width: 5px; cursor: ew-resize; }
+.grip-ne { top: 0; right: 0; width: 12px; height: 12px; cursor: nesw-resize; }
+.grip-nw { top: 0; left: 0; width: 12px; height: 12px; cursor: nwse-resize; }
+.grip-se { bottom: 0; right: 0; width: 12px; height: 12px; cursor: nwse-resize; }
+.grip-sw { bottom: 0; left: 0; width: 12px; height: 12px; cursor: nesw-resize; }
+
+/* Flat chrome when maximized/fullscreen: no rounded "ears" */
+html.tauri .app-shell.has-titlebar.is-maximized,
+html.tauri .app-shell.has-titlebar.is-fullscreen,
+html.callai-window-chrome-flat .app-shell.has-titlebar {
+  border-radius: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+html.tauri .app-shell.has-titlebar.is-maximized > .titlebar,
+html.tauri .app-shell.has-titlebar.is-fullscreen > .titlebar {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+/* ── Transparent host for rounded undeco window (must win cascade) ── */
+html.tauri,
+html.tauri body,
+html.tauri body.tauri,
+html.tauri #root,
+html.tauri .cursor-root,
+html.tauri [class*="animal-cursor"],
+html.tauri [class*="animal-Cursor"],
+html.tauri .callai-cursor {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+html.tauri .app-shell.has-titlebar {
+  /* only painted surface inside transparent OS window */
+  background: var(--callai-bg) !important;
+  border-radius: var(--callai-window-radius, 16px) !important;
+  overflow: hidden !important;
+  isolation: isolate;
+}
+
+html.tauri .app-shell.has-titlebar.is-maximized {
+  border-radius: 0 !important;
+}
+
+
+/* ── Bottom radius + sea: keep waves inside rounded shell ── */
+html.tauri .app-shell.has-titlebar {
+  overflow: hidden !important;
+}
+html.tauri .app-shell.has-titlebar .app-footer-band {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  overflow: hidden !important;
+  border-bottom-left-radius: calc(var(--callai-window-radius, 16px) - 2px);
+  border-bottom-right-radius: calc(var(--callai-window-radius, 16px) - 2px);
+}
+html.tauri .app-shell.has-titlebar.is-maximized .app-footer-band,
+html.tauri .app-shell.has-titlebar.is-fullscreen .app-footer-band {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* ── Titlebar dark contrast: extras + pills + labels ── */
+[data-theme="dark"] .titlebar-title {
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .titlebar-tagline {
+  color: #e2d0b4 !important;
+  opacity: 1;
+}
+[data-theme="dark"] .titlebar-btn:not(.is-traffic) {
+  background: #2a3a33 !important;
+  border-color: #a8bdb2 !important;
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .titlebar-btn:not(.is-traffic):hover {
+  background: color-mix(in srgb, #5ee0d2 35%, #2a3a33) !important;
+  border-color: #5ee0d2 !important;
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .titlebar-btn.is-active:not(.is-traffic) {
+  background: #5ee0d2 !important;
+  border-color: #3bb8ab !important;
+  color: #042f2b !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .titlebar-close:not(.is-traffic):hover {
+  background: color-mix(in srgb, #ff9b8a 42%, #2a3a33) !important;
+  border-color: #ff9b8a !important;
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .titlebar-pill {
+  background: #fff1d6 !important;
+  border-color: #d4b48a !important;
+  color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
+}
+[data-theme="dark"] .titlebar-pill.is-focus {
+  background: #ffe8a8 !important;
+  border-color: #e0b020 !important;
+  color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
+}
+[data-theme="dark"] .titlebar-extra svg {
+  color: inherit;
+}
+
+
+/* ── Overlay titlebar clearance: content scrolls under HUD ── */
+:root {
+  --callai-titlebar-h: 42px;
+}
+
+/* Shell children after titlebar fill full height (titlebar is absolute) */
+.app-shell.has-titlebar > .app-body,
+.app-shell.has-titlebar > .edit-page,
+.app-shell.has-titlebar.immersive-edit > .edit-page {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Tab content / home: start under titlebar + keep existing tab pill clearance */
+.app-shell.has-titlebar .main-tabs [class*="animal-tabList"] {
+  top: calc(10px + var(--callai-titlebar-h)) !important;
+}
+
+.app-shell.has-titlebar .main-tabs [class*="animal-tabContentInner"] > .home-page > .home-hero {
+  /* was 52px for tab pill only; add titlebar HUD */
+  margin-top: calc(52px + var(--callai-titlebar-h) - 8px) !important;
+  padding-top: 52px; /* keep sticky hero offset under tab pill */
+}
+
+.app-shell.has-titlebar .settings-page .settings-hero {
+  margin-top: calc(52px + var(--callai-titlebar-h) - 8px) !important;
+}
+
+.app-shell.has-titlebar .settings-hero-deco {
+  top: calc(56px + var(--callai-titlebar-h)) !important;
+}
+
+/* Edit page floating header sits under titlebar HUD */
+.app-shell.has-titlebar.immersive-edit .edit-hero,
+.app-shell.has-titlebar .edit-page > header.edit-hero {
+  top: calc(8px + var(--callai-titlebar-h)) !important;
+}
+.app-shell.has-titlebar .edit-page .edit-main,
+.app-shell.has-titlebar .edit-page .app-main.form-stack.edit-main {
+  padding-top: calc(118px + var(--callai-titlebar-h) - 40px) !important;
+}
+
+/* Titlebar control clusters: no container border/plate — only the buttons themselves */
+.titlebar-extras,
+.titlebar.controls-right .titlebar-controls,
+.titlebar.controls-left .titlebar-controls {
+  padding: 2px;
+  gap: 6px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0;
+}
+[data-theme="dark"] .titlebar-extras,
+[data-theme="dark"] .titlebar.controls-right .titlebar-controls,
+[data-theme="dark"] .titlebar.controls-left .titlebar-controls {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Brand text gets subtle readable shadow instead of solid bar */
+.titlebar-title,
+.titlebar-tagline {
+  text-shadow:
+    0 1px 0 color-mix(in srgb, var(--callai-bg) 70%, transparent),
+    0 0 10px color-mix(in srgb, var(--callai-bg) 55%, transparent);
+}
+[data-theme="dark"] .titlebar-title,
+[data-theme="dark"] .titlebar-tagline {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 12px rgba(0, 0, 0, 0.35);
+}
+
+/* macOS traffic cluster: no container border/plate — only the three dots */
+.titlebar.controls-left .titlebar-controls {
+  padding: 4px 2px;
+  gap: 8px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0;
+}
+[data-theme="dark"] .titlebar.controls-left .titlebar-controls {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+
+/* Final: never paint a bordered tray around titlebar control groups */
+.titlebar-controls,
+.titlebar-extras {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+
+/* Settings about: version + links */
+.settings-about-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.settings-about-meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-about-row {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.settings-about-row dt {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--callai-ink-soft);
+}
+.settings-about-row dd {
+  margin: 0;
+  min-width: 0;
+}
+.settings-link-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 800;
+  color: var(--callai-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  text-align: left;
+  word-break: break-all;
+}
+.settings-link-btn:hover {
+  color: var(--callai-ink);
+}
+[data-theme="dark"] .settings-link-btn {
+  color: #5ee0d2;
+}
+[data-theme="dark"] .settings-link-btn:hover {
+  color: #fff6e8;
+}
+[data-theme="dark"] .settings-about-row dt {
+  color: var(--callai-ink-soft);
+}
+
+
+/* Keep-alive tab panes (Settings stays warm; no remount stall) */
+.app-body {
+  position: relative;
+}
+.tab-panes {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.tab-pane {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  display: none;
+}
+.tab-pane.is-active {
+  display: block;
+}
+/* Hide empty animal tab content shell when we host panes ourselves */
+.main-tabs [class*="animal-tabContent"] {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+/* Floating tab list still above panes */
+.main-tabs [class*="animal-tabList"] {
+  z-index: 300 !important;
+}
+
+
+/* Edit overlays main shell (Home/Settings stay mounted, no remount stall) */
+.app-body[hidden],
+.app-footer-band[hidden] {
+  display: none !important;
+}
+.edit-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--callai-bg);
+}
+.app-shell.has-titlebar > .edit-overlay {
+  /* sit under transparent HUD titlebar */
+  top: 0;
+  padding-top: 0;
+}
+
+
+/* ── Picker dark contrast (FINAL, high specificity) ──
+   Portaled popups must NOT inherit:
+   - dark page light-ink on dark surface wash
+   - global [data-theme=dark] button { color: #3a2714 }
+   - edit-page input parchment rules for unrelated nodes
+*/
+[data-theme="dark"] .time-picker-trigger,
+[data-theme="dark"] .timezone-picker-trigger,
+[data-theme="dark"] .duration-picker-trigger,
+[data-theme="dark"] button.time-picker-trigger,
+[data-theme="dark"] button.timezone-picker-trigger {
+  background: #15201c !important;
+  border: 2px solid #a8c0b4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+[data-theme="dark"] .time-picker-trigger .time-picker-value,
+[data-theme="dark"] .time-picker-trigger .time-picker-caret,
+[data-theme="dark"] .timezone-picker-trigger .timezone-picker-value,
+[data-theme="dark"] .timezone-picker-value {
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  opacity: 1 !important;
+}
+
+/* Popup shell: near-black green + cream ink (WCAG-ish large text) */
+[data-theme="dark"] .time-picker-popup,
+[data-theme="dark"] .time-picker-popup-portal,
+[data-theme="dark"] .timezone-picker-popup,
+[data-theme="dark"] .duration-picker-popup,
+[data-theme="dark"] body > .time-picker-popup-portal {
+  background: #101814 !important;
+  background-color: #101814 !important;
+  border: 2px solid #b7d0c4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Every text node inside popup defaults to cream (then refine controls) */
+[data-theme="dark"] .time-picker-popup,
+[data-theme="dark"] .time-picker-popup-portal,
+[data-theme="dark"] .timezone-picker-popup,
+[data-theme="dark"] .duration-picker-popup,
+[data-theme="dark"] body > .time-picker-popup-portal {
+  color: #fffaf0 !important;
+}
+
+[data-theme="dark"] .time-picker-popup .time-wheel-item,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-item,
+[data-theme="dark"] .timezone-picker-popup .time-wheel-item,
+[data-theme="dark"] .timezone-picker-popup .timezone-wheel-item,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-item,
+[data-theme="dark"] body > .time-picker-popup-portal .timezone-wheel-item {
+  color: #d9c9a8 !important;
+  -webkit-text-fill-color: #d9c9a8 !important;
+  background: transparent !important;
+  border: none !important;
+  opacity: 1 !important;
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-item.active,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-item.active,
+[data-theme="dark"] .timezone-picker-popup .time-wheel-item.active,
+[data-theme="dark"] .timezone-picker-popup .timezone-wheel-item.active,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-item.active,
+[data-theme="dark"] body > .time-picker-popup-portal .timezone-wheel-item.active {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-colon,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-colon,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-colon {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-highlight,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-highlight,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-highlight {
+  border: 2px solid #6aead8 !important;
+  background: rgba(94, 224, 210, 0.22) !important;
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-fade-top,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-fade-top,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-fade-top {
+  background: linear-gradient(to bottom, #101814 15%, transparent) !important;
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-fade-bottom,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-fade-bottom,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-fade-bottom {
+  background: linear-gradient(to top, #101814 15%, transparent) !important;
+}
+[data-theme="dark"] .timezone-picker-caption,
+[data-theme="dark"] .duration-picker-labels,
+[data-theme="dark"] .time-picker-popup-portal .timezone-picker-caption,
+[data-theme="dark"] .time-picker-popup-portal .duration-picker-labels {
+  color: #f0e0c8 !important;
+  -webkit-text-fill-color: #f0e0c8 !important;
+  font-weight: 800 !important;
+}
+
+/* Footer actions: high-contrast solid chips (override global dark button ink) */
+[data-theme="dark"] .time-picker-actions button,
+[data-theme="dark"] .time-picker-popup-portal .time-picker-actions button,
+[data-theme="dark"] .timezone-picker-popup .time-picker-actions button,
+[data-theme="dark"] body > .time-picker-popup-portal .time-picker-actions button,
+[data-theme="dark"] body > .time-picker-popup-portal button[class*="animal-btn"] {
+  background: #fff6e8 !important;
+  border: 2px solid #e0c9a0 !important;
+  color: #1a1008 !important;
+  -webkit-text-fill-color: #1a1008 !important;
+  opacity: 1 !important;
+}
+[data-theme="dark"] .time-picker-actions button[class*="primary"],
+[data-theme="dark"] .time-picker-popup-portal .time-picker-actions button[class*="primary"],
+[data-theme="dark"] .timezone-picker-popup .time-picker-actions button[class*="primary"],
+[data-theme="dark"] body > .time-picker-popup-portal button[class*="animal-btn-primary"],
+[data-theme="dark"] body > .time-picker-popup-portal button.animal-btn-primary-9tMG9 {
+  background: #5ee0d2 !important;
+  border-color: #8af0e4 !important;
+  color: #042f2b !important;
+  -webkit-text-fill-color: #042f2b !important;
+  font-weight: 800 !important;
+}
+
+/* Duration presets inside popup */
+[data-theme="dark"] .duration-presets button,
+[data-theme="dark"] .time-picker-popup-portal .duration-presets button,
+[data-theme="dark"] body > .time-picker-popup-portal .duration-presets button {
+  background: #1a2621 !important;
+  border: 2px solid #9bb5a8 !important;
+  color: #fff6e8 !important;
+  -webkit-text-fill-color: #fff6e8 !important;
+}
+[data-theme="dark"] .duration-presets button.active,
+[data-theme="dark"] .time-picker-popup-portal .duration-presets button.active,
+[data-theme="dark"] body > .time-picker-popup-portal .duration-presets button.active {
+  background: #5ee0d2 !important;
+  border-color: #8af0e4 !important;
+  color: #042f2b !important;
+  -webkit-text-fill-color: #042f2b !important;
+  font-weight: 900 !important;
+}
+
+/* Schedule time chips (outside popup) */
+[data-theme="dark"] .time-chip {
+  background: #15201c !important;
+  border: 2px solid #a8c0b4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+[data-theme="dark"] .time-chip.active {
+  background: #5ee0d2 !important;
+  border-color: #8af0e4 !important;
+  color: #042f2b !important;
+  -webkit-text-fill-color: #042f2b !important;
+}
+
+
+/* ── Picker/Select dark contrast v2 ──
+   Portaled pickers + animal-island Select dropdowns.
+   Override library yellow (#ffeea0) and parchment ink on dark pages.
+   Keep selectors scoped to picker/select — do not paint Input wrappers.
+*/
+html[data-theme="dark"] .time-picker-trigger,
+html[data-theme="dark"] .timezone-picker-trigger,
+html[data-theme="dark"] .duration-picker-trigger,
+html[data-theme="dark"] button.time-picker-trigger,
+html[data-theme="dark"] button.timezone-picker-trigger,
+html[data-theme="dark"] button.duration-picker-trigger {
+  background: #15201c !important;
+  background-color: #15201c !important;
+  border: 2px solid #a8c0b4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+html[data-theme="dark"] .time-picker-trigger .time-picker-value,
+html[data-theme="dark"] .time-picker-trigger .time-picker-caret,
+html[data-theme="dark"] .duration-picker-trigger .time-picker-value,
+html[data-theme="dark"] .duration-picker-trigger .time-picker-caret,
+html[data-theme="dark"] .timezone-picker-trigger .time-picker-value,
+html[data-theme="dark"] .timezone-picker-trigger .timezone-picker-value,
+html[data-theme="dark"] .timezone-picker-value {
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .time-picker-popup,
+html[data-theme="dark"] .time-picker-popup-portal,
+html[data-theme="dark"] .timezone-picker-popup,
+html[data-theme="dark"] .duration-picker-popup,
+html[data-theme="dark"] body > .time-picker-popup-portal,
+html[data-theme="dark"] body > .time-picker-popup.time-picker-popup-portal {
+  background: #101814 !important;
+  background-color: #101814 !important;
+  border: 2px solid #b7d0c4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
+}
+
+html[data-theme="dark"] .time-picker-popup-portal button.time-wheel-item,
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-item,
+html[data-theme="dark"] .time-picker-popup-portal .timezone-wheel-item,
+html[data-theme="dark"] body > .time-picker-popup-portal button.time-wheel-item,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-item,
+html[data-theme="dark"] body > .time-picker-popup-portal .timezone-wheel-item {
+  color: #d9c9a8 !important;
+  -webkit-text-fill-color: #d9c9a8 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  opacity: 1 !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal button.time-wheel-item.active,
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-item.active,
+html[data-theme="dark"] .time-picker-popup-portal .timezone-wheel-item.active,
+html[data-theme="dark"] body > .time-picker-popup-portal button.time-wheel-item.active,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-item.active,
+html[data-theme="dark"] body > .time-picker-popup-portal .timezone-wheel-item.active {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-colon,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-colon {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-highlight,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-highlight {
+  border: 2px solid #6aead8 !important;
+  background: rgba(94, 224, 210, 0.22) !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-fade-top,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-fade-top {
+  background: linear-gradient(to bottom, #101814 15%, transparent) !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-fade-bottom,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-fade-bottom {
+  background: linear-gradient(to top, #101814 15%, transparent) !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .timezone-picker-caption,
+html[data-theme="dark"] .time-picker-popup-portal .duration-picker-labels,
+html[data-theme="dark"] body > .time-picker-popup-portal .timezone-picker-caption,
+html[data-theme="dark"] body > .time-picker-popup-portal .duration-picker-labels {
+  color: #f0e0c8 !important;
+  -webkit-text-fill-color: #f0e0c8 !important;
+}
+
+/* Popup footer chips */
+html[data-theme="dark"] .time-picker-popup-portal .time-picker-actions button,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-picker-actions button,
+html[data-theme="dark"] body > .time-picker-popup-portal button[class*="animal-btn"] {
+  background: #fff6e8 !important;
+  border: 2px solid #e0c9a0 !important;
+  color: #1a1008 !important;
+  -webkit-text-fill-color: #1a1008 !important;
+  opacity: 1 !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-picker-actions button[class*="primary"],
+html[data-theme="dark"] body > .time-picker-popup-portal button[class*="animal-btn-primary"],
+html[data-theme="dark"] body > .time-picker-popup-portal button.animal-btn-primary-9tMG9 {
+  background: #5ee0d2 !important;
+  border-color: #8af0e4 !important;
+  color: #042f2b !important;
+  -webkit-text-fill-color: #042f2b !important;
+  font-weight: 800 !important;
+}
+
+/* animal-island Select (template etc.): scoped dark trigger */
+html[data-theme="dark"] .field-template [class*="animal-wrapper"],
+html[data-theme="dark"] .field-template [class*="animal-trigger"],
+html[data-theme="dark"] .edit-page .field-template [class*="animal-trigger"] {
+  color: #fffaf0 !important;
+}
+html[data-theme="dark"] .field-template [class*="animal-trigger"],
+html[data-theme="dark"] .edit-page .field-template [class*="animal-trigger"] {
+  background: #15201c !important;
+  background-color: #15201c !important;
+  border: 2px solid #a8c0b4 !important;
+  color: #fffaf0 !important;
+}
+html[data-theme="dark"] .field-template [class*="animal-value"],
+html[data-theme="dark"] .edit-page .field-template [class*="animal-value"] {
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+html[data-theme="dark"] .field-template [class*="animal-placeholder"],
+html[data-theme="dark"] .edit-page .field-template [class*="animal-placeholder"] {
+  color: #c8b89a !important;
+  -webkit-text-fill-color: #c8b89a !important;
+}
+html[data-theme="dark"] .field-template [class*="animal-arrow"],
+html[data-theme="dark"] .edit-page .field-template [class*="animal-arrow"] {
+  color: #c8b89a !important;
+}
+
+/* Portaled / absolute Select dropdown list (class is unique: animal-dropdown-*) */
+html[data-theme="dark"] [class*="animal-dropdown"],
+html[data-theme="dark"] [class*="animal-select-popup"] {
+  background: #101814 !important;
+  background-color: #101814 !important;
+  border: 2px solid #b7d0c4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"],
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option-"],
+html[data-theme="dark"] [class*="animal-option"] {
+  color: #e8dcc0 !important;
+  -webkit-text-fill-color: #e8dcc0 !important;
+  background: transparent !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"][class*="animal-active"],
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"][class*="active"],
+html[data-theme="dark"] [class*="animal-option"][class*="animal-active"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 800 !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-pillBar"] {
+  background: #5ee0d2 !important;
+  opacity: 0.35 !important;
 }

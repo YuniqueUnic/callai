@@ -12,6 +12,22 @@ import { IconFolder, IconLogs, IconRestore, IconTrash } from "../ui/icons";
 import { playSound, setSoundEnabled, unlockAudio } from "../ui/sounds";
 import { isTauri } from "../infra/tauriApi";
 import { checkForAppUpdate } from "../infra/updater";
+import {
+  ensureDetectedTimezone,
+  peekDetectedTimezone,
+} from "../infra/timezoneCache";
+import {
+  getAppVersionCached,
+  getAutostartCached,
+  getSettingsCached,
+  listBackupsCached,
+  peekAppVersion,
+  peekAutostart,
+  peekBackups,
+  peekSettings,
+  setAutostartCache,
+  setSettingsCache,
+} from "../infra/settingsCache";
 
 async function ensureNotifyPermission(): Promise<boolean> {
   if (!isTauri()) return true;
@@ -34,52 +50,139 @@ interface Props {
   onOpenLogs: () => void;
 }
 
+
+const REPO_URL = "https://github.com/YuniqueUnic/callai";
+const AUTHOR_URL = "https://github.com/YuniqueUnic";
+const ISSUES_URL = "https://github.com/YuniqueUnic/callai/issues";
+
+async function openExternal(url: string): Promise<void> {
+  if (isTauri()) {
+    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    await openUrl(url);
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 export function SettingsPage({ onOpenLogs }: Props) {
   const { t, i18n } = useTranslation(["settings", "common", "alarms"]);
-  const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [backups, setBackups] = useState<string[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(() => peekSettings());
+  const [backups, setBackups] = useState<string[]>(() => peekBackups() ?? []);
   const [confirmDeleteBackup, setConfirmDeleteBackup] = useState<string | null>(
     null,
   );
   const [updateBusy, setUpdateBusy] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<string | null>(null);
   const [pendingInstall, setPendingInstall] = useState<null | (() => Promise<void>)>(null);
-  const [detectedTz, setDetectedTz] = useState<string>("");
-  const [appVersion, setAppVersion] = useState<string>("");
-  const [autostartOn, setAutostartOn] = useState(false);
+  const [pendingVersion, setPendingVersion] = useState<string>("");
+  const [confirmUpdate, setConfirmUpdate] = useState(false);
+  const [detectedTz, setDetectedTz] = useState<string>(() => peekDetectedTimezone());
+  const [appVersion, setAppVersion] = useState<string>(() => peekAppVersion() ?? "");
+  const [autostartOn, setAutostartOn] = useState<boolean>(() => peekAutostart() ?? false);
 
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
-      setSettings(await client.getSettings());
-      setBackups(await client.listBackups());
+      // Cache-first: keep-alive tab + module caches make re-entry instant.
       try {
-        setDetectedTz(await client.detectTimezone());
+        const s = await getSettingsCached();
+        if (cancelled) return;
+        setSettings(s);
       } catch {
-        setDetectedTz(
-          Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-        );
+        if (!cancelled) setSettings(null);
+        return;
       }
-      try {
-        setAppVersion(await client.getAppVersion());
-      } catch {
-        setAppVersion("");
-      }
-      try {
-        setAutostartOn(await client.getAutostartEnabled());
-      } catch {
-        setAutostartOn(false);
-      }
+
+      // Background refine (timezone already warmed at app start).
+      void ensureDetectedTimezone().then((tz) => {
+        if (!cancelled) setDetectedTz(tz);
+      });
+      void Promise.all([
+        listBackupsCached().then((b) => {
+          if (!cancelled) setBackups(b);
+        }),
+        getAppVersionCached().then((v) => {
+          if (!cancelled) setAppVersion(v);
+        }),
+        getAutostartCached().then((v) => {
+          if (!cancelled) setAutostartOn(v);
+        }),
+      ]);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function save(next: AppSettings) {
     const saved = await client.saveSettings(next);
+    setSettingsCache(saved);
     setSettings(saved);
     applyTheme(saved.theme);
     if (saved.locale !== i18n.language) {
       await i18n.changeLanguage(saved.locale);
     }
     toast.success({ message: t("settings:saved"), key: "settings-save", duration: 2.6 });
+  }
+
+
+  async function runUpdateCheck(): Promise<
+    | { kind: "none" }
+    | { kind: "available"; version: string; install: () => Promise<void>; body?: string | null }
+  > {
+    const res = await checkForAppUpdate();
+    if (res.status === "unsupported") {
+      setUpdateInfo(t("settings:updateUnsupported"));
+      setPendingInstall(null);
+      setPendingVersion("");
+      toast.warning({ message: t("settings:updateUnsupported") });
+      return { kind: "none" };
+    }
+    if (res.status === "upToDate") {
+      setUpdateInfo(t("settings:updateUpToDate"));
+      setPendingInstall(null);
+      setPendingVersion("");
+      toast.success({ message: t("settings:updateUpToDate") });
+      return { kind: "none" };
+    }
+    if (res.status === "error") {
+      setUpdateInfo(res.message);
+      setPendingInstall(null);
+      setPendingVersion("");
+      toast.error({
+        message: t("settings:updateError"),
+        description: res.message,
+      });
+      return { kind: "none" };
+    }
+    setUpdateInfo(t("settings:updateAvailable", { version: res.version }));
+    setPendingInstall(() => res.install);
+    setPendingVersion(res.version);
+    return {
+      kind: "available",
+      version: res.version,
+      install: res.install,
+      body: res.body,
+    };
+  }
+
+  async function installPending(install: () => Promise<void>) {
+    setUpdateBusy(true);
+    toast.success({ message: t("settings:updateInstalling") });
+    try {
+      await install();
+      toast.success({ message: t("settings:updateDone") });
+      setUpdateInfo(t("settings:updateDone"));
+      setPendingInstall(null);
+      setPendingVersion("");
+    } catch (err) {
+      toast.error({
+        message: t("settings:updateError"),
+        description: String((err as { message?: string })?.message ?? err),
+      });
+    } finally {
+      setUpdateBusy(false);
+    }
   }
 
   if (!settings) {
@@ -199,6 +302,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
                 void (async () => {
                   try {
                     const enabled = await client.setAutostartEnabled(v);
+                    setAutostartCache(enabled);
                     setAutostartOn(enabled);
                     toast.success({
                       message: t("settings:saved"),
@@ -303,7 +407,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
               block
               onClick={async () => {
                 const name = await client.backupNow();
-                setBackups(await client.listBackups());
+                setBackups(await listBackupsCached(true));
                 toast.success({
                   message: t("settings:backupNow"),
                   description: name || undefined,
@@ -383,77 +487,61 @@ export function SettingsPage({ onOpenLogs }: Props) {
             ) : null}
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               <Button
+                type="primary"
+                disabled={updateBusy}
+                onClick={() => {
+                  void (async () => {
+                    // One-click path: check if needed → confirm → install.
+                    if (pendingInstall) {
+                      setConfirmUpdate(true);
+                      return;
+                    }
+                    setUpdateBusy(true);
+                    try {
+                      const found = await runUpdateCheck();
+                      if (found.kind === "available") {
+                        toast.success({
+                          message: t("settings:updateAvailable", {
+                            version: found.version,
+                          }),
+                          description: found.body || undefined,
+                        });
+                        setConfirmUpdate(true);
+                      }
+                    } finally {
+                      setUpdateBusy(false);
+                    }
+                  })();
+                }}
+              >
+                {updateBusy
+                  ? t("settings:checkingUpdate")
+                  : t("settings:updateInstall")}
+              </Button>
+              <Button
                 type="default"
                 disabled={updateBusy}
                 onClick={() => {
                   void (async () => {
                     setUpdateBusy(true);
                     try {
-                      const res = await checkForAppUpdate();
-                      if (res.status === "unsupported") {
-                        setUpdateInfo(t("settings:updateUnsupported"));
-                        return;
-                      }
-                      if (res.status === "upToDate") {
-                        setUpdateInfo(t("settings:updateUpToDate"));
-                        toast.success({ message: t("settings:updateUpToDate") });
-                        return;
-                      }
-                      if (res.status === "error") {
-                        setUpdateInfo(res.message);
-                        toast.error({
-                          message: t("settings:updateError"),
-                          description: res.message,
+                      const found = await runUpdateCheck();
+                      if (found.kind === "available") {
+                        toast.success({
+                          message: t("settings:updateAvailable", {
+                            version: found.version,
+                          }),
+                          description: found.body || undefined,
                         });
-                        return;
+                        // Checked only — user can tap install without re-check.
                       }
-                      setUpdateInfo(
-                        t("settings:updateAvailable", { version: res.version }),
-                      );
-                      toast.success({
-                        message: t("settings:updateAvailable", {
-                          version: res.version,
-                        }),
-                        description: res.body || undefined,
-                      });
-                      setPendingInstall(() => res.install);
                     } finally {
                       setUpdateBusy(false);
                     }
                   })();
                 }}
               >
-                {updateBusy ? t("settings:checkingUpdate") : t("settings:checkUpdate")}
-              </Button>
-              <Button
-                type="primary"
-                disabled={updateBusy}
-                onClick={() => {
-                  if (!pendingInstall) {
-                    toast.warning({ message: t("settings:checkUpdate") });
-                    return;
-                  }
-                  void (async () => {
-                    setUpdateBusy(true);
-                    toast.success({ message: t("settings:updateInstalling") });
-                    try {
-                      await pendingInstall();
-                      toast.success({ message: t("settings:updateDone") });
-                      setUpdateInfo(t("settings:updateDone"));
-                    } catch (err) {
-                      toast.error({
-                        message: t("settings:updateError"),
-                        description: String(
-                          (err as { message?: string })?.message ?? err,
-                        ),
-                      });
-                    } finally {
-                      setUpdateBusy(false);
-                    }
-                  })();
-                }}
-              >
-                {t("settings:updateInstall")}
+                {t("settings:checkUpdate")}
               </Button>
             </div>
           </div>
@@ -462,15 +550,92 @@ export function SettingsPage({ onOpenLogs }: Props) {
             <div className="panel-head">
               <label className="label">{t("settings:aboutSection")}</label>
             </div>
-            <div className="settings-version" aria-label={t("settings:appVersion", { version: appVersion || "…" })}>
-              <span className="settings-version-badge">
-                {appVersion
-                  ? t("settings:appVersion", { version: appVersion })
-                  : t("common:loading")}
-              </span>
-              <span className="meta settings-version-cli">
-                {t("settings:cliVersionHint")}
-              </span>
+            <div className="settings-about-body">
+              <div
+                className="settings-version"
+                aria-label={t("settings:appVersion", {
+                  version: appVersion || "…",
+                })}
+              >
+                <span className="settings-version-badge">
+                  {appVersion
+                    ? t("settings:appVersion", { version: appVersion })
+                    : t("common:loading")}
+                </span>
+                <span className="meta settings-version-cli">
+                  {t("settings:cliVersionHint")}
+                </span>
+              </div>
+
+              <dl className="settings-about-meta">
+                <div className="settings-about-row">
+                  <dt>{t("settings:aboutAuthor")}</dt>
+                  <dd>
+                    <button
+                      type="button"
+                      className="settings-link-btn"
+                      onClick={() => {
+                        void openExternal(AUTHOR_URL).catch((err) => {
+                          toast.error({
+                            message: t("settings:openLinkFail"),
+                            description: String(
+                              (err as { message?: string })?.message ?? err,
+                            ),
+                          });
+                        });
+                      }}
+                    >
+                      {t("settings:aboutAuthorName")}
+                    </button>
+                  </dd>
+                </div>
+                <div className="settings-about-row">
+                  <dt>{t("settings:aboutGithub")}</dt>
+                  <dd>
+                    <button
+                      type="button"
+                      className="settings-link-btn"
+                      onClick={() => {
+                        void openExternal(REPO_URL).catch((err) => {
+                          toast.error({
+                            message: t("settings:openLinkFail"),
+                            description: String(
+                              (err as { message?: string })?.message ?? err,
+                            ),
+                          });
+                        });
+                      }}
+                    >
+                      {t("settings:aboutGithubRepo")}
+                    </button>
+                  </dd>
+                </div>
+                <div className="settings-about-row">
+                  <dt>{t("settings:aboutIssues")}</dt>
+                  <dd>
+                    <button
+                      type="button"
+                      className="settings-link-btn"
+                      onClick={() => {
+                        void openExternal(ISSUES_URL).catch((err) => {
+                          toast.error({
+                            message: t("settings:openLinkFail"),
+                            description: String(
+                              (err as { message?: string })?.message ?? err,
+                            ),
+                          });
+                        });
+                      }}
+                    >
+                      Issues
+                    </button>
+                  </dd>
+                </div>
+                <div className="settings-about-row">
+                  <dt>{t("settings:aboutLicense")}</dt>
+                  <dd className="meta">{t("settings:aboutLicenseValue")}</dd>
+                </div>
+              </dl>
             </div>
           </div>
 
@@ -501,7 +666,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
           void (async () => {
             try {
               await client.deleteBackup(confirmDeleteBackup);
-              setBackups(await client.listBackups());
+              setBackups(await listBackupsCached(true));
               toast.success({
                 message: t("settings:deleteBackupSuccess"),
               });
@@ -524,6 +689,22 @@ export function SettingsPage({ onOpenLogs }: Props) {
             {confirmDeleteBackup}
           </div>
         ) : null}
+      </Modal>
+
+      <Modal
+        open={confirmUpdate}
+        title={t("settings:updateConfirmTitle")}
+        typewriter={false}
+        onClose={() => setConfirmUpdate(false)}
+        onOk={() => {
+          setConfirmUpdate(false);
+          if (!pendingInstall) return;
+          void installPending(pendingInstall);
+        }}
+      >
+        {t("settings:updateConfirmBody", {
+          version: pendingVersion || "…",
+        })}
       </Modal>
     </div>
   );
