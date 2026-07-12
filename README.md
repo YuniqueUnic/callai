@@ -244,6 +244,14 @@ python3 scripts/brand/make_tray_template.py --help
 - [PRODUCT.md](./PRODUCT.md) · [DESIGN.md](./DESIGN.md) · [usecases/](./usecases/)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md)
 
+## Links
+
+- [GitHub](https://github.com/YuniqueUnic/callai)
+- [Releases](https://github.com/YuniqueUnic/callai/releases)
+- [LinuxDo](https://linux.do)
+- [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)
+- [Development records](./docs/development/README.md)
+
 ## License
 
 - Application source: [MIT](./LICENSE)
