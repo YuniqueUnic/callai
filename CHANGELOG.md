@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.3](https://github.com/YuniqueUnic/callai/compare/v0.2.2...v0.2.3) (2026-07-12)
+
+
+### Features
+
+* **packaging:** scheduled sync from releases + tap/bucket mirrors ([862ecbb](https://github.com/YuniqueUnic/callai/commit/862ecbb994038aef3691bac066068a861b26d5c9))
+
+
+### Bug Fixes
+
+* **packaging:** mirror via per-repo SSH deploy keys ([b9077a2](https://github.com/YuniqueUnic/callai/commit/b9077a20d92ba133c10c30be98074cf861565d28))
+* **schedule:** wall-clock TZ evaluation, weekly/monthly, TimezonePicker ([2c13cd8](https://github.com/YuniqueUnic/callai/commit/2c13cd8e6ff507bd97c01dccbffffd0c3fe97bf2))
+* **ui:** float edit header like home-hero (sticky brand grid) ([ba4a286](https://github.com/YuniqueUnic/callai/commit/ba4a286b2eb4f091913240a9107210eade0375b5))
+
 ## [0.2.2](https://github.com/YuniqueUnic/callai/compare/v0.2.1...v0.2.2) (2026-07-12)
 
 
