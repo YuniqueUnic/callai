@@ -30,6 +30,7 @@
 | 9 | [09 元数据与教学沉淀](./09-docs-meta-and-teaching.md) | 把对话炼成教材 |
 | 10 | [10 CI 现代化与仓库治理](./10-cicd-hardening-and-governance.md) | Node/runner 警告、分支保护、验收剧本 |
 | 11 | [11 包管理器分发](./11-packaging-brew-scoop-winget.md) | brew/scoop/winget GUI+CLI、脚本与 CI |
+| 12 | [12 运行时硬化与音效](./12-runtime-hardening-and-sfx.md) | 超时/取消/shlex/DurationPicker/SFX/去 hint |
 
 ### 路径 B · 只学「如何写 prompt」
 
@@ -37,7 +38,11 @@
 
 ### 路径 C · 只学发布工程
 
-`06` → `10` → `07` → `08` → `09`，配合 `gh run list` / Releases 页实操。
+`06` → `10` → `07` → `08` → `09` → `11`，配合 `gh run list` / Releases 页实操。
+
+### 路径 D · 只学执行语义与交互硬化
+
+`05` → `12` → `03`（CLI 对等），配合本地 `sleep`/`osascript`/`say` 手测。
 
 ## 提交时间线（证据）
 
@@ -57,6 +62,8 @@
 | CI Node24 / pin runners | `ea94e42` | 06, 10 |
 | 分支保护文档 | PR docs/protection | 10 |
 | 本教材 | `3f4a97f` + 本轮扩写 | 09 |
+| 包管理 | `68aa339` `d798362` | 11 |
+| 运行时硬化 | `f9cc5ba` `7eaf32d` `0db6b62` `6bc6223` | 12 |
 
 ```bash
 git log --oneline --reverse

@@ -102,14 +102,16 @@ impl SqliteStore {
                 backup_keep_count INTEGER NOT NULL
             );
 
+            -- Insert without sound_enabled so pre-migration DBs (missing the column)
+            -- still accept this statement; DEFAULT applies on fresh CREATE TABLE.
             INSERT OR IGNORE INTO app_settings (
                 id, theme, locale, launch_minimized, log_retention_days,
-                notify_on_failure, sound_enabled, auto_backup_on_start, backup_keep_count
-            ) VALUES (1, 'system', 'zh-CN', 0, 30, 0, 1, 1, 10);
+                notify_on_failure, auto_backup_on_start, backup_keep_count
+            ) VALUES (1, 'system', 'zh-CN', 0, 30, 0, 1, 10);
             "#,
         )
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("migrate: {e}")))?;
-        // Additive columns for existing installs.
+        // Additive columns for existing installs (must run after CREATE/INSERT batch).
         let _ = conn.execute(
             "ALTER TABLE alarms ADD COLUMN timeout_secs INTEGER NOT NULL DEFAULT 20",
             [],

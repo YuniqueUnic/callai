@@ -339,8 +339,8 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
               placeholder={t("alarms:argsPlaceholder")}
               onChange={(e) => setArgsText(e.target.value)}
             />
-            <div className="hint">
-              {t("alarms:argsHint")} · {"{{date}}"} · {"{{datetime}}"} · {"{{timestamp}}"}
+            <div className="hint meta">
+              {"{{date}}"} · {"{{datetime}}"} · {"{{timestamp}}"}
             </div>
           </div>
 
@@ -421,9 +421,6 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                 }
               />
             </div>
-            <div className="hint" style={{ marginTop: 8 }}>
-              {t("alarms:timeoutHint")}
-            </div>
           </div>
         </Card>
 
@@ -447,7 +444,6 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                 </button>
               ))}
             </div>
-            <div className="hint">{t("alarms:retryHint")}</div>
           </div>
         </Card>
       </div>
