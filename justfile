@@ -289,3 +289,17 @@ packaging-generate tag:
     ./packaging/scripts/generate_from_release.sh {{tag}}
     ./packaging/scripts/validate_manifests.sh
 
+
+
+# Mirror monorepo packaging/ to homebrew-callai + scoop-callai (needs MIRROR_TOKEN)
+packaging-mirror tag:
+  TAG={{tag}} ./packaging/scripts/mirror_to_tap_bucket.sh
+
+# Trigger GitHub packaging-sync workflow (latest or tag)
+packaging-sync-remote tag="":
+  #!/usr/bin/env bash
+  if [ -n "{{tag}}" ]; then
+    gh workflow run packaging-sync.yml -f tag={{tag}} -f open_pr=true -f mirror=true
+  else
+    gh workflow run packaging-sync.yml -f open_pr=true -f mirror=true
+  fi

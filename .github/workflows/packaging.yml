@@ -35,7 +35,8 @@ jobs:
 
   regenerate:
     name: packaging-regenerate
-    if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
+    # Prefer packaging-sync.yml for scheduled PR flow; keep this for ad-hoc artifact upload.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -50,7 +51,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./packaging/scripts/generate_from_release.sh "${{ inputs.tag }}"
+          TAG="${{ inputs.tag }}"
+          if [ -n "$TAG" ]; then
+            ./packaging/scripts/generate_from_release.sh "$TAG"
+          else
+            ./packaging/scripts/generate_from_release.sh
+          fi
           ./packaging/scripts/validate_manifests.sh
 
       - name: Upload manifests artifact

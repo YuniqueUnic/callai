@@ -85,7 +85,7 @@
 
 | Manager | GUI | CLI |
 | --- | --- | --- |
-| Homebrew | `brew tap YuniqueUnic/callai && brew install --cask callai-app` | `brew tap YuniqueUnic/callai && brew install callai` |
+| Homebrew | `brew tap YuniqueUnic/homebrew-callai && brew install --cask callai-app` | `brew tap YuniqueUnic/homebrew-callai && brew install callai` |
 | Scoop | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai` | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai-cli` |
 | winget | community PR (GUI only; one app per PR) → then `winget install YuniqueUnic.Callai` · local: `winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai/0.2.1` | separate PR for CLI → `winget install YuniqueUnic.Callai.CLI` · local: `--manifest .../Callai.CLI/0.2.1` |
 

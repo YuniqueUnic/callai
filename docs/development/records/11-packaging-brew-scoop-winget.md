@@ -317,3 +317,36 @@ Submit callai GUI + CLI to microsoft/winget-pkgs for version X.Y.Z.
 > **winget 投稿 = 正确 manifest + 一应用一 PR + 本人 CLA agree + 验证流水线绿。**  
 > 缺任何一环都「合不进去」；其中最多人栽的是 **双包装塞同一 PR**，其次是 **把旧 needsCLA 评论当成当前状态**。
 
+
+
+---
+
+## 10. 仓库怎么拆？用户体验优先 + xidl 式同步
+
+### 决策（当前）
+
+| 仓库 | 保留？ | 原因 |
+| --- | --- | --- |
+| `callai` + `packaging/**` | **必须** | 真源、脚本、winget、校验 |
+| `homebrew-callai` | **保留** | 用户 `brew tap` 习惯；根目录布局 |
+| `scoop-callai` | **保留** | 用户 `scoop bucket add` 习惯 |
+| 再拆「产品级」第三仓 | **不要** | 重复元数据、无自动同步会腐烂 |
+
+### 同步模型（避免发版 CI 跨仓耦合）
+
+```text
+Release 只出资产
+    -> packaging-sync（定时/手动）拉 Release 写 monorepo packaging/
+    -> 开 PR 合入 main
+    -> 同 workflow 可选 mirror 到 tap/bucket（PACKAGING_MIRROR_TOKEN）
+```
+
+本地：
+
+```bash
+./packaging/scripts/generate_from_release.sh vX.Y.Z
+MIRROR_TOKEN=... TAG=vX.Y.Z ./packaging/scripts/mirror_to_tap_bucket.sh
+gh workflow run packaging-sync.yml -f tag=vX.Y.Z
+```
+
+详见 `packaging/README.md` § Strategy。

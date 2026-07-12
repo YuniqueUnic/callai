@@ -1,0 +1,145 @@
+# xidl-packaging style: packaging *pulls* latest stable Release and refreshes manifests.
+# 1) regenerate packaging/** in monorepo (open PR under branch protection)
+# 2) optional mirror to homebrew-callai / scoop-callai (user-friendly brew/scoop install)
+#
+# App release.yml only builds assets — it does NOT push other repos (no release-time cross-repo coupling).
+name: Packaging sync
+
+on:
+  schedule:
+    # Daily UTC 06:00 — catch releases even if maintainers forget manual regen
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.2.2). Empty = latest stable."
+        required: false
+        default: ""
+      open_pr:
+        description: "Open monorepo PR when packaging/ changes"
+        type: boolean
+        default: true
+      mirror:
+        description: "Mirror to homebrew-callai + scoop-callai when PACKAGING_MIRROR_TOKEN is set"
+        type: boolean
+        default: true
+
+concurrency:
+  group: packaging-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: sync-manifests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: rel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_TAG:-}" ]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG=$(gh release list -R YuniqueUnic/callai --limit 30 --json tagName,isDraft,isPrerelease \
+              --jq '[.[]|select(.isDraft==false and .isPrerelease==false)|.tagName]|first')
+          fi
+          if [ -z "$TAG" ]; then
+            echo "No stable release found"
+            exit 1
+          fi
+          VER="${TAG#v}"
+          CUR=$(grep -E '^\s*version "' packaging/homebrew/Formula/callai.rb | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+          {
+            echo "tag=$TAG"
+            echo "ver=$VER"
+            echo "current=$CUR"
+          } >> "$GITHUB_OUTPUT"
+          echo "Resolved tag=$TAG (manifest currently $CUR)"
+
+      - name: Regenerate manifests from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ./packaging/scripts/generate_from_release.sh "${{ steps.rel.outputs.tag }}"
+          ./packaging/scripts/validate_manifests.sh
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet -- packaging/; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No packaging changes for ${{ steps.rel.outputs.tag }}"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git status --short packaging/
+          fi
+
+      - name: Commit on branch and open PR
+        if: >-
+          steps.diff.outputs.changed == 'true' &&
+          (github.event_name != 'workflow_dispatch' || inputs.open_pr)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.rel.outputs.tag }}"
+          VER="${{ steps.rel.outputs.ver }}"
+          BRANCH="chore/packaging-sync-${VER}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add packaging/
+          git commit -m "chore(packaging): sync manifests to ${TAG}"
+          git push -u origin "$BRANCH" --force
+          OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$OPEN" = "0" ]; then
+            BODY_FILE=$(mktemp)
+            {
+              echo "## Summary"
+              echo "Automated packaging sync ([xidl-packaging](https://github.com/xidl/xidl-packaging) style)."
+              echo
+              echo "- Source release: \`${TAG}\`"
+              echo "- Regenerated: Homebrew / Scoop / winget under \`packaging/\`"
+              echo "- Trigger: \`${{ github.event_name }}\`"
+              echo
+              echo "## Design"
+              echo "- **Monorepo \`packaging/\` = source of truth**"
+              echo "- Independent tap/bucket repos are **UX mirrors** (simplified user install)"
+              echo "- Release CI does not push other repos; this workflow *pulls* Releases"
+              echo "- winget still needs microsoft/winget-pkgs PRs (one app per PR + CLA)"
+            } > "$BODY_FILE"
+            gh pr create --base main --head "$BRANCH" \
+              --title "chore(packaging): sync manifests to ${TAG}" \
+              --body-file "$BODY_FILE"
+          else
+            echo "PR already open for $BRANCH"
+          fi
+
+      - name: Mirror to homebrew-callai + scoop-callai
+        if: >-
+          steps.diff.outputs.changed == 'true' &&
+          (github.event_name != 'workflow_dispatch' || inputs.mirror)
+        env:
+          MIRROR_TOKEN: ${{ secrets.PACKAGING_MIRROR_TOKEN }}
+          TAG: ${{ steps.rel.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MIRROR_TOKEN:-}" ]; then
+            echo "PACKAGING_MIRROR_TOKEN not set — skip mirrors."
+            echo "Set a PAT/fine-grained token with contents:write on homebrew-callai + scoop-callai."
+            exit 0
+          fi
+          ./packaging/scripts/mirror_to_tap_bucket.sh
