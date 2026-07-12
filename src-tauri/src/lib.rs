@@ -150,9 +150,8 @@ pub fn run() {
             let mut builder = tauri_plugin_autostart::Builder::new().app_name("callai");
             #[cfg(target_os = "macos")]
             {
-                builder = builder.macos_launcher(
-                    tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-                );
+                builder =
+                    builder.macos_launcher(tauri_plugin_autostart::MacosLauncher::LaunchAgent);
             }
             builder.build()
         })
@@ -183,6 +182,7 @@ pub fn run() {
             commands::detect_timezone,
             commands::get_app_version,
             commands::get_backups_dir,
+            commands::open_backups_dir,
             commands::refresh_tray_menu,
         ])
         .setup(|app| {

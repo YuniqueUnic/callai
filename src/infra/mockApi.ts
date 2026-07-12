@@ -190,4 +190,7 @@ export const mockApi = {
   async getBackupsDir() {
     return "/tmp/callai-mock-backups";
   },
+  async openBackupsDir() {
+    return "/tmp/callai-mock-backups";
+  },
 };

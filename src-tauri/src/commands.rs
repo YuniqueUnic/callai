@@ -212,11 +212,23 @@ pub fn get_app_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 
+/// Returns the backups directory path (for display / diagnostics).
 #[tauri::command]
 pub fn get_backups_dir() -> Result<String, String> {
     let paths = crate::infra::AppPaths::resolve().map_err(map_err)?;
     paths.ensure().map_err(map_err)?;
     Ok(paths.backups_dir.display().to_string())
+}
+
+/// Open the backups directory in the OS file manager.
+/// Uses the Rust opener API (no frontend path-scope allowlist needed).
+#[tauri::command]
+pub fn open_backups_dir() -> Result<String, String> {
+    let paths = crate::infra::AppPaths::resolve().map_err(map_err)?;
+    paths.ensure().map_err(map_err)?;
+    let dir = paths.backups_dir;
+    tauri_plugin_opener::open_path(&dir, None::<&str>).map_err(|e| e.to_string())?;
+    Ok(dir.display().to_string())
 }
 
 #[tauri::command]

@@ -334,20 +334,10 @@ export function SettingsPage({ onOpenLogs }: Props) {
                 onClick={() => {
                   void (async () => {
                     try {
-                      const dir = await client.getBackupsDir();
-                      if (!isTauri()) {
-                        toast.success({
-                          message: t("settings:openBackupsFolderSuccess"),
-                          description: dir,
-                        });
-                        return;
-                      }
-                      const { openPath } = await import(
-                        "@tauri-apps/plugin-opener"
-                      );
-                      await openPath(dir);
+                      const dir = await client.openBackupsDir();
                       toast.success({
                         message: t("settings:openBackupsFolderSuccess"),
+                        description: dir || undefined,
                       });
                     } catch (err) {
                       toast.error({
