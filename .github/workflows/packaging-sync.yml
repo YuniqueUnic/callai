@@ -133,13 +133,16 @@ jobs:
           steps.diff.outputs.changed == 'true' &&
           (github.event_name != 'workflow_dispatch' || inputs.mirror)
         env:
+          # Prefer per-repo SSH deploy keys (not GITHUB_TOKEN / not a broad PAT).
+          PACKAGING_MIRROR_SSH_KEY_HOMEBREW: ${{ secrets.PACKAGING_MIRROR_SSH_KEY_HOMEBREW }}
+          PACKAGING_MIRROR_SSH_KEY_SCOOP: ${{ secrets.PACKAGING_MIRROR_SSH_KEY_SCOOP }}
+          # Optional HTTPS fallback (do not use GITHUB_TOKEN here)
           MIRROR_TOKEN: ${{ secrets.PACKAGING_MIRROR_TOKEN }}
           TAG: ${{ steps.rel.outputs.tag }}
         run: |
           set -euo pipefail
-          if [ -z "${MIRROR_TOKEN:-}" ]; then
-            echo "PACKAGING_MIRROR_TOKEN not set — skip mirrors."
-            echo "Set a PAT/fine-grained token with contents:write on homebrew-callai + scoop-callai."
+          if [ -z "${PACKAGING_MIRROR_SSH_KEY_HOMEBREW:-}" ] && [ -z "${PACKAGING_MIRROR_SSH_KEY_SCOOP:-}" ] && [ -z "${MIRROR_TOKEN:-}" ]; then
+            echo "No mirror credentials — skip (set deploy-key secrets or PACKAGING_MIRROR_TOKEN)."
             exit 0
           fi
           ./packaging/scripts/mirror_to_tap_bucket.sh

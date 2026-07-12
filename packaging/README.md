@@ -47,12 +47,15 @@ packaging-sync.yml
 | **独立 tap/bucket（推荐）** | `brew tap` / `scoop bucket add` 一行习惯 | 镜像脚本 + 一个 secret |
 | 发版 CI 直接 push 镜像 | 同 UX | 跨仓耦合、半失败难查 |
 
-### Secret
+### Secrets（镜像用 · 推荐 deploy key，不要用 `GITHUB_TOKEN`）
 
 | Name | 用途 |
 | --- | --- |
-| `PACKAGING_MIRROR_TOKEN` | 对 `homebrew-callai` + `scoop-callai` 有 `contents:write` 的 PAT/fine-grained token |
+| `PACKAGING_MIRROR_SSH_KEY_HOMEBREW` | **write** deploy key private key → `homebrew-callai` only |
+| `PACKAGING_MIRROR_SSH_KEY_SCOOP` | **write** deploy key private key → `scoop-callai` only |
+| `PACKAGING_MIRROR_TOKEN`（可选 fallback） | HTTPS PAT；**不要**把日常 `gh auth token` 塞进 secret |
 
+GitHub 不允许同一把 deploy key 挂两个仓库，所以是 **两把 key / 两个 secret**。  
 未配置时：monorepo 同步 PR 仍可用；镜像步骤 skip。
 
 ### monorepo 内边界（保持干净）
