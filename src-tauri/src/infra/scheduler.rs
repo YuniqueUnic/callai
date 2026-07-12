@@ -159,10 +159,7 @@ impl AlarmScheduler {
     }
 
     fn tick(&self) -> crate::domain::DomainResult<()> {
-        let tz = self
-            .service
-            .schedule_timezone()
-            .unwrap_or(chrono_tz::UTC);
+        let tz = self.service.schedule_timezone().unwrap_or(chrono_tz::UTC);
         let now_utc = chrono::Utc::now();
         let now_local = now_utc.with_timezone(&tz);
         let minute_key = now_local.format("%Y%m%d%H%M").to_string();
