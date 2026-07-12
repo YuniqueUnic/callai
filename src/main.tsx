@@ -13,7 +13,11 @@ if (isTauri()) {
   document.body.style.background = "transparent";
 }
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+const rootEl = document.getElementById("root") as HTMLElement;
+// Drawer pushBackground mutates body children; keep #root out of that path.
+rootEl.setAttribute("data-animal-drawer-ignore", "1");
+
+ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,

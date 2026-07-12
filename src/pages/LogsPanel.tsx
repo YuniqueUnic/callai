@@ -8,6 +8,7 @@ import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
 import { IconSearch, IconTrash } from "../ui/icons";
 import { toast } from "../ui/toast";
+import { playSound } from "../ui/sounds";
 
 interface Props {
   alarmId?: string | null;
@@ -98,7 +99,7 @@ export function LogsPanel({ alarmId }: Props) {
                       label={t("logs:delete")}
                       icon={<IconTrash size={14} />}
                       variant="danger"
-                      onClick={() => setConfirmDeleteId(log.id)}
+                      onClick={() => { playSound("warn"); setConfirmDeleteId(log.id); }}
                     />
                   <Tag
                     color={
@@ -152,8 +153,9 @@ export function LogsPanel({ alarmId }: Props) {
         open={confirmDeleteId != null}
         title={t("logs:delete")}
         typewriter={false}
-        onClose={() => setConfirmDeleteId(null)}
+        onClose={() => { playSound("cancel"); setConfirmDeleteId(null); }}
         onOk={() => {
+          playSound("warn");
           if (confirmDeleteId == null) return;
           void (async () => {
             try {

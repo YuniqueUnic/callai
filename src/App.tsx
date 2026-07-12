@@ -180,7 +180,9 @@ export default function App() {
           title={t("logs:title")}
           placement="right"
           width="min(420px, 92vw)"
-          pushBackground
+          /* pushBackground scales/blurs #root + forces radius — breaks transparent
+             rounded Tauri chrome (square corners under mask). Keep false. */
+          pushBackground={false}
           onClose={() => setLogsOpen(false)}
           className="logs-drawer"
         >

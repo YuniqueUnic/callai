@@ -421,19 +421,19 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                       label={t("common:edit")}
                       icon={<IconEdit size={16} />}
                       disabled={running || busyId === alarm.id}
-                      onClick={() => onEdit(alarm.id)}
+                      onClick={() => { playSound("soft"); onEdit(alarm.id); }}
                     />
                     <IconButton
                       label={t("alarms:viewLogs")}
                       icon={<IconLogs size={16} />}
-                      onClick={() => onLogs(alarm.id)}
+                      onClick={() => { playSound("soft"); onLogs(alarm.id); }}
                     />
                     <IconButton
                       label={t("common:delete")}
                       icon={<IconTrash size={16} />}
                       variant="danger"
                       disabled={running || deleting || busyId === alarm.id}
-                      onClick={() => setConfirmDelete(alarm)}
+                      onClick={() => { playSound('warn'); setConfirmDelete(alarm); }}
                     />
                     {running || busyId === alarm.id ? (
                       <IconButton
@@ -446,7 +446,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                         variant="danger"
                         loading={stoppingId === alarm.id}
                         disabled={stoppingId === alarm.id}
-                        onClick={() => setConfirmStop(alarm)}
+                        onClick={() => { playSound('warn'); setConfirmStop(alarm); }}
                       />
                     ) : (
                       <IconButton
@@ -454,7 +454,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                         icon={<IconBolt size={16} />}
                         variant="primary"
                         disabled={!!busyId}
-                        onClick={() => setConfirmRun(alarm)}
+                        onClick={() => { playSound('soft'); setConfirmRun(alarm); }}
                       />
                     )}
                   </div>
@@ -471,7 +471,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
               className="fab"
               type="button"
               aria-label={t("alarms:create")}
-              onClick={onCreate}
+              onClick={() => { playSound("confirm"); onCreate(); }}
             >
               <IconPlus size={28} />
             </button>,
@@ -484,9 +484,13 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
         title={t("alarms:runNow")}
         typewriter={false}
         onClose={() => {
-          if (!busyId) setConfirmRun(null);
+          if (!busyId) {
+            playSound("cancel");
+            setConfirmRun(null);
+          }
         }}
         onOk={() => {
+          playSound("confirm");
           if (confirmRun && !busyId) void runNow(confirmRun);
         }}
       >
@@ -499,9 +503,13 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
         title={t("alarms:stop")}
         typewriter={false}
         onClose={() => {
-          if (!stoppingId) setConfirmStop(null);
+          if (!stoppingId) {
+            playSound("cancel");
+            setConfirmStop(null);
+          }
         }}
         onOk={() => {
+          playSound("warn");
           if (confirmStop && !stoppingId) void stopNow(confirmStop);
         }}
       >
@@ -517,8 +525,14 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
         open={!!confirmDelete}
         title={t("common:delete")}
         typewriter={false}
-        onClose={() => !deleting && setConfirmDelete(null)}
+        onClose={() => {
+          if (!deleting) {
+            playSound("cancel");
+            setConfirmDelete(null);
+          }
+        }}
         onOk={() => {
+          playSound("warn");
           if (confirmDelete) void remove(confirmDelete);
         }}
       >

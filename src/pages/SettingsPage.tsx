@@ -467,7 +467,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
                       label={t("settings:deleteBackup")}
                       icon={<IconTrash size={16} />}
                       variant="danger"
-                      onClick={() => setConfirmDeleteBackup(b)}
+                      onClick={() => { playSound("warn"); setConfirmDeleteBackup(b); }}
                     />
                   </div>
                 </div>
@@ -493,7 +493,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
                   void (async () => {
                     // One-click path: check if needed → confirm → install.
                     if (pendingInstall) {
-                      setConfirmUpdate(true);
+                      playSound("soft"); setConfirmUpdate(true);
                       return;
                     }
                     setUpdateBusy(true);
@@ -506,7 +506,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
                           }),
                           description: found.body || undefined,
                         });
-                        setConfirmUpdate(true);
+                        playSound("soft"); setConfirmUpdate(true);
                       }
                     } finally {
                       setUpdateBusy(false);
@@ -660,9 +660,10 @@ export function SettingsPage({ onOpenLogs }: Props) {
         open={!!confirmDeleteBackup}
         title={t("settings:deleteBackup")}
         typewriter={false}
-        onClose={() => setConfirmDeleteBackup(null)}
+        onClose={() => { playSound("cancel"); setConfirmDeleteBackup(null); }}
         onOk={() => {
           if (!confirmDeleteBackup) return;
+          playSound("warn");
           void (async () => {
             try {
               await client.deleteBackup(confirmDeleteBackup);
@@ -695,8 +696,9 @@ export function SettingsPage({ onOpenLogs }: Props) {
         open={confirmUpdate}
         title={t("settings:updateConfirmTitle")}
         typewriter={false}
-        onClose={() => setConfirmUpdate(false)}
+        onClose={() => { playSound("cancel"); setConfirmUpdate(false); }}
         onOk={() => {
+          playSound("confirm");
           setConfirmUpdate(false);
           if (!pendingInstall) return;
           void installPending(pendingInstall);

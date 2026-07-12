@@ -9,6 +9,7 @@ import {
 import { createPortal } from "react-dom";
 import classNames from "classnames";
 import { Button } from "animal-island-ui";
+import { playSound, type SoundKind, unlockAudio } from "./sounds";
 
 type Variant = "default" | "primary" | "danger" | "ghost";
 type Placement = "top" | "bottom" | "left" | "right";
@@ -22,6 +23,8 @@ interface Props {
   disabled?: boolean;
   className?: string;
   tooltipPlacement?: Placement;
+  /** Cozy SFX on press (default: none; primary often "confirm"). */
+  sfx?: SoundKind | false;
   onClick?: () => void;
 }
 
@@ -38,6 +41,7 @@ export function IconButton({
   disabled,
   className,
   tooltipPlacement = "bottom",
+  sfx,
   onClick,
 }: Props) {
   const type = variant === "primary" ? "primary" : "default";
@@ -154,7 +158,13 @@ export function IconButton({
           aria-label={label}
           aria-describedby={open ? tipId : undefined}
           className="icon-btn"
-          onClick={onClick}
+          onClick={() => {
+            if (sfx) {
+              void unlockAudio();
+              playSound(sfx);
+            }
+            onClick?.();
+          }}
         />
       </span>
       {tip}
