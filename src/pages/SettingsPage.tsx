@@ -181,12 +181,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
 
 
           <div className="settings-row">
-            <div>
-              <div>{t("settings:soundEnabled")}</div>
-              <div className="hint" style={{ marginTop: 2 }}>
-                {t("settings:soundHint")}
-              </div>
-            </div>
+            <span>{t("settings:soundEnabled")}</span>
             <div className="row" style={{ gap: 8, alignItems: "center" }}>
               <Button
                 size="small"
@@ -258,9 +253,6 @@ export function SettingsPage({ onOpenLogs }: Props) {
 
           <div className="field">
             <label className="label">{t("settings:backups")}</label>
-            <div className="hint" style={{ marginBottom: 8 }}>
-              {t("settings:backupKeepHint")}
-            </div>
             {backups.length === 0 ? (
               <div className="meta">{t("common:empty")}</div>
             ) : (
@@ -296,9 +288,6 @@ export function SettingsPage({ onOpenLogs }: Props) {
           <div className="field">
             <div className="panel-head">
               <label className="label">{t("settings:updateSection")}</label>
-            </div>
-            <div className="hint" style={{ marginBottom: 8 }}>
-              {t("settings:updateHint")}
             </div>
             {updateInfo ? (
               <div className="meta" style={{ marginBottom: 8 }}>
@@ -387,7 +376,6 @@ export function SettingsPage({ onOpenLogs }: Props) {
               <ElementImage id="logs-clipboard" size={36} alt="" />
               <div>
                 <div className="label">{t("alarms:openLogsFromSettings")}</div>
-                <div className="hint">{t("alarms:logsHint")}</div>
               </div>
             </div>
             <IconButton

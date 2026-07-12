@@ -24,5 +24,6 @@
 
 ## 维护
 
-新增大阶段需求后：新增 `records/NN-*.md`，更新 `00-index.md` 时间线。  
+新增大阶段需求后：新增 `records/NN-*.md`，更新 `00-index.md` 时间线。
+最近完整长文示例：[`records/12-runtime-hardening-and-sfx.md`](./records/12-runtime-hardening-and-sfx.md)。  
 禁止把私钥、本机绝对路径密钥、`assets/screenshot/original` 大文件写进教材附件。
