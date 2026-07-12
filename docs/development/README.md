@@ -27,3 +27,7 @@
 新增大阶段需求后：新增 `records/NN-*.md`，更新 `00-index.md` 时间线。
 最近完整长文示例：[`records/12-runtime-hardening-and-sfx.md`](./records/12-runtime-hardening-and-sfx.md)。  
 禁止把私钥、本机绝对路径密钥、`assets/screenshot/original` 大文件写进教材附件。
+
+## 专题速查
+
+- winget 投稿硬规则（一应用一 PR、CLA 评论签署）：[`records/11-packaging-brew-scoop-winget.md`](./records/11-packaging-brew-scoop-winget.md) **§9**

@@ -29,7 +29,7 @@
 | 8 | [08 媒体与 README](./08-media-readme-pipeline.md) | 素材卫生；展示即获客 |
 | 9 | [09 元数据与教学沉淀](./09-docs-meta-and-teaching.md) | 把对话炼成教材 |
 | 10 | [10 CI 现代化与仓库治理](./10-cicd-hardening-and-governance.md) | Node/runner 警告、分支保护、验收剧本 |
-| 11 | [11 包管理器分发](./11-packaging-brew-scoop-winget.md) | brew/scoop/winget GUI+CLI、脚本与 CI |
+| 11 | [11 包管理器分发](./11-packaging-brew-scoop-winget.md) | brew/scoop/winget；**winget 一应用一 PR + CLA** |
 | 12 | [12 运行时硬化与音效](./12-runtime-hardening-and-sfx.md) | 超时/取消/shlex/DurationPicker/SFX/去 hint |
 
 ### 路径 B · 只学「如何写 prompt」
@@ -38,7 +38,7 @@
 
 ### 路径 C · 只学发布工程
 
-`06` → `10` → `07` → `08` → `09` → `11`，配合 `gh run list` / Releases 页实操。
+`06` → `10` → `07` → `08` → `09` → `11`（含 §9 winget-pkgs CLA / 一应用一 PR），配合 `gh run list` / Releases 页实操。
 
 ### 路径 D · 只学执行语义与交互硬化
 

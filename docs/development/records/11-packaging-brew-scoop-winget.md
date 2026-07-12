@@ -104,3 +104,216 @@ Do not mix identifiers in one PR.
 已拆分提交：
 - GUI: https://github.com/microsoft/winget-pkgs/pull/401366
 - CLI: https://github.com/microsoft/winget-pkgs/pull/401367
+
+---
+
+## 9. winget-pkgs 上游要求（必读 · 投稿 checklist）
+
+> 本节把 **真实踩坑 + 官方规则** 写进教材，避免下一次发版再踩「多应用 PR / CLA 假失败 / 验证流水线」同一坑。  
+> 权威入口：
+>
+> - 仓库：https://github.com/microsoft/winget-pkgs  
+> - CLA 说明：https://opensource.microsoft.com/cla/  
+> - CLA PDF：https://opensource.microsoft.com/pdf/microsoft-contribution-license-agreement.pdf  
+> - 验证失败常见问题：https://github.com/microsoft/winget-pkgs/blob/master/doc/ValidationFailureGuide.md  
+
+### 9.1 一条铁律：一个 PR 只能有一个 PackageIdentifier
+
+| 允许 | 禁止 |
+| --- | --- |
+| PR 只含 `manifests/y/YuniqueUnic/Callai/0.2.1/**` | 同一 PR 里同时有 `Callai` **和** `Callai.CLI` |
+| PR 只含 `manifests/y/YuniqueUnic/Callai.CLI/0.2.1/**` | 「图省事」一次提交 GUI + CLI |
+| 同一版本发 **两个 PR** | 用 monorepo 式路径塞两个应用树 |
+
+**真实失败（callai）：**
+
+- PR：https://github.com/microsoft/winget-pkgs/pull/401342 （已关闭）  
+- 错误（wingetbot）：
+
+```text
+PullRequest-Error The pull request contains more than one application.
+Multiple manifests changes must be under the same application.
+```
+
+**纠偏后的正确提交：**
+
+| PackageIdentifier | 资产 | PR |
+| --- | --- | --- |
+| `YuniqueUnic.Callai` | MSI GUI | https://github.com/microsoft/winget-pkgs/pull/401366 |
+| `YuniqueUnic.Callai.CLI` | portable exe | https://github.com/microsoft/winget-pkgs/pull/401367 |
+
+**给 agent / 维护者的硬约束：**
+
+```markdown
+## winget submission
+- Never put two PackageIdentifier trees in one PR
+- GUI path: manifests/y/YuniqueUnic/Callai/<ver>/
+- CLI path: manifests/y/YuniqueUnic/Callai.CLI/<ver>/
+- Open two PRs; close any multi-app PR with a comment linking the split PRs
+```
+
+### 9.2 CLA（Contributor License Agreement）怎么签
+
+Microsoft 的 CLA **嵌在 GitHub PR 体验里**，不需要单独填网页表单（个人场景）。
+
+#### 签署步骤（个人贡献 · 默认）
+
+1. 用 **提交该 PR 的同一 GitHub 账号** 登录（callai 为 `YuniqueUnic`）。  
+2. 打开对应 winget-pkgs PR 页面。  
+3. 在评论框 **单独发一行**（不要夹杂其它说明）：
+
+```text
+@microsoft-github-policy-service agree
+```
+
+4. 等 1–2 分钟，刷新 **Checks**。  
+5. 看到 `license/cla` 为 **SUCCESS**，且描述类似：
+
+```text
+All CLA requirements met.
+```
+
+即表示签署完成。
+
+#### 公司签署（少用）
+
+若贡献属于雇主职务作品，用：
+
+```text
+@microsoft-github-policy-service agree company="Legal Company Name"
+```
+
+#### 常见误解
+
+| 误解 | 事实 |
+| --- | --- |
+| bot 评论 *needsCLA* 就一定没签 | 旧模板评论可能残留；**以 Checks 里 `license/cla` 为准** |
+| API/别人代发 `agree` 一定生效 | 最稳是 **本人在网页上评论** |
+| CLA 绿了就能立刻 merge | 还要过 **WinGet 验证流水线 + 人工审核** |
+| 微软员工也要手动 agree | 内部账号关联后通常免签；社区贡献者走 agree |
+
+#### 检查是否已签过
+
+```bash
+# 看 PR 的 license/cla 结论
+gh pr view 401366 --repo microsoft/winget-pkgs \
+  --json statusCheckRollup \
+  --jq '.statusCheckRollup[] | select(.name=="license/cla")'
+```
+
+或浏览器：PR → **Checks** → `license/cla` 绿勾。
+
+### 9.3 验证流水线（WinGetSvc-Validation）
+
+投稿后 `wingetbot` 会贴 Azure Pipelines 链接，例如：
+
+```text
+Validation Pipeline Run [WinGetSvc-Validation-…](https://dev.azure.com/shine-oss/...)
+```
+
+典型检查包括（随官方演进，以当次 pipeline 为准）：
+
+- manifest schema / 字段完整性  
+- InstallerUrl 可达  
+- InstallerSha256 与真实文件一致  
+- PackageIdentifier / 版本路径约定  
+- **单应用边界**（§9.1）  
+- 未签名安装包可能出现 SmartScreen 相关提示（描述里诚实写明即可）
+
+失败时优先读：
+
+1. pipeline 日志  
+2. [ValidationFailureGuide](https://github.com/microsoft/winget-pkgs/blob/master/doc/ValidationFailureGuide.md)  
+3. 本仓库 `packaging/winget/manifests/...` 与 Release 资产是否仍对齐  
+
+### 9.4 本地与本仓清单要求
+
+```bash
+# 发版后刷新 hash/version
+./packaging/scripts/generate_from_release.sh vX.Y.Z
+just packaging-validate
+
+# Windows 上（装了 winget 客户端时）
+winget validate packaging\winget\manifests\y\YuniqueUnic\Callai\X.Y.Z
+winget validate packaging\winget\manifests\y\YuniqueUnic\Callai.CLI\X.Y.Z
+
+# 合入官方仓前可本地试装
+winget install --manifest packaging\winget\manifests\y\YuniqueUnic\Callai\X.Y.Z
+winget install --manifest packaging\winget\manifests\y\YuniqueUnic\Callai.CLI\X.Y.Z
+```
+
+每个版本目录通常三件套：
+
+| 文件 | 作用 |
+| --- | --- |
+| `*.yaml`（version） | PackageIdentifier + Version + DefaultLocale |
+| `*.installer.yaml` | URL / SHA256 / InstallerType / Architecture |
+| `*.locale.en-US.yaml` | 名称、描述、License、Tags |
+
+callai 约定：
+
+| 包 | InstallerType | 命令 |
+| --- | --- | --- |
+| `YuniqueUnic.Callai` | wix (MSI) | GUI |
+| `YuniqueUnic.Callai.CLI` | portable | `Commands: [callai]` |
+
+### 9.5 投稿操作剧本（发新版本时）
+
+```text
+1. GitHub Release 出齐：MSI + callai-cli-*-windows-msvc.exe（及 .sig 可选）
+2. generate_from_release.sh vX.Y.Z → 更新 packaging/winget/**
+3. just packaging-validate / winget validate 两个目录
+4. fork microsoft/winget-pkgs（或已有 fork）基于最新 master
+5. 开 PR-A：只加 Callai/X.Y.Z
+6. 开 PR-B：只加 Callai.CLI/X.Y.Z
+7. 每个 PR 用同一 GitHub 账号评论：
+     @microsoft-github-policy-service agree
+8. 确认 license/cla = SUCCESS
+9. 等 WinGetSvc-Validation；红了按 ValidationFailureGuide 修 manifest 后 push 同分支
+10. 合入后 README 把「pending PR」改成 winget install 命令
+```
+
+### 9.6 给 AI agent 的完整提示模板
+
+```markdown
+# Goal
+Submit callai GUI + CLI to microsoft/winget-pkgs for version X.Y.Z.
+
+# Hard rules
+1. ONE PackageIdentifier per PR (never mix Callai and Callai.CLI).
+2. Author must CLA-sign by commenting on each PR (as the GitHub user):
+   @microsoft-github-policy-service agree
+3. InstallerSha256 must match Release assets; regenerate via
+   ./packaging/scripts/generate_from_release.sh vX.Y.Z
+4. Base branch: microsoft/winget-pkgs master (keep fork master synced).
+
+# PR A — GUI
+- Paths only under manifests/y/YuniqueUnic/Callai/X.Y.Z/
+- Title: New package: YuniqueUnic.Callai version X.Y.Z
+  (or "New version: …" if package already exists)
+
+# PR B — CLI
+- Paths only under manifests/y/YuniqueUnic/Callai.CLI/X.Y.Z/
+- Title: New package: YuniqueUnic.Callai.CLI version X.Y.Z
+
+# If an old multi-app PR exists
+- Close it with comment linking PR A + PR B and quote the validation error.
+
+# Do not
+- Put both trees in one commit/PR
+- Hand-edit SHA without re-downloading assets
+- Claim CLA failed when license/cla check is already green (stale comment)
+```
+
+### 9.7 学员练习
+
+1. 用一句话解释：为什么 GUI 与 CLI 在 winget 里是两个 PackageIdentifier，而 brew 用 `callai-app` cask + `callai` formula。  
+2. 模拟 bot 报 “more than one application”：写出你关闭旧 PR 的评论全文。  
+3. 在假 PR 上写出个人 CLA 与公司 CLA 两条评论的区别。  
+4. 从 `latest` Release 拉 MSI，本地算 SHA-256，与 `*.installer.yaml` 对照。  
+
+### 9.8 一句话收束
+
+> **winget 投稿 = 正确 manifest + 一应用一 PR + 本人 CLA agree + 验证流水线绿。**  
+> 缺任何一环都「合不进去」；其中最多人栽的是 **双包装塞同一 PR**，其次是 **把旧 needsCLA 评论当成当前状态**。
+

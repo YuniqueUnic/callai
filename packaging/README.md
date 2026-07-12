@@ -86,6 +86,29 @@ scoop install ./packaging/scoop/bucket/callai.json
 > Active submissions: [Callai GUI #401366](https://github.com/microsoft/winget-pkgs/pull/401366) · [Callai.CLI #401367](https://github.com/microsoft/winget-pkgs/pull/401367)
 
 
+#### winget-pkgs hard requirements (upstream)
+
+1. **One application per PR**  
+   - `YuniqueUnic.Callai` and `YuniqueUnic.Callai.CLI` must be **two PRs**.  
+   - Mixing both trees fails validation: *"The pull request contains more than one application."*
+
+2. **Sign the Microsoft CLA** (same GitHub user as the PR author), comment on **each** PR:
+
+   ```text
+   @microsoft-github-policy-service agree
+   ```
+
+   - Personal (default): the line above.  
+   - Company: `@microsoft-github-policy-service agree company="Legal Name"`  
+   - Official guide: https://opensource.microsoft.com/cla/  
+   - Trust **Checks → `license/cla` = success** (“All CLA requirements met”), not stale bot comments.
+
+3. After CLA: wait for **WinGetSvc-Validation** (Azure pipeline linked by wingetbot).  
+   Common failures guide: https://github.com/microsoft/winget-pkgs/blob/master/doc/ValidationFailureGuide.md
+
+4. Teaching write-up: [`docs/development/records/11-packaging-brew-scoop-winget.md`](../docs/development/records/11-packaging-brew-scoop-winget.md) §9.
+
+
 清单在合入 [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) 前，可用本地校验：
 
 ```powershell
