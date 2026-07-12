@@ -100,6 +100,25 @@ python3 scripts/brand/make_tray_template.py --help
   - `src-tauri/Cargo.toml`
   - `.release-please-manifest.json`
 
+
+## Branch protection & merges
+
+`main` is protected:
+
+- PRs must be **up to date** with `main` (`strict` status checks)
+- Required check: **`gate`** (CI workflow job name)
+- **Rebase merge only** (squash/merge commits disabled) for linear history
+- Force-push and branch deletion on `main` are blocked; feature branches auto-delete on merge
+- Conversation resolution required before merge
+
+Local tip:
+
+```bash
+git fetch origin
+git rebase origin/main
+# ensure CI green, then open/update PR
+```
+
 ## License
 
 By contributing, you agree that your contributions are licensed under the MIT License in `LICENSE`, subject to the third-party notice about `animal-island-ui` (CC BY-NC 4.0). Do not introduce dependencies that block personal/non-commercial use without calling it out in the PR.
