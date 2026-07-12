@@ -229,6 +229,14 @@ just brand
 - [PRODUCT.md](./PRODUCT.md) · [DESIGN.md](./DESIGN.md) · [usecases/](./usecases/)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md)
 
+## Links
+
+- [GitHub](https://github.com/YuniqueUnic/callai)
+- [Releases](https://github.com/YuniqueUnic/callai/releases)
+- [LinuxDo](https://linux.do)
+- [animal-island-ui](https://github.com/guokaigdg/animal-island-ui)
+- [开发过程 records](./docs/development/README.md)
+
 ## 许可
 
 - 源码：[MIT](./LICENSE)
