@@ -85,9 +85,9 @@
 
 | Manager | GUI | CLI |
 | --- | --- | --- |
-| Homebrew | `brew install --cask ./packaging/homebrew/Casks/callai-app.rb` | `brew install ./packaging/homebrew/Formula/callai.rb` |
-| Scoop | `scoop install ./packaging/scoop/bucket/callai.json` | `scoop install ./packaging/scoop/bucket/callai-cli.json` |
-| winget | `winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai/<ver>` | `winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai.CLI/<ver>` |
+| Homebrew | `brew tap YuniqueUnic/callai && brew install --cask callai-app` | `brew tap YuniqueUnic/callai && brew install callai` |
+| Scoop | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai` | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai-cli` |
+| winget | pending community PR → then `winget install YuniqueUnic.Callai` (local: `--manifest packaging/winget/.../Callai/<ver>`) | pending community PR → then `winget install YuniqueUnic.Callai.CLI` |
 
 Full matrix, refresh scripts, and upstream submission notes: **[packaging/README.md](./packaging/README.md)**.
 
@@ -277,6 +277,9 @@ python3 scripts/brand/make_tray_template.py --help
 
 ## Links
 
+- [Homebrew tap](https://github.com/YuniqueUnic/homebrew-callai)
+- [Scoop bucket](https://github.com/YuniqueUnic/scoop-callai)
+- [winget-pkgs PR](https://github.com/microsoft/winget-pkgs/pull/401342)
 - [GitHub](https://github.com/YuniqueUnic/callai)
 - [Releases](https://github.com/YuniqueUnic/callai/releases)
 - [LinuxDo](https://linux.do)

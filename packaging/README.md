@@ -42,10 +42,10 @@ packaging/
 
 ```bash
 # GUI (Cask) — 从本仓库路径直接装
-brew install --cask ./packaging/homebrew/Casks/callai-app.rb
+brew tap YuniqueUnic/callai && brew install --cask callai-app
 
 # CLI (Formula)
-brew install ./packaging/homebrew/Formula/callai.rb
+brew tap YuniqueUnic/callai && brew install callai
 
 callai --help
 ```
