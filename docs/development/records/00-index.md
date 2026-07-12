@@ -31,6 +31,7 @@
 | 10 | [10 CI 现代化与仓库治理](./10-cicd-hardening-and-governance.md) | Node/runner 警告、分支保护、验收剧本 |
 | 11 | [11 包管理器分发](./11-packaging-brew-scoop-winget.md) | brew/scoop/winget；**winget 一应用一 PR + CLA** |
 | 12 | [12 运行时硬化与音效](./12-runtime-hardening-and-sfx.md) | 超时/取消/shlex/DurationPicker/SFX/去 hint |
+| 13 | [13 GitHub Issue/PR 周期](./13-github-issue-pr-lifecycle.md) | Issue→分支→PR→gate→rebase merge；#16–#19 样板 |
 
 ### 路径 B · 只学「如何写 prompt」
 
@@ -38,7 +39,7 @@
 
 ### 路径 C · 只学发布工程
 
-`06` → `10` → `07` → `08` → `09` → `11`（含 §9 winget-pkgs CLA / 一应用一 PR），配合 `gh run list` / Releases 页实操。
+`06` → `10` → `13` → `07` → `08` → `09` → `11`（含 §9 winget-pkgs CLA / 一应用一 PR），配合 `gh run list` / Releases 页实操。
 
 ### 路径 D · 只学执行语义与交互硬化
 
@@ -65,6 +66,7 @@
 | 包管理 | `68aa339` `d798362` | 11 |
 | 运行时硬化 | `f9cc5ba` `7eaf32d` `0db6b62` `6bc6223` | 12 |
 | UI 浮层顶栏 / 海浪无缝 / 时区墙钟 | `ce863f6` `909a0cb` + SeaMarquee 续 | 04 附录 B · 05 附录 B · 12 附录 A |
+| Issues #16–#19 功能与周期教材 | `fix/issues-16-19` | 13 |
 
 ```bash
 git log --oneline --reverse

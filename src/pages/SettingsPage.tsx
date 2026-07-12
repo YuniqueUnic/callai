@@ -8,7 +8,7 @@ import { applyTheme } from "../theme/theme";
 import { ElementImage } from "../ui/ElementImage";
 import { TimezonePicker } from "../ui/TimezonePicker";
 import { IconButton } from "../ui/IconButton";
-import { IconLogs, IconRestore, IconTrash } from "../ui/icons";
+import { IconFolder, IconLogs, IconRestore, IconTrash } from "../ui/icons";
 import { playSound, setSoundEnabled, unlockAudio } from "../ui/sounds";
 import { isTauri } from "../infra/tauriApi";
 import { checkForAppUpdate } from "../infra/updater";
@@ -45,6 +45,8 @@ export function SettingsPage({ onOpenLogs }: Props) {
   const [updateInfo, setUpdateInfo] = useState<string | null>(null);
   const [pendingInstall, setPendingInstall] = useState<null | (() => Promise<void>)>(null);
   const [detectedTz, setDetectedTz] = useState<string>("");
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [autostartOn, setAutostartOn] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -56,6 +58,19 @@ export function SettingsPage({ onOpenLogs }: Props) {
         setDetectedTz(
           Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         );
+      }
+      try {
+        setAppVersion(await client.getAppVersion());
+      } catch {
+        setAppVersion("");
+      }
+      if (isTauri()) {
+        try {
+          const { isEnabled } = await import("@tauri-apps/plugin-autostart");
+          setAutostartOn(await isEnabled());
+        } catch {
+          setAutostartOn(false);
+        }
       }
     })();
   }, []);
@@ -180,6 +195,41 @@ export function SettingsPage({ onOpenLogs }: Props) {
           </div>
 
           <div className="settings-row">
+            <span>{t("settings:autostart")}</span>
+            <Switch
+              checked={autostartOn}
+              onChange={(v) => {
+                void (async () => {
+                  if (!isTauri()) {
+                    setAutostartOn(v);
+                    return;
+                  }
+                  try {
+                    const { enable, disable } = await import(
+                      "@tauri-apps/plugin-autostart"
+                    );
+                    if (v) await enable();
+                    else await disable();
+                    setAutostartOn(v);
+                    toast.success({
+                      message: t("settings:saved"),
+                      key: "autostart",
+                      duration: 2.2,
+                    });
+                  } catch (err) {
+                    toast.error({
+                      message: t("settings:autostartFail"),
+                      description: String(
+                        (err as { message?: string })?.message ?? err,
+                      ),
+                    });
+                  }
+                })();
+              }}
+            />
+          </div>
+
+          <div className="settings-row">
             <span>{t("settings:notifyFailure")}</span>
             <Switch
               checked={settings.notify_on_failure}
@@ -276,7 +326,41 @@ export function SettingsPage({ onOpenLogs }: Props) {
           </div>
 
           <div className="field">
-            <label className="label">{t("settings:backups")}</label>
+            <div className="panel-head" style={{ marginBottom: 8 }}>
+              <label className="label">{t("settings:backups")}</label>
+              <IconButton
+                label={t("settings:openBackupsFolder")}
+                icon={<IconFolder size={16} />}
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      const dir = await client.getBackupsDir();
+                      if (!isTauri()) {
+                        toast.success({
+                          message: t("settings:openBackupsFolderSuccess"),
+                          description: dir,
+                        });
+                        return;
+                      }
+                      const { openPath } = await import(
+                        "@tauri-apps/plugin-opener"
+                      );
+                      await openPath(dir);
+                      toast.success({
+                        message: t("settings:openBackupsFolderSuccess"),
+                      });
+                    } catch (err) {
+                      toast.error({
+                        message: t("settings:openBackupsFolderFail"),
+                        description: String(
+                          (err as { message?: string })?.message ?? err,
+                        ),
+                      });
+                    }
+                  })();
+                }}
+              />
+            </div>
             {backups.length === 0 ? (
               <div className="meta">{t("common:empty")}</div>
             ) : (
@@ -392,6 +476,22 @@ export function SettingsPage({ onOpenLogs }: Props) {
               >
                 {t("settings:updateInstall")}
               </Button>
+            </div>
+          </div>
+
+          <div className="field settings-about">
+            <div className="panel-head">
+              <label className="label">{t("settings:aboutSection")}</label>
+            </div>
+            <div className="settings-version" aria-label={t("settings:appVersion", { version: appVersion || "…" })}>
+              <span className="settings-version-badge">
+                {appVersion
+                  ? t("settings:appVersion", { version: appVersion })
+                  : t("common:loading")}
+              </span>
+              <span className="meta settings-version-cli">
+                {t("settings:cliVersionHint")}
+              </span>
             </div>
           </div>
 

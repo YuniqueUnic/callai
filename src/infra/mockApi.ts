@@ -184,4 +184,10 @@ export const mockApi = {
     d.setHours(d.getHours() + 1, 0, 0, 0);
     return d.toISOString();
   },
+  async getAppVersion() {
+    return "0.0.0-mock";
+  },
+  async getBackupsDir() {
+    return "/tmp/callai-mock-backups";
+  },
 };

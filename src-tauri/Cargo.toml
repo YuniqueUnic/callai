@@ -57,6 +57,8 @@ clap = { version = "4", default-features = false, features = [
 ] }
 tauri-plugin-updater = { version = "2", default-features = false, features = ["rustls-tls"] }
 ctrlc = { version = "3", default-features = false }
+tauri-plugin-autostart = "2"
+tauri-plugin-opener = "2"
 
 [dev-dependencies]
 tempfile = "3"

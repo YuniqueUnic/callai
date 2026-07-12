@@ -17,10 +17,11 @@ use crate::infra::{AlarmScheduler, AppPaths, SqliteStore, SystemProcessRunner, T
 #[derive(Debug, Parser)]
 #[command(
     name = "callai",
-    version,
+    version = env!("CARGO_PKG_VERSION"),
     about = "callai — give your AI a cozy alarm (CLI + desktop app)",
     long_about = "Desktop GUI is the default when no subcommand is given.\n\
-CLI commands operate on the same SQLite DB + config.toml as the app."
+CLI commands operate on the same SQLite DB + config.toml as the app.\n\
+Version is printed with `callai --version` / `callai -V`."
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -62,6 +63,8 @@ pub enum Commands {
     },
     /// Launch the desktop GUI (same as running with no subcommand)
     App,
+    /// Print version (same as --version / -V)
+    Version,
 }
 
 pub fn is_cli_invocation(args: &[String]) -> bool {
@@ -105,6 +108,10 @@ pub fn run(args: Vec<String>) -> Result<(), String> {
     // clap wants argv[0]=program
     let cli = Cli::parse_from(args);
     match cli.command {
+        Commands::Version => {
+            println!("callai {}", env!("CARGO_PKG_VERSION"));
+            Ok(())
+        }
         Commands::App => {
             crate::run();
             Ok(())
