@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.2](https://github.com/YuniqueUnic/callai/compare/v0.2.1...v0.2.2) (2026-07-12)
+
+
+### Features
+
+* **packaging:** add brew/scoop/winget manifests for GUI and CLI ([68aa339](https://github.com/YuniqueUnic/callai/commit/68aa33930554807cb85e3ab867f559b33de33284))
+* procedural UI sounds with settings toggle ([21cbc43](https://github.com/YuniqueUnic/callai/commit/21cbc433cf45d4a093183c3e300e33cde4221115))
+
+
+### Bug Fixes
+
+* migrate sound_enabled on legacy DBs; strip UI hints; teach record 12 ([4c78016](https://github.com/YuniqueUnic/callai/commit/4c780168cc6e7da1733fa8b8894711a18dc66559))
+* process timeout/cancel, env focus, log delete, CLI live output ([405cd74](https://github.com/YuniqueUnic/callai/commit/405cd74f81ed6b4cebd1ee494509343403b16471))
+* shlex-parse shell-style args for osascript/say pastes ([4985a45](https://github.com/YuniqueUnic/callai/commit/4985a459746d0b63b3a7bf2c196b87ce2aafa476))
+* **ui:** replace timeout segmented+input with DurationPicker ([e25d783](https://github.com/YuniqueUnic/callai/commit/e25d783c05723be5fa258b5f09cdb727f5d706f9))
+
 ## [0.2.1](https://github.com/YuniqueUnic/callai/compare/v0.2.0...v0.2.1) (2026-07-12)
 
 
