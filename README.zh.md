@@ -39,7 +39,7 @@
   <a href="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-0.2.2?logo=github" alt="version 0.2.1" /><!-- x-release-please-version -->
+  <img src="https://img.shields.io/badge/version-0.2.3?logo=github" alt="version 0.2.1" /><!-- x-release-please-version -->
   <img src="https://img.shields.io/badge/Tauri-2-ffc131?logo=tauri&logoColor=white" alt="Tauri 2" />
   <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust&logoColor=white" alt="Rust" />
   <img src="https://img.shields.io/badge/Bun-React-fbf0df?logo=bun&logoColor=black" alt="Bun React" />
@@ -282,7 +282,7 @@ chmod +x callai_*.AppImage
 | 存储 | SQLite + `config.toml` 备份 |
 | 发布 | release-please（semver）+ GitHub Actions 多平台构建 |
 
-**当前版本：** `0.2.2` <!-- x-release-please-version -->
+**当前版本：** `0.2.3` <!-- x-release-please-version -->
 
 ## 快速开始（开发）
 
