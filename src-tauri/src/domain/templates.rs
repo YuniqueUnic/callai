@@ -1,6 +1,4 @@
-use super::{
-    AlarmDraft, RetryPolicy, ScheduleSpec, BUILTIN_ALARM_BINARY, DEFAULT_TIMEOUT_SECS,
-};
+use super::{AlarmDraft, RetryPolicy, ScheduleSpec, BUILTIN_ALARM_BINARY, DEFAULT_TIMEOUT_SECS};
 
 /// Built-in task templates for quick fill.
 pub struct TaskTemplate {
@@ -18,7 +16,10 @@ pub const TEMPLATES: &[TaskTemplate] = &[
         name_en: "Cozy alarm clock",
         // Portable built-in — same config on macOS/Windows/Linux.
         binary: BUILTIN_ALARM_BINARY,
-        args: &["叮咚～闹钟响啦！现在是 callai 小闹钟提醒你一下。", "callai 小闹钟"],
+        args: &[
+            "叮咚～闹钟响啦！现在是 callai 小闹钟提醒你一下。",
+            "callai 小闹钟",
+        ],
     },
     TaskTemplate {
         id: "codex_hi",

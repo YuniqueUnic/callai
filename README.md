@@ -54,7 +54,7 @@
 </p>
 
 <p align="center">
-  <em>1.4× speed preview</em> ·
+  <em>1.7× speed preview</em> ·
   <a href="docs/assets/screenshot/record-preview.gif">GIF</a> ·
   <a href="docs/assets/screenshot/record.mp4">full MP4</a> ·
   <a href="docs/assets/screenshot/record.webp">full WebP</a>
@@ -62,22 +62,32 @@
 
 ### Screenshots
 
+<p align="center">
 <table>
-<tr>
-  <td align="center" width="25%"><b>Alarms</b></td>
-  <td align="center" width="25%"><b>New alarm</b></td>
-  <td align="center" width="25%"><b>Logs</b></td>
-  <td align="center" width="25%"><b>Settings</b></td>
-</tr>
-<tr>
-  <td align="center" width="25%"><img src="docs/assets/screenshot/alarms.webp" alt="alarms" width="180" /></td>
-  <td align="center" width="25%"><img src="docs/assets/screenshot/new-alarm.webp" alt="new alarm" width="180" /></td>
-  <td align="center" width="25%"><img src="docs/assets/screenshot/logs.webp" alt="logs" width="180" /></td>
-  <td align="center" width="25%"><img src="docs/assets/screenshot/settings.webp" alt="settings" width="180" /></td>
-</tr>
+  <tr>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/alarms.png"><img src="docs/assets/screenshot/alarms.webp" alt="Alarms (dark)" width="160" /></a><br />
+      <sub><b>Alarms</b> · dark</sub>
+    </td>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/new-alarm.png"><img src="docs/assets/screenshot/new-alarm.webp" alt="Edit alarm (light)" width="160" /></a><br />
+      <sub><b>Edit</b> · light</sub>
+    </td>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/edit-alarm-dark.png"><img src="docs/assets/screenshot/edit-alarm-dark.webp" alt="Edit alarm (dark)" width="160" /></a><br />
+      <sub><b>Edit</b> · dark</sub>
+    </td>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/logs.png"><img src="docs/assets/screenshot/logs.webp" alt="Logs (light)" width="160" /></a><br />
+      <sub><b>Logs</b> · light</sub>
+    </td>
+    <td align="center" width="20%" valign="top">
+      <a href="docs/assets/screenshot/settings.png"><img src="docs/assets/screenshot/settings.webp" alt="Settings (light)" width="160" /></a><br />
+      <sub><b>Settings</b> · light</sub>
+    </td>
+  </tr>
 </table>
-
-
+</p>
 
 ## Install
 
@@ -366,7 +376,7 @@ Commit style: [Conventional Commits](https://www.conventionalcommits.org/).
 just brand
 just brand-check
 python3 scripts/brand/make_tray_template.py --help
-./scripts/media/optimize_screenshots.sh   # PNG/WebP + 1.4× demo video
+./scripts/media/optimize_screenshots.sh   # original/* → docs webp/png (+ 1.7× video)
 ```
 
 ## Docs
