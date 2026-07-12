@@ -84,7 +84,13 @@ fn weekly_only_selected_weekdays() {
         .expect("next");
     let local = next.with_timezone(&Shanghai);
     assert_eq!(
-        (local.year(), local.month(), local.day(), local.hour(), local.weekday().num_days_from_sunday()),
+        (
+            local.year(),
+            local.month(),
+            local.day(),
+            local.hour(),
+            local.weekday().num_days_from_sunday()
+        ),
         (2026, 7, 13, 9, 1),
         "local={local}"
     );

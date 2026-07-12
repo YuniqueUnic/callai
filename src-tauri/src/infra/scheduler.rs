@@ -159,7 +159,10 @@ impl AlarmScheduler {
     }
 
     fn tick(&self) -> crate::domain::DomainResult<()> {
-        let tz = self.service.schedule_timezone().unwrap_or_else(|_| chrono_tz::UTC);
+        let tz = self
+            .service
+            .schedule_timezone()
+            .unwrap_or(chrono_tz::UTC);
         let now_utc = chrono::Utc::now();
         let now_local = now_utc.with_timezone(&tz);
         let minute_key = now_local.format("%Y%m%d%H%M").to_string();
@@ -208,7 +211,7 @@ mod tests {
     use super::is_due_now_tz;
     use crate::domain::ScheduleSpec;
     use chrono::Timelike;
-    
+
     #[test]
     fn due_detection_for_current_minute() {
         let tz = chrono_tz::Asia::Shanghai;
