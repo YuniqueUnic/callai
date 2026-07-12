@@ -200,7 +200,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
 
       <div className="app-main form-stack edit-main">
         <Card color="default" className="form-panel">
-          <div className="field">
+          <div className="field field-template">
             <label>{t("alarms:template")}</label>
             <Select
               value=""
@@ -490,8 +490,9 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
             answer={
               <div>
                 {draft.env_vars.map((env, idx) => (
-                  <div className="row" key={`env-row-${idx}`} style={{ marginBottom: 8 }}>
+                  <div className="row env-row" key={`env-row-${idx}`}>
                     <Input
+                      className="env-input"
                       value={env.key}
                       placeholder="KEY"
                       onChange={(e) => {
@@ -505,6 +506,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                       }}
                     />
                     <Input
+                      className="env-input"
                       value={env.value}
                       placeholder="value"
                       onChange={(e) => {

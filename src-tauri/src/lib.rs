@@ -39,24 +39,24 @@ pub fn tray_copy_public(locale: LocaleCode) -> TrayCopy {
         LocaleCode::En => TrayCopy {
             show: "Show window",
             new_alarm: "New alarm",
-            logs: "View logs",
-            run_all: "Run all alarms now",
+            logs: "Logs",
+            run_all: "Run all now",
             pause_all: "Pause all",
             resume_all: "Resume all",
             settings: "Settings",
             quit: "Quit",
-            tooltip: "callai · cozy AI window alarm",
+            tooltip: "callai",
         },
         LocaleCode::ZhCn => TrayCopy {
-            show: "显示主窗口",
+            show: "显示窗口",
             new_alarm: "新建闹钟",
-            logs: "查看日志",
-            run_all: "立即执行全部闹钟",
-            pause_all: "暂停所有闹钟",
-            resume_all: "恢复所有闹钟",
+            logs: "日志",
+            run_all: "全部立即执行",
+            pause_all: "全部暂停",
+            resume_all: "全部恢复",
             settings: "设置",
             quit: "退出",
-            tooltip: "callai · 帮你照顾 AI 的小闹钟",
+            tooltip: "callai",
         },
     }
 }
@@ -109,14 +109,8 @@ fn navigate(app: &AppHandle, target: &str) {
 fn notify_failure(app: &AppHandle, name: &str, locale: LocaleCode) {
     use tauri_plugin_notification::NotificationExt;
     let (title, body) = match locale {
-        LocaleCode::En => (
-            "A little task needs care".to_string(),
-            format!("“{name}” did not finish. Open logs for details."),
-        ),
-        LocaleCode::ZhCn => (
-            "小任务不太顺利".to_string(),
-            format!("「{name}」这次没完成，可以打开日志看看～"),
-        ),
+        LocaleCode::En => ("Task failed".to_string(), format!("{name} failed")),
+        LocaleCode::ZhCn => ("任务失败".to_string(), format!("「{name}」未完成")),
     };
     let _ = app.notification().builder().title(title).body(body).show();
 }
@@ -150,6 +144,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_autostart::Builder::new()
+                .macos_launcher(tauri_plugin_autostart::MacosLauncher::LaunchAgent)
+                .app_name("callai")
+                .build(),
+        )
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             commands::list_alarms,
@@ -175,6 +176,8 @@ pub fn run() {
             commands::delete_backup,
             commands::next_trigger,
             commands::detect_timezone,
+            commands::get_app_version,
+            commands::get_backups_dir,
             commands::refresh_tray_menu,
         ])
         .setup(|app| {

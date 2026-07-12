@@ -2876,3 +2876,130 @@ body.callai-logs-open [class*="animal-body"] {
   border: none !important;
   box-shadow: none !important;
 }
+
+
+/* ── Issue #17: dark mode contrast on Edit / env / select ── */
+[data-theme="dark"] .edit-page .form-panel,
+[data-theme="dark"] .edit-page .form-stack > [class*="animal-card"],
+[data-theme="dark"] .edit-page .form-stack > .animal-card {
+  color: var(--callai-ink) !important;
+  background: var(--callai-surface) !important;
+  border-color: var(--callai-border) !important;
+}
+
+[data-theme="dark"] .edit-page .field label,
+[data-theme="dark"] .edit-page .field .label,
+[data-theme="dark"] .edit-page .panel-head h3,
+[data-theme="dark"] .edit-page .hint,
+[data-theme="dark"] .edit-page .meta,
+[data-theme="dark"] .edit-page .preview-box {
+  color: var(--callai-ink) !important;
+}
+
+[data-theme="dark"] .edit-page .hint,
+[data-theme="dark"] .edit-page .meta {
+  color: var(--callai-ink-soft) !important;
+}
+
+/* Inputs stay dark-ink on parchment library surfaces, force fill for readability */
+[data-theme="dark"] .edit-page input,
+[data-theme="dark"] .edit-page textarea,
+[data-theme="dark"] .edit-page .raw,
+[data-theme="dark"] .edit-page [class*="animal-input"],
+[data-theme="dark"] .env-row input,
+[data-theme="dark"] .env-row [class*="animal-input"] {
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+  caret-color: #1f1408 !important;
+  background: #fff8ea !important;
+  border-color: #c4a574 !important;
+}
+
+[data-theme="dark"] .edit-page input::placeholder,
+[data-theme="dark"] .edit-page textarea::placeholder,
+[data-theme="dark"] .env-row input::placeholder {
+  color: #6b5640 !important;
+  -webkit-text-fill-color: #6b5640 !important;
+  opacity: 1;
+}
+
+/* Select trigger + popup list */
+[data-theme="dark"] .edit-page [class*="animal-select"],
+[data-theme="dark"] .edit-page [class*="animal-Select"],
+[data-theme="dark"] .field-template [class*="animal-"] {
+  color: #1f1408 !important;
+}
+
+[data-theme="dark"] [class*="animal-dropdown"],
+[data-theme="dark"] [class*="animal-dropdown"] *,
+[data-theme="dark"] [class*="animal-select-popup"],
+[data-theme="dark"] [class*="animal-option"] {
+  color: #1f1408 !important;
+}
+
+[data-theme="dark"] .edit-page .icon-btn,
+[data-theme="dark"] .env-row .icon-btn,
+[data-theme="dark"] .env-row .icon-btn svg,
+[data-theme="dark"] .edit-page .icon-actions .icon-btn,
+[data-theme="dark"] .edit-page .icon-actions .icon-btn svg {
+  color: #2a1c0e !important;
+}
+
+[data-theme="dark"] .env-row .icon-btn[class*="danger"],
+[data-theme="dark"] .env-row button.icon-btn[class*="danger"],
+[data-theme="dark"] .env-row button.icon-btn[class*="danger"] svg {
+  color: #5c1a12 !important;
+}
+
+.env-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.env-row .env-input,
+.env-row [class*="animal-input"] {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+/* Settings about / version badge */
+.settings-about {
+  margin-top: 4px;
+}
+.settings-version {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.settings-version-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-bg-soft);
+  color: var(--callai-ink);
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+.settings-version-cli {
+  font-size: 0.8rem;
+}
+[data-theme="dark"] .settings-version-badge {
+  background: #1a2621;
+  border-color: #8a9e93;
+  color: #fff6e8;
+}
+[data-theme="dark"] .settings-version-cli {
+  color: var(--callai-ink-soft) !important;
+}
+
+/* Collapse / env section labels on dark */
+[data-theme="dark"] .edit-page [class*="animal-collapse"],
+[data-theme="dark"] .edit-page [class*="animal-Collapse"],
+[data-theme="dark"] .edit-page [class*="collapse"] {
+  color: var(--callai-ink) !important;
+}

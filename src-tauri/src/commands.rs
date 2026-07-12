@@ -107,14 +107,8 @@ fn maybe_notify_failure(app: &tauri::AppHandle, state: &AppState, name: &str) {
         return;
     }
     let (title, body) = match settings.locale {
-        crate::domain::LocaleCode::En => (
-            "A little task needs care".to_string(),
-            format!("{name} did not finish. Open logs for details."),
-        ),
-        crate::domain::LocaleCode::ZhCn => (
-            "小任务不太顺利".to_string(),
-            format!("「{name}」这次没完成，可以打开日志看看～"),
-        ),
+        crate::domain::LocaleCode::En => ("Task failed".to_string(), format!("{name} failed")),
+        crate::domain::LocaleCode::ZhCn => ("任务失败".to_string(), format!("「{name}」未完成")),
     };
     let _ = app.notification().builder().title(title).body(body).show();
 }
@@ -211,6 +205,18 @@ pub fn next_trigger(state: State<'_, AppState>, id: String) -> Result<Option<Str
 #[tauri::command]
 pub fn detect_timezone() -> Result<String, String> {
     Ok(crate::domain::detect_system_timezone().name().to_string())
+}
+
+#[tauri::command]
+pub fn get_app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+#[tauri::command]
+pub fn get_backups_dir() -> Result<String, String> {
+    let paths = crate::infra::AppPaths::resolve().map_err(map_err)?;
+    paths.ensure().map_err(map_err)?;
+    Ok(paths.backups_dir.display().to_string())
 }
 
 #[tauri::command]
