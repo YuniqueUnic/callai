@@ -82,6 +82,8 @@ scoop install ./packaging/scoop/bucket/callai.json
 > **winget-pkgs rule:** one pull request may only contain **one** package identifier tree.
 > Submit `YuniqueUnic.Callai` and `YuniqueUnic.Callai.CLI` as **two separate PRs**.
 > Validation error if mixed: *"The pull request contains more than one application."*
+>
+> Active submissions: [Callai GUI #401366](https://github.com/microsoft/winget-pkgs/pull/401366) · [Callai.CLI #401367](https://github.com/microsoft/winget-pkgs/pull/401367)
 
 
 清单在合入 [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) 前，可用本地校验：
