@@ -163,21 +163,23 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
 
   return (
     <div className="edit-page">
-      <ElementImage
-        id="create-alarm"
-        size={120}
-        alt=""
-        motion="breathe"
-        className="edit-hero-deco"
-      />
-
       <header className="edit-hero">
-        <div className="edit-hero-main">
+        <div className="edit-hero-brand">
+          <ElementImage
+            id="create-alarm"
+            size={108}
+            alt=""
+            motion="breathe"
+            className="edit-hero-deco"
+          />
           <div className="edit-hero-copy">
             <h1>{alarmId ? t("alarms:edit") : t("alarms:create")}</h1>
             <p>{t("common:tagline")}</p>
           </div>
-          <div className="edit-hero-actions header-actions">
+        </div>
+
+        <div className="edit-hero-tools">
+          <div className="header-actions edit-hero-actions">
             <IconButton
               label={t("common:back")}
               icon={<IconBack size={18} />}
