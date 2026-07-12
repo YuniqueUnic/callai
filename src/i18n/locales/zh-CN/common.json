@@ -30,5 +30,12 @@
   "windowMinimize": "最小化",
   "windowMaximize": "最大化",
   "windowRestore": "还原",
-  "windowClose": "关闭"
+  "windowClose": "关闭",
+  "windowExtras": "窗口增强",
+  "windowPin": "置顶",
+  "windowUnpin": "取消置顶",
+  "windowFullscreen": "全屏",
+  "windowExitFullscreen": "退出全屏",
+  "windowPinnedBadge": "置顶中",
+  "windowFullscreenBadge": "全屏"
 }

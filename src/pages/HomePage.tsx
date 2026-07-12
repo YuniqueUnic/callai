@@ -18,6 +18,11 @@ import {
   remainingLabel,
 } from "../domain/format";
 import { client } from "../infra/client";
+import {
+  peekAlarms,
+  peekNextMap,
+  refreshAlarmsBundle,
+} from "../infra/alarmsCache";
 import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
 import { IslandTime } from "../ui/IslandTime";
@@ -40,9 +45,9 @@ interface Props {
 
 export function HomePage({ onCreate, onEdit, onLogs }: Props) {
   const { t, i18n } = useTranslation(["alarms", "common"]);
-  const [alarms, setAlarms] = useState<Alarm[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [nextMap, setNextMap] = useState<Record<string, string>>({});
+  const [alarms, setAlarms] = useState<Alarm[]>(() => peekAlarms() ?? []);
+  const [loading, setLoading] = useState(() => peekAlarms() == null);
+  const [nextMap, setNextMap] = useState<Record<string, string>>(() => peekNextMap());
   const [confirmRun, setConfirmRun] = useState<Alarm | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Alarm | null>(null);
   const [confirmStop, setConfirmStop] = useState<Alarm | null>(null);
@@ -51,23 +56,22 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [tick, setTick] = useState(0);
 
-  async function refresh(opts?: { silent?: boolean }) {
+  async function refresh(opts?: { silent?: boolean; force?: boolean }) {
     const silent = Boolean(opts?.silent);
-    if (!silent) setLoading(true);
+    const force = Boolean(opts?.force);
+    // Cache hit: paint immediately, never flash full-page loading on re-entry.
+    const cached = peekAlarms();
+    if (cached && !force) {
+      setAlarms(cached);
+      setNextMap(peekNextMap());
+      setLoading(false);
+    } else if (!silent && !cached) {
+      setLoading(true);
+    }
     try {
-      const list = await client.listAlarms();
+      const { alarms: list, nextMap: nm } = await refreshAlarmsBundle(force || !cached);
       setAlarms(list);
-      const entries = await Promise.all(
-        list.map(async (a) => {
-          try {
-            const n = await client.nextTrigger(a.id);
-            return [a.id, n ?? ""] as const;
-          } catch {
-            return [a.id, ""] as const;
-          }
-        }),
-      );
-      setNextMap(Object.fromEntries(entries));
+      setNextMap({ ...nm });
     } catch (err) {
       if (!silent) {
         toast.error({
@@ -81,7 +85,13 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
   }
 
   useEffect(() => {
-    void refresh();
+    // Prefer silent if cache already warm (return from edit / tab switch).
+    void refresh({ silent: Boolean(peekAlarms()), force: false });
+    const onChanged = () => {
+      void refresh({ silent: true, force: true });
+    };
+    window.addEventListener("callai:alarms-changed", onChanged);
+    return () => window.removeEventListener("callai:alarms-changed", onChanged);
   }, []);
 
   // progress tick + lifecycle refresh (running birds stay in sync)
@@ -89,7 +99,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
     const ms = busyId ? 2_000 : 12_000;
     const id = window.setInterval(() => {
       setTick((n) => n + 1);
-      void refresh({ silent: true });
+      void refresh({ silent: true, force: true });
     }, ms);
     return () => window.clearInterval(id);
   }, [busyId]);
@@ -97,7 +107,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
   async function toggle(alarm: Alarm, enabled: boolean) {
     try {
       await client.setEnabled(alarm.id, enabled);
-      await refresh();
+      await refresh({ force: true });
       toast.success({
         message: enabled ? t("alarms:resumeSuccess") : t("alarms:pauseSuccess"),
         key: enabled ? "alarm-resume" : "alarm-pause",
@@ -153,13 +163,15 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
           ),
         });
       }
-      await refresh({ silent: true });
+      // MUST force: cache may still hold lifecycle=Running from mid-run polls.
+      await refresh({ silent: true, force: true });
     } catch (err) {
       const code = (err as { code?: string })?.code;
       toast.error({
         message: t(`alarms:ERR_${code ?? "INTERNAL"}` as "alarms:ERR_INTERNAL"),
         description: String((err as { message?: string })?.message ?? err),
       });
+      await refresh({ silent: true, force: true });
     } finally {
       setBusyId(null);
       setStoppingId(null);
@@ -181,7 +193,13 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
         key: "alarm-stop-req",
         duration: 2.4,
       });
-      // keep busy/running UI until backend finishes; poll will clear lifecycle
+      // Backend marks idle when process dies; force-sync soon so UI is not stuck on Running.
+      window.setTimeout(() => {
+        void refresh({ silent: true, force: true }).finally(() => {
+          setBusyId(null);
+          setStoppingId(null);
+        });
+      }, 400);
     } catch (err) {
       setStoppingId(null);
       toast.error({
@@ -197,7 +215,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
       await client.deleteAlarm(alarm.id);
       setAlarms((prev) => prev.filter((a) => a.id !== alarm.id));
       toast.success({ message: t("alarms:deleteSuccess"), key: "alarm-delete", duration: 3.2 });
-      await refresh();
+      await refresh({ force: true });
     } catch (err) {
       const code = (err as { code?: string })?.code;
       toast.error({
@@ -216,7 +234,7 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
   async function setAll(enabled: boolean) {
     try {
       await client.setAllEnabled(enabled);
-      await refresh();
+      await refresh({ force: true });
       toast.success({
         message: enabled ? t("alarms:resumeSuccess") : t("alarms:pauseSuccess"),
         key: enabled ? "alarm-resume" : "alarm-pause",

@@ -22,6 +22,7 @@ import { IconButton } from "../ui/IconButton";
 import { IconBack, IconFolder, IconPlus, IconSave, IconTrash } from "../ui/icons";
 import { DurationPicker } from "../ui/DurationPicker";
 import { TimePicker } from "../ui/TimePicker";
+import { installSelectOptionTicks, playTick, unlockAudio } from "../ui/sounds";
 
 interface Props {
   alarmId?: string | null;
@@ -40,6 +41,11 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
   const [newTime, setNewTime] = useState("09:00");
   const [saving, setSaving] = useState(false);
   const [argsText, setArgsText] = useState("callai warmup {{date}}");
+
+  useEffect(() => {
+    void unlockAudio();
+    return installSelectOptionTicks();
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -200,7 +206,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
 
       <div className="app-main form-stack edit-main">
         <Card color="default" className="form-panel">
-          <div className="field field-template">
+          <div className="field field-template" onPointerDown={() => void unlockAudio()}>
             <label>{t("alarms:template")}</label>
             <Select
               value=""
@@ -212,7 +218,11 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                   label: i18n.language.startsWith("zh") ? tpl.name_zh : tpl.name_en,
                 })),
               ]}
-              onChange={(key) => key && void onTemplate(key)}
+              onChange={(key) => {
+                if (!key) return;
+                playTick();
+                void onTemplate(key);
+              }}
             />
           </div>
 
@@ -488,11 +498,11 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           <Collapse
             question={t("alarms:env")}
             answer={
-              <div>
+              <div className="env-editor">
                 {draft.env_vars.map((env, idx) => (
-                  <div className="row env-row" key={`env-row-${idx}`}>
+                  <div className="env-row" key={`env-row-${idx}`}>
                     <Input
-                      className="env-input"
+                      className="env-input env-key"
                       value={env.key}
                       placeholder="KEY"
                       onChange={(e) => {
@@ -506,7 +516,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                       }}
                     />
                     <Input
-                      className="env-input"
+                      className="env-input env-value"
                       value={env.value}
                       placeholder="value"
                       onChange={(e) => {
@@ -519,29 +529,33 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                         });
                       }}
                     />
-                    <IconButton
-                      label={t("common:delete")}
-                      icon={<IconTrash size={14} />}
-                      variant="danger"
-                      onClick={() =>
-                        setDraft((d) => ({
-                          ...d,
-                          env_vars: d.env_vars.filter((_, i) => i !== idx),
-                        }))
-                      }
-                    />
+                    <div className="env-actions">
+                      <IconButton
+                        label={t("common:delete")}
+                        icon={<IconTrash size={14} />}
+                        variant="danger"
+                        onClick={() =>
+                          setDraft((d) => ({
+                            ...d,
+                            env_vars: d.env_vars.filter((_, i) => i !== idx),
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
                 ))}
-                <IconButton
-                  label={t("alarms:addEnv")}
-                  icon={<IconPlus size={16} />}
-                  onClick={() =>
-                    setDraft((d) => ({
-                      ...d,
-                      env_vars: [...d.env_vars, { key: "", value: "" }],
-                    }))
-                  }
-                />
+                <div className="env-add">
+                  <IconButton
+                    label={t("alarms:addEnv")}
+                    icon={<IconPlus size={16} />}
+                    onClick={() =>
+                      setDraft((d) => ({
+                        ...d,
+                        env_vars: [...d.env_vars, { key: "", value: "" }],
+                      }))
+                    }
+                  />
+                </div>
               </div>
             }
           />

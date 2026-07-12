@@ -273,3 +273,259 @@ Edit/new alarm header as floating overlay chrome (not document-flow section).
 
 `src/pages/EditAlarmPage.tsx` · `src/theme/global.css`（`.edit-hero` / `.home-hero` / `.main-tabs … tabList`）
 
+
+## 附录 C · UI 切换卡顿（闹钟 ↔ 设置 ↔ 编辑返回）与加载链路硬化（2026-07 续）
+
+> 用户体感：**点 Settings 卡 1–2s**；**从编辑闹钟返回主列表也卡一下**。  
+> 不是「再加 loading 动画」，而是 **卸载/重挂 + 关键路径串行 IPC + N+1 nextTrigger + 时区探测** 叠在一起。  
+> 本附录按教材骨架写：**思想 → prompt 拆解 → 需求怎么说清楚 → 功能拆分 → 流程 → 偏差 → 验收**。
+
+---
+
+### C.1 思想 / 为什么会有这个需求
+
+桌面小工具的「可爱」会被 **操作延迟** 直接毁掉：
+
+| 场景 | 用户预期 | 实际（修复前） | 情绪结果 |
+| --- | --- | --- | --- |
+| 闹钟 tab → 设置 | 像翻页，瞬间 | 白屏/转圈 1–2s | 「这软件沉」 |
+| 编辑返回列表 | 列表还在 | 整页重拉 + 进度条重算 | 「每次改完都等」 |
+| 再进设置 | 已看过 | 又整页加载 | 「没记忆」 |
+
+产品原则（与 PRODUCT Overlay HUD 一致）：**壳与列表应常驻；切换只改可见性；网络/磁盘/OS 探测不得挡首帧。**
+
+**思想一句话**：交互硬化不只 z-index，还包括 **导航生命周期（mount 策略）+ 缓存边界（谁可以慢）**。
+
+---
+
+### C.2 原始 prompt 拆解
+
+#### C.2.1 用户话术（浓缩）
+
+```text
+从闹钟 tab 切换 settings tab 时会卡上 1–2s，
+是因为在加载 sqlite 和 bkp 吗？！？需要修复和改进！！
+
+还可能是检测时区的问题！？！？
+时区也可以整个后台检测，前台拿的是 cache！？
+
+仔细调查这些都可能的原因，然后修复！！
+然后确保 alarm 功能也做好了！？！？
+
+从编辑闹钟界面返回主页面（alarm）也是会卡一下，
+需要也调查和找到问题根源，并且修复！！
+
+然后把 UI 加载交互缓慢也整理一下，输出到合适的已有文章中；
+（进一步分析 commits / prompt / 思想 / 流程 / 偏差…）
+```
+
+#### C.2.2 为什么这些 prompt「好」
+
+| 说法 | 好在哪 | 驱动 agent 做什么 |
+| --- | --- | --- |
+| **给出体感数字 1–2s** | 可验收，不是「感觉慢」 | 用性能预算衡量 |
+| **猜测 sqlite / bkp / 时区** | 给排查假说，但不锁死 | 对照代码验证/否证 |
+| **「前台 cache / 后台检测」** | 已是架构解法暗示 | 直接做 cache 模块 |
+| **「仔细调查都可能的原因」** | 禁止单点修补 | 列因果链再改 |
+| **编辑返回也卡** | 暴露第二卸载点 | keep-alive 扩展到 edit |
+| **写进已有 record** | 防文档碎片 | 附录进 05 而非新开流水账 |
+
+#### C.2.3 还可写得更清楚（教学对照）
+
+```markdown
+## 性能预算
+- tab 切换到可交互：< 100ms（本地）
+- 编辑返回列表：列表不得整页 loading；允许后台 silent refresh
+## 禁止
+- 每次 tab 切换 unmount Settings/Home
+- 首屏 await 串行：settings → backups → tz → version → autostart
+- Home mount 时 listAlarms + N×nextTrigger 阻塞首屏
+## 允许
+- 先 paint cache，再 force refresh
+- 时区 Intl 先显，OS 探测 refine 一次
+```
+
+---
+
+### C.3 根因图谱（调查结论，按杀伤力排序）
+
+```text
+[导航层]
+  A. animal-island Tabs 只渲染 active children → Settings 每次切换 remount
+  B. App 用 page==="edit" 整段替换 body → Home 进编辑即 unmount
+        ↓ remount
+[数据层·Settings]
+  C. useEffect 串行 await getSettings → listBackups → detectTimezone → version → autostart
+  D. detectTimezone 走 Tauri IPC + 系统时区（可慢；且可缓存）
+  E. getAutostartEnabled 读 OS 登录项（可慢）
+  F. listBackups 读目录（通常快，但串在后面仍拖尾）
+        ↓ remount
+[数据层·Home]
+  G. mount 时 refresh：listAlarms + 每个闹钟 nextTrigger → N+1 IPC
+  H. setLoading(true) 全页 loading，cache 未命中时白一下
+  I. 12s/2s interval 也会 silent refresh（次要）
+[渲染层]
+  J. SeaMarquee / 多 ElementImage 随 Home 重挂再启动（编辑返回时）
+  K. leafAnimation 等 tab 动效（已关；次要）
+```
+
+**否证**：
+
+- 「只是 sqlite 慢」→ `get_settings` 通常毫秒级；真凶是 **remount + 串行次要 IO + N+1**。  
+- 「只是 bkp」→ backups 不是唯一瓶颈；即使去掉仍有 autostart/tz/N+1。  
+- 「时区一定慢」→ 慢的是 **重复探测**；cache 后可忽略。
+
+---
+
+### C.4 功能划分（解法模块）
+
+| 层 | 模块 | 职责 |
+| --- | --- | --- |
+| 导航 | `App.tsx` tab-panes + `hidden` | Home/Settings **常驻**；Tabs 只负责 pill 标签 |
+| 导航 | `edit-overlay` | 编辑盖在主壳上，**不拆掉** Home/Settings/Sea |
+| 缓存 | `timezoneCache.ts` | 后台 `ensure` 一次；`peek` 同步 Intl/cache |
+| 缓存 | `settingsCache.ts` | settings/version/backups/autostart 共享 inflight |
+| 缓存 | `alarmsCache.ts` | list + nextMap；分块拉 nextTrigger；`warm`/`invalidate` |
+| 页面 | Settings | 先 `getSettingsCached` 再并行次要；初值 peek |
+| 页面 | Home | cache-first refresh；`callai:alarms-changed` 强制刷新 |
+| 启动 | App bootstrap | `warmAlarmsCache` + `ensureDetectedTimezone` + settings warm |
+
+**分层纪律**：cache 在 **前端 infra**，不进 domain；OS 探测失败用 Intl 兜底，不挡 UI。
+
+---
+
+### C.5 推进流程（agent 推荐串行）
+
+```text
+1. 复现：devtools Performance / 日志点 tab 切换与 edit 返回
+2. 读 App 条件渲染：是否 unmount Home/Settings
+3. 读 Settings useEffect：是否串行 await 次要 IO
+4. 读 Home refresh：是否 N+1 nextTrigger + loading 闪白
+5. 改导航 keep-alive（tab panes + edit overlay）—— 收益最大
+6. 加 timezone/settings/alarms cache + 启动预热
+7. Settings/Home 改为 cache-first / progressive
+8. 保存闹钟：invalidate + event，Home silent force refresh
+9. typecheck；手测三条路径 < 体感瞬时
+10. 附录写入 record 05（本文）
+```
+
+**为何先导航后缓存**：即使 cache 完美，**unmount 仍会重跑 effect、重建动画**；先保活再缓存是正确顺序。
+
+---
+
+### C.6 真实执行 / 偏差与调整
+
+| 现象 / 假设 | 验证 | 动作 | 结果 |
+| --- | --- | --- | --- |
+| Tabs 卸载 Settings | 读 Tabs 源：`children: o?.children` 仅 active | tabItems 空 children + 外置 panes | 设置页不卸载 |
+| 串行 settings 加载 | 读 Settings effect | settings 优先；backups/tz/version/autostart 并行 | 首帧可出表单 |
+| 时区拖慢 | 用户提示 + IPC 路径 | `timezoneCache` + App 预热 | 前台 peek，无阻塞 |
+| 编辑返回卡 | `page==edit` 替换 body | 主壳常驻 + `edit-overlay` | Home/Sea 不重挂 |
+| 列表仍可能慢 | N+1 nextTrigger | `alarmsCache` + chunk(8) + warm | 有 cache 秒开 |
+| 保存后列表旧 | keep-alive 不 remount | `invalidate` + `callai:alarms-changed` | silent force 刷新 |
+| domain→infra 引用 | cargo 分层风险 | builtin id 放 domain，执行在 infra | 编译边界干净 |
+
+**关键代码指针**（写作时工作区，以 tree 为准）：
+
+- `src/App.tsx` — tab-panes、edit-overlay、warm*  
+- `src/infra/timezoneCache.ts` / `settingsCache.ts` / `alarmsCache.ts`  
+- `src/pages/SettingsPage.tsx` / `HomePage.tsx`  
+- `src/theme/global.css` — `.tab-panes` / `.edit-overlay`
+
+---
+
+### C.7 交互扩展与「加载 UX」原则
+
+1. **Never full-page loading on re-entry**  
+   有 cache → 直接画旧数据；后台 silent refresh。  
+2. **Critical vs secondary**  
+   设置表单需要 `AppSettings`；备份列表/版本/开机启动可以晚 100–300ms 填。  
+3. **OS 探测 = 后台单例**  
+   时区、autostart 都「进程内一次 + inflight 合并」。  
+4. **N+1 必须显式**  
+   `nextTrigger` 批量/分块；禁止 `list.map(await)` 无策略。  
+5. **动画可关**  
+   tab `leafAnimation={false}`；保活后动画价值下降。  
+6. **事件优于 prop 钻透**  
+   编辑保存 → `window` 事件 → Home 刷新，避免把 refresh 从 App 层层传入。
+
+---
+
+### C.8 给 AI 的提示模板（导航卡顿类）
+
+```markdown
+## Symptom
+- Tab A → Tab B feels 1–2s stuck
+- Edit → back to list also hitch
+
+## Investigate (ordered)
+1. Does navigation unmount the heavy page? (Tabs children / conditional render)
+2. What does useEffect await on mount? serial vs parallel?
+3. Any OS/IPC (timezone, autostart, N×nextTrigger)?
+4. Any full-page loading gate until ALL data ready?
+
+## Fix strategy
+1. Keep-alive: mount once, toggle hidden/is-active (or CSS display)
+2. Cache module per domain surface (settings / alarms / tz)
+3. Progressive: paint critical cache → background fill
+4. Prefetch on app start for likely next screens
+5. On mutation: invalidate + event; silent force refresh
+
+## Do not
+- Add longer spinners as "fix"
+- Remount SeaMarquee / heavy lists for route cosmetics
+- Block first paint on detectTimezone/listBackups/autostart
+
+## Accept
+- [ ] tab switch interactive < ~100ms local
+- [ ] edit back: list visible immediately (no blank loading)
+- [ ] settings re-entry uses cache (no loading flash if warm)
+- [ ] save alarm updates list without manual remount
+```
+
+---
+
+### C.9 验收清单
+
+**导航**
+
+- [ ] 闹钟 ↔ 设置：无明显卡顿、无整页 loading 闪白  
+- [ ] 编辑 → 返回：列表立即在；海浪不「重启感」过重  
+
+**缓存**
+
+- [ ] 杀进程再开：允许首次略慢；之后切换应暖  
+- [ ] 改主题/语言仍即时；备份列表可稍后出现  
+
+**正确性**
+
+- [ ] 保存/删除闹钟后列表与下次触发时间正确  
+- [ ] 时区「跟随系统」标签合理（Intl 或 OS refine）  
+
+**回归**
+
+- [ ] `bun run typecheck`  
+- [ ] 手测：新建闹钟模板「小闹钟提醒」可保存并触发（builtin 路径另见实现）  
+
+---
+
+### C.10 练习（课堂）
+
+1. 故意恢复 `page==="edit" ? <Edit/> : <Home/>`，录屏对比 keep-alive。  
+2. 在 Settings 再串行 `await detectTimezone()`，用 Performance 标出 Long Task。  
+3. 画一张「导航 × 缓存」矩阵：哪些页面 keep-alive、哪些数据 cache、失效条件是什么。  
+4. 写 5 条 PR 验收句，禁止出现「优化一下手感」这种不可测表述。  
+
+---
+
+### C.11 与其它 record 的链接
+
+| 主题 | 文档 |
+| --- | --- |
+| Overlay HUD 视觉 | 本文件附录 B；PRODUCT 原则 7–8 |
+| 时区语义 / next trigger | record 12 附录 A |
+| 自绘 titlebar 透明链 | record 14 |
+| 内置跨平台闹钟执行 | 实现：`infra/builtin_alarm` + domain `BUILTIN_ALARM_BINARY`（可另开运行时附录） |
+
+**一句话收束**：  
+卡顿的根是 **把「页面切换」做成了「应用冷启动」**；修好导航生命周期后，缓存才是锦上添花。

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
+import { playTick, unlockAudio } from "./sounds";
 
 interface Props {
   /** Total seconds (1–3600). */
@@ -181,6 +182,7 @@ export function DurationPicker({
             onChange={(v) => {
               setM(v);
               commit(v, s);
+              playTick();
             }}
           />
           <div className="time-wheel-colon">:</div>
@@ -191,6 +193,7 @@ export function DurationPicker({
             onChange={(v) => {
               setS(v);
               commit(m, v);
+              playTick();
             }}
           />
         </div>
@@ -209,8 +212,11 @@ export function DurationPicker({
         <button
           ref={triggerRef}
           type="button"
-          className="time-picker-trigger"
-          onClick={() => setOpen((v) => !v)}
+          className="time-picker-trigger duration-picker-trigger"
+          onClick={() => {
+            void unlockAudio();
+            setOpen((v) => !v);
+          }}
           aria-expanded={open}
         >
           <span className="time-picker-value">{formatClock(total)}</span>
@@ -218,16 +224,6 @@ export function DurationPicker({
             ▾
           </span>
         </button>
-        <Button
-          size="small"
-          type="primary"
-          onClick={() => {
-            commit();
-            setOpen(false);
-          }}
-        >
-          {t("timeoutApply")}
-        </Button>
       </div>
       {popup}
     </div>

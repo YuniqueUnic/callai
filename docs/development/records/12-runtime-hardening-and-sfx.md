@@ -476,6 +476,9 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 ## 附录 A · 时区与「下次触发」显示异常（续）
 
+> **性能补充（2026-07）**：UI 侧 `src/infra/timezoneCache.ts` 将 OS `detect_timezone` 收成 **进程内单例缓存**；App 启动预热，Settings **peek 同步值**，避免 tab 切换把探测放进关键路径。导航卡顿全景见 **record 05 附录 C**。
+
+
 ### 现象
 
 闹钟配置每天 `08:00 / 13:00 / 18:00`，但「下次触发」出现 **21:00**。

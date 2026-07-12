@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
+import { playTick, unlockAudio } from "./sounds";
 
 interface Props {
   value: string; // HH:mm
@@ -154,6 +155,7 @@ export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
             onChange={(v) => {
               setH(v);
               commit(v, m);
+              playTick();
             }}
           />
           <div className="time-wheel-colon">:</div>
@@ -164,6 +166,7 @@ export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
             onChange={(v) => {
               setM(v);
               commit(h, v);
+              playTick();
             }}
           />
         </div>
@@ -183,7 +186,10 @@ export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
           ref={triggerRef}
           type="button"
           className="time-picker-trigger"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            void unlockAudio();
+            setOpen((v) => !v);
+          }}
           aria-expanded={open}
         >
           <span className="time-picker-value">{value || "09:00"}</span>

@@ -141,6 +141,13 @@ export const mockApi = {
   async listTemplates(): Promise<TemplateDto[]> {
     return [
       {
+        id: "cozy_alarm",
+        name_zh: "小闹钟提醒",
+        name_en: "Cozy alarm clock",
+        binary: "__callai_alarm__",
+        args: ["叮咚～闹钟响啦！现在是 callai 小闹钟提醒你一下。", "callai 小闹钟"],
+      },
+      {
         id: "echo_warmup",
         name_zh: "本地 echo 测试",
         name_en: "Local echo test",
@@ -157,6 +164,18 @@ export const mockApi = {
     ];
   },
   async templateDraft(id: string) {
+    if (id === "cozy_alarm") {
+      const d = defaultDraft();
+      d.name = "小闹钟提醒";
+      d.schedule = { mode: "daily", times: ["07:30", "12:00", "21:00"] };
+      d.binary = "__callai_alarm__";
+      d.args = [
+        "叮咚～闹钟响啦！现在是 callai 小闹钟提醒你一下。",
+        "callai 小闹钟",
+      ];
+      d.timeout_secs = 120;
+      return d;
+    }
     const t = (await this.listTemplates()).find((x) => x.id === id);
     if (!t) return null;
     const d = defaultDraft();

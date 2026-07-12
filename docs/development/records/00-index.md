@@ -23,7 +23,7 @@
 | 2 | [02 品牌与托盘](./02-brand-and-tray.md) | 资产流水线；视觉 QA 语言 |
 | 3 | [03 CLI 与 daemon](./03-cli-and-daemon.md) | 单二进制双入口；共享 domain |
 | 4 | [04 沉浸式 UI](./04-ui-island-motion.md) | 组件语义驱动布局 |
-| 5 | [05 交互硬化](./05-ui-interaction-hardening.md) | 层级 / 状态机 / 反馈 |
+| 5 | [05 交互硬化](./05-ui-interaction-hardening.md) | 层级 / 状态机 / 反馈；**附录 C：tab/编辑返回卡顿与缓存** |
 | 6 | [06 CI/CD](./06-cicd-release-please.md) | gate → release-please → 多平台 |
 | 7 | [07 Updater 与未签名安装](./07-updater-and-unsigned-install.md) | 信任模型与文档诚实 |
 | 8 | [08 媒体与 README](./08-media-readme-pipeline.md) | 素材卫生；展示即获客 |
@@ -32,6 +32,7 @@
 | 11 | [11 包管理器分发](./11-packaging-brew-scoop-winget.md) | brew/scoop/winget；**winget 一应用一 PR + CLA** |
 | 12 | [12 运行时硬化与音效](./12-runtime-hardening-and-sfx.md) | 超时/取消/shlex/DurationPicker/SFX/去 hint |
 | 13 | [13 GitHub Issue/PR 周期](./13-github-issue-pr-lifecycle.md) | Issue→分支→PR→gate→rebase merge；#16–#19 样板 |
+| 14 | [14 自绘 Titlebar 与窗口铬](./14-custom-titlebar-and-window-chrome.md) | decorations/transparent/圆角坑；跨平台自绘；pin/fullscreen/grips |
 
 ### 路径 B · 只学「如何写 prompt」
 
@@ -44,6 +45,10 @@
 ### 路径 D · 只学执行语义与交互硬化
 
 `05` → `12` → `03`（CLI 对等），配合本地 `sleep`/`osascript`/`say` 手测。
+
+### 路径 E · 只学桌面窗口铬 / 自绘 titlebar
+
+`02`（托盘）→ `04` → `14` → `05`（层级），配合三平台拖拽/圆角/close-to-tray 手测。
 
 ## 提交时间线（证据）
 
@@ -67,6 +72,8 @@
 | 运行时硬化 | `f9cc5ba` `7eaf32d` `0db6b62` `6bc6223` | 12 |
 | UI 浮层顶栏 / 海浪无缝 / 时区墙钟 | `ce863f6` `909a0cb` + SeaMarquee 续 | 04 附录 B · 05 附录 B · 12 附录 A |
 | Issues #16–#19 功能与周期教材 | `fix/issues-16-19` | 13 |
+| 自绘 titlebar / 透明圆角 / 窗口增强 | `fix/dark-modal-contrast` + TitleBar | 14 |
+| UI 切换卡顿 / keep-alive / 多级 cache | 工作区 App panes + *Cache.ts | 05 附录 C |
 
 ```bash
 git log --oneline --reverse

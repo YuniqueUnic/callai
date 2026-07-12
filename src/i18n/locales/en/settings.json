@@ -45,5 +45,17 @@
   "autostartFail": "Could not update",
   "aboutSection": "About",
   "appVersion": "v{{version}}",
-  "cliVersionHint": "callai --version"
+  "cliVersionHint": "callai --version",
+  "aboutAuthor": "Author",
+  "aboutAuthorName": "unic",
+  "aboutGithub": "GitHub",
+  "aboutGithubRepo": "YuniqueUnic/callai",
+  "aboutHomepage": "Homepage",
+  "aboutIssues": "Issues",
+  "aboutLicense": "License",
+  "aboutLicenseValue": "MIT",
+  "openLinkFail": "Could not open link",
+  "updateConfirmTitle": "Install update?",
+  "updateConfirmBody": "Version v{{version}} is available. Download and install now?",
+  "updateNoPending": "Check for updates first"
 }

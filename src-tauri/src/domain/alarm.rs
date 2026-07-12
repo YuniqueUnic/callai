@@ -6,6 +6,11 @@ use uuid::Uuid;
 use super::{DomainError, DomainResult, ErrorCode, RetryPolicy, ScheduleSpec};
 
 pub const DEFAULT_TIMEOUT_SECS: u32 = 20;
+
+/// Portable built-in alarm binary id (resolved at run time by infra).
+pub const BUILTIN_ALARM_BINARY: &str = "__callai_alarm__";
+pub const BUILTIN_ALARM_ALIAS: &str = "callai-alarm";
+
 pub const MIN_TIMEOUT_SECS: u32 = 1;
 pub const MAX_TIMEOUT_SECS: u32 = 3600;
 

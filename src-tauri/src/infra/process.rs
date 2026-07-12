@@ -22,6 +22,20 @@ impl ProcessRunner for SystemProcessRunner {
         cancel: Option<Arc<CancelFlag>>,
         on_chunk: Option<&OutputChunkFn>,
     ) -> DomainResult<ProcessOutput> {
+        if crate::infra::builtin_alarm::is_builtin_alarm(binary) {
+            let out = crate::infra::builtin_alarm::run_builtin_alarm(args, timeout_secs, cancel)?;
+            if let Some(cb) = on_chunk {
+                if !out.stdout.is_empty() {
+                    cb(&out.stdout, false);
+                }
+                if !out.stderr.is_empty() {
+                    cb(&out.stderr, true);
+                }
+            }
+            let _ = env; // builtins ignore process env
+            return Ok(out);
+        }
+
         let started = Instant::now();
         let timeout = Duration::from_secs(u64::from(timeout_secs.max(1)));
 
@@ -176,6 +190,9 @@ impl ProcessRunner for SystemProcessRunner {
     }
 
     fn which(&self, binary: &str) -> DomainResult<Option<String>> {
+        if let Some(marker) = crate::infra::builtin_alarm::builtin_which(binary) {
+            return Ok(Some(marker));
+        }
         if binary.contains('/') || binary.contains('\\') {
             let path = std::path::Path::new(binary);
             return Ok(if path.exists() {
