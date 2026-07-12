@@ -1,56 +1,121 @@
-# 06 · CI/CD 与 release-please
+# 06 · CI/CD：从「能跑」到「可发布」
 
-## 学员目标
+## 1. 思想：本地绿 ≠ 用户能装
 
-- 用 GitHub Actions 跑通：前端门禁 + Rust 门禁 + CLI smoke  
-- 用 release-please 做 semver 与多文件版本同步  
-- 合并 Release PR 后触发多平台 Tauri + CLI 产物上传  
+callai 作为桌面+CLI 产品，交付物是：
 
-## 原始诉求（摘要）
+- 多平台安装包（dmg/msi/deb/…）  
+- CLI 单文件  
+- 可重复的版本号与 changelog  
 
-> 使用 gh 构建 workflow：Tauri（官方或更好用的 tauri-action）+ CLI；version 用 semver + google release-please；确保 CI/CD 正常。
+思想：
 
-## 关键提交
+> PR 门禁保主分支质量；release-please 保版本语义；矩阵构建保资产存在。
 
-| Commit | 说明 |
+### 需求动机
+
+```text
+使用 gh 构建 workflow，构建 tauri + cli
+version：semver + google release-please
+确保 CI/CD 正常！！！
+```
+
+短、硬、可执行——这是 **工程类 prompt 的正确语气**。
+
+---
+
+## 2. Prompt 拆解
+
+| 要求 | 落地 |
 | --- | --- |
-| `45343c8` | 引入 CI + release-please + publish 矩阵 |
-| `fc24400` | Ubuntu apt 包冲突（appindicator） |
-| `773afe0` | cargo fmt 过 gate |
-| `1e7423f` | `tauri-plugin-dialog` 默认 features（Linux rfd） |
-| `f3ab0ff` | icons 强制入库、双语 README、LICENSE… |
-| `fec4fe6` | README 作为 generic extra-files |
-| `09c6f87` / `ba217cd` / `6868380` | Release PR 与 v0.2.0 merge |
+| gh + workflow | `.github/workflows/*.yml` |
+| Tauri 官方/更好 | `tauri-apps/tauri-action@v1` + `bunx tauri` |
+| CLI | 同 crate `cargo build --release` 上传 |
+| semver + release-please | `googleapis/release-please-action@v4` |
+| 确保正常 | 真的 merge、真的看 run、真的修红 |
 
-## 工作流文件
+**好 prompt 特征**：指定工具族（gh、release-please），而非「弄一下自动发布」。
 
-- `.github/workflows/ci.yml` — PR/main gate  
-- `.github/workflows/release.yml` — release-please + publish  
-- `release-please-config.json`、`.release-please-manifest.json`  
-- `scripts/check_versions.sh`
+---
 
-## 版本源（必须一致）
+## 3. 给 AI 的提示模板（CI 类）
 
-`package.json` · `src-tauri/tauri.conf.json` · `src-tauri/Cargo.toml` · `.release-please-manifest.json` · README 标记
+```markdown
+## 目标
+main 每次 PR：typecheck/test/build + cargo fmt/test/clippy + CLI smoke
+main 发版：release-please PR → merge → tag → 矩阵发布 desktop+cli
 
-## 复现命令
+## 约束
+- 包管理器 bun --frozen-lockfile
+- 版本源同步：package.json / tauri.conf.json / Cargo.toml / manifest / README markers
+- Ubuntu 依赖不要同时装冲突的 appindicator 包
+
+## 验收
+- [ ] gh run 绿
+- [ ] 人为制造版本不一致时 check_versions 失败
+```
+
+---
+
+## 4. 功能划分
+
+| Job | 何时 | 做什么 |
+| --- | --- | --- |
+| `ci.yml` gate | PR/push main | 质量门禁 |
+| release-please | push main | 开/更 Release PR |
+| publish matrix | release_created | 4 平台 Tauri + CLI upload |
+
+版本源：`scripts/check_versions.sh`。
+
+---
+
+## 5. 推进流程（真实排障序）
+
+```text
+1. 写 ci.yml 最小 gate（先前端+ fmt）
+2. 加 Rust test/clippy
+3. 加 release-please + 版本同步
+4. 加 publish 矩阵
+5. 修第一轮红：apt / fmt / rfd / icons
+6. 修第二轮红：README 版本 marker
+7. merge release PR 验证真产物
+```
+
+---
+
+## 6. 真实故障与纠偏（课堂重点）
+
+| Commit | 故障 | 根因 | 教训 |
+| --- | --- | --- | --- |
+| `fc24400` | apt 冲突 | 两个 appindicator 包 | 官方文档依赖列表要本地验证 |
+| `773afe0` | fmt check | 未在 CI 前 fmt | gate 与本地 just 对齐 |
+| `1e7423f` | rfd 编译 | dialog default-features 关过头 | 瘦身按 crate 测 Linux |
+| `f3ab0ff` | 缺 icons | 全局 `Icon?` ignore | CI 环境 ≠ 开发机 ignore |
+| `09c6f87` | README 仍 0.1.0 | release-please 未改 markdown | extra-files + marker 约定 |
+| `fec4fe6` | 同上预防 | generic extra-files | 文档也是版本源 |
+
+发版证据：`6868380` → tag `v0.2.0` → 13 个资产（桌面+CLI）。
+
+---
+
+## 7. 验收清单
 
 ```bash
 ./scripts/check_versions.sh
-just ci   # 或 just gate
+just ci
 gh run list --limit 5
-gh pr list
-# 仅当确认要发版时：merge release-please PR
+gh release view v0.2.0
 ```
 
-## 实战故障树（课堂金句）
+- [ ] PR 红能在 1 个工作会话内定位  
+- [ ] 说清 release-please PR **不要手改版本**（除非修 marker）  
 
-1. **icons 未进库** → 编译 `include_bytes!` 失败（全局 `Icon?` ignore）  
-2. **rfd 无 backend** → dialog plugin 勿乱关 default-features  
-3. **README 版本未涨** → check_versions 失败；需要 `x-release-please-version` + generic extra-files  
-4. **Release PR CI action_required** → rebase 到最新 main 再跑  
+## 8. 练习
 
-## 练习
+1. 画 swimlane：开发者 commit → CI → release PR → publish。  
+2. 模拟：只改 package.json 版本，预测哪步红。  
+3. 解释为何 publish 用 `release_created == true` 门闩。  
 
-1. 画 release-please 状态机：main push → PR → merge → tag → publish matrix。  
-2. 解释为何 CLI 与 GUI 共用 `cargo build --release` 同一二进制。
+## 9. 关键
+
+`.github/workflows/*` · `release-please-config.json` · `scripts/check_versions.sh`
