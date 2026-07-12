@@ -9,6 +9,7 @@ import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
 import { IconLogs, IconRestore, IconTrash } from "../ui/icons";
 import { isTauri } from "../infra/tauriApi";
+import { checkForAppUpdate } from "../infra/updater";
 
 async function ensureNotifyPermission(): Promise<boolean> {
   if (!isTauri()) return true;
@@ -38,6 +39,9 @@ export function SettingsPage({ onOpenLogs }: Props) {
   const [confirmDeleteBackup, setConfirmDeleteBackup] = useState<string | null>(
     null,
   );
+  const [updateBusy, setUpdateBusy] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<string | null>(null);
+  const [pendingInstall, setPendingInstall] = useState<null | (() => Promise<void>)>(null);
 
   useEffect(() => {
     void (async () => {
@@ -251,6 +255,96 @@ export function SettingsPage({ onOpenLogs }: Props) {
                 </div>
               ))
             )}
+          </div>
+
+
+          <div className="field">
+            <div className="panel-head">
+              <label className="label">{t("settings:updateSection")}</label>
+            </div>
+            <div className="hint" style={{ marginBottom: 8 }}>
+              {t("settings:updateHint")}
+            </div>
+            {updateInfo ? (
+              <div className="meta" style={{ marginBottom: 8 }}>
+                {updateInfo}
+              </div>
+            ) : null}
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <Button
+                type="default"
+                disabled={updateBusy}
+                onClick={() => {
+                  void (async () => {
+                    setUpdateBusy(true);
+                    try {
+                      const res = await checkForAppUpdate();
+                      if (res.status === "unsupported") {
+                        setUpdateInfo(t("settings:updateUnsupported"));
+                        return;
+                      }
+                      if (res.status === "upToDate") {
+                        setUpdateInfo(t("settings:updateUpToDate"));
+                        toast.success({ message: t("settings:updateUpToDate") });
+                        return;
+                      }
+                      if (res.status === "error") {
+                        setUpdateInfo(res.message);
+                        toast.error({
+                          message: t("settings:updateError"),
+                          description: res.message,
+                        });
+                        return;
+                      }
+                      setUpdateInfo(
+                        t("settings:updateAvailable", { version: res.version }),
+                      );
+                      toast.success({
+                        message: t("settings:updateAvailable", {
+                          version: res.version,
+                        }),
+                        description: res.body || undefined,
+                      });
+                      setPendingInstall(() => res.install);
+                    } finally {
+                      setUpdateBusy(false);
+                    }
+                  })();
+                }}
+              >
+                {updateBusy ? t("settings:checkingUpdate") : t("settings:checkUpdate")}
+              </Button>
+              <Button
+                type="primary"
+                disabled={updateBusy}
+                onClick={() => {
+                  if (!pendingInstall) {
+                    toast.warning({ message: t("settings:checkUpdate") });
+                    return;
+                  }
+                  void (async () => {
+                    setUpdateBusy(true);
+                    toast.success({ message: t("settings:updateInstalling") });
+                    try {
+                      await pendingInstall();
+                      toast.success({ message: t("settings:updateDone") });
+                      setUpdateInfo(t("settings:updateDone"));
+                    } catch (err) {
+                      toast.error({
+                        message: t("settings:updateError"),
+                        description: String(
+                          (err as { message?: string })?.message ?? err,
+                        ),
+                      });
+                    } finally {
+                      setUpdateBusy(false);
+                    }
+                  })();
+                }}
+              >
+                {t("settings:updateInstall")}
+              </Button>
+            </div>
           </div>
 
           <div className="settings-logs-entry">

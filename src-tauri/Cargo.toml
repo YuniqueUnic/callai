@@ -13,7 +13,7 @@ name = "callai_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", default-features = false }
+tauri-build = { version = "2", default-features = false , features = [] }
 
 [dependencies]
 # tray + PNG template icon for macOS monochrome tray
@@ -52,6 +52,7 @@ clap = { version = "4", default-features = false, features = [
   "usage",
   "error-context",
 ] }
+tauri-plugin-updater = { version = "2", default-features = false, features = ["rustls-tls"] }
 
 [dev-dependencies]
 tempfile = "3"

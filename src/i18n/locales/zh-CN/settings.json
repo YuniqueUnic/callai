@@ -20,5 +20,16 @@
   "deleteBackup": "删除",
   "deleteBackupConfirm": "确定删除这份备份吗？删掉就找不回来啦～",
   "deleteBackupSuccess": "备份已删除～",
-  "backupKeepHint": "最多保留 10 份备份，超出时会自动清理最旧的"
+  "backupKeepHint": "最多保留 10 份备份，超出时会自动清理最旧的",
+  "checkUpdate": "检查更新",
+  "checkingUpdate": "正在检查…",
+  "updateAvailable": "发现新版本：v{{version}}",
+  "updateUpToDate": "已经是最新版本啦～",
+  "updateInstall": "下载并安装",
+  "updateInstalling": "正在下载更新…",
+  "updateDone": "更新已安装，请重新打开 callai～",
+  "updateError": "检查更新失败",
+  "updateUnsupported": "自动更新仅在桌面安装包中可用。",
+  "updateSection": "应用更新",
+  "updateHint": "更新包从 GitHub Releases 获取，并由 minisign 公钥校验。"
 }

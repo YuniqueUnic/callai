@@ -271,3 +271,7 @@ check-versions:
 
 # Local CI-ish gate + version check
 ci: check-versions gate
+
+# Optimize README screenshots + demo video (1.4x)
+optimize-screenshots:
+    ./scripts/media/optimize_screenshots.sh

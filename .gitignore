@@ -53,3 +53,12 @@ assets/brand/callai.iconset/
 !public/icons/**
 !docs/assets/
 !docs/assets/**
+
+# Signing keys (never commit private keys)
+.keys/
+*.key
+!*.key.pub
+
+# Local screenshot tooling / huge originals (keep optimized docs assets)
+assets/screenshot/.venv/
+assets/screenshot/original/

@@ -33,6 +33,18 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVGMjIyQUE4RTBGNkY0NzMKUldSejlQYmdxQ29pN3p1djBJdTdYcythUnZhd0t3QWxjbHRXL3dtemRRYjltSUhQMTBjWjFsZzIK",
+      "endpoints": [
+        "https://github.com/YuniqueUnic/callai/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

@@ -39,6 +39,27 @@
 
 ---
 
+## 演示
+
+<p align="center">
+  <img src="docs/assets/screenshot/record-preview.webp" alt="callai 演示预览" width="320" />
+</p>
+
+<p align="center">
+  <em>1.4 倍速预览</em> ·
+  <a href="docs/assets/screenshot/record-preview.gif">GIF</a> ·
+  <a href="docs/assets/screenshot/record.mp4">完整 MP4</a> ·
+  <a href="docs/assets/screenshot/record.webp">完整 WebP</a>
+</p>
+
+### 截图
+
+| 闹钟列表 | 新建闹钟 |
+| :---: | :---: |
+| <img src="docs/assets/screenshot/alarms.webp" alt="闹钟" width="220" /> | <img src="docs/assets/screenshot/new-alarm.webp" alt="新建" width="220" /> |
+| **日志** | **设置** |
+| <img src="docs/assets/screenshot/logs.webp" alt="日志" width="220" /> | <img src="docs/assets/screenshot/settings.webp" alt="设置" width="220" /> |
+
 ## 为什么需要 callai？
 
 <p align="center">
@@ -51,8 +72,7 @@
 
 Claude、ChatGPT、Codex 等常见 AI 工具普遍采用**滚动窗口（Rolling Window）**额度机制。真实痛点：
 
-> 上午 9:30 开始高强度使用，中午前后额度烧光；午后再等很久窗口才滑出旧消耗。  
-> 结果往往是：上午高效、下午等待、晚上继续等。
+> 上午 9:30 开始高强度使用，中午前后额度烧光；午后再等很久窗口才滑出旧消耗。
 
 **callai** 是一个动森气质的小闹钟：在设定时间触发极轻量任务（如 `echo hi` / `codex exec hi`），提前“占位”，让黄金工作时段窗口更新鲜。
 
@@ -68,49 +88,71 @@ Claude、ChatGPT、Codex 等常见 AI 工具普遍采用**滚动窗口（Rolling
 | <img src="docs/assets/elements/theme-light.png" height="48" alt="主题" /> | **主题 + 多语言** | 亮 / 暗 / 跟随系统 · 中英双语 |
 | <img src="docs/assets/elements/logs-clipboard.png" height="48" alt="日志" /> | **日志与重试** | 本地历史、柔和重试、失败系统通知 |
 | <img src="docs/assets/elements/notify-badge.png" height="48" alt="托盘" /> | **原生托盘** | macOS 自适应托盘剪影 |
+| <img src="docs/assets/elements/sync-refresh.png" height="48" alt="更新" /> | **自动更新** | Tauri updater，读取 GitHub Releases |
 | <img src="docs/assets/elements/multi-device.png" height="48" alt="跨平台" /> | **跨平台** | macOS · Windows · Linux CI 构建 |
 
-## 小岛贴纸
+## 下载与首次打开（未公证 / 未签名安装包）
 
-与应用内使用的同一批切片（来自 `callai.elements.png`）：
+[Releases](https://github.com/YuniqueUnic/callai/releases) 上的安装包**没有**走 Apple 公证 / Windows 商业代码签名（仅有开源 updater 的 minisign 密钥）。系统拦截是正常现象，按下面步骤即可使用。
 
-<p align="center">
-  <img src="docs/assets/elements/hero-perch.png" height="64" alt="hero-perch" />
-  <img src="docs/assets/elements/create-alarm.png" height="64" alt="create-alarm" />
-  <img src="docs/assets/elements/set-time.png" height="64" alt="set-time" />
-  <img src="docs/assets/elements/task-checklist.png" height="64" alt="task-checklist" />
-  <img src="docs/assets/elements/running.png" height="64" alt="running" />
-  <img src="docs/assets/elements/sprout-fresh.png" height="64" alt="sprout-fresh" />
-  <img src="docs/assets/elements/theme-light.png" height="64" alt="theme-light" />
-  <img src="docs/assets/elements/theme-dark.png" height="64" alt="theme-dark" />
-  <img src="docs/assets/elements/success-check.png" height="64" alt="success-check" />
-  <img src="docs/assets/elements/logs-clipboard.png" height="64" alt="logs-clipboard" />
-  <img src="docs/assets/elements/notify-badge.png" height="64" alt="notify-badge" />
-  <img src="docs/assets/elements/multi-device.png" height="64" alt="multi-device" />
-</p>
+### macOS
+
+```bash
+# 把 callai.app 拖进「应用程序」之后：
+xattr -dr com.apple.quarantine /Applications/callai.app
+# 或清理扩展属性：
+xattr -cr /Applications/callai.app
+open /Applications/callai.app
+```
+
+仍被拦截时：**右键 → 打开** 一次，或 **系统设置 → 隐私与安全性 → 仍要打开**。
+
+### Windows
+
+1. 运行 Releases 中的 `.msi` 或 `-setup.exe`  
+2. 若出现 SmartScreen：**更多信息 → 仍要运行**
+
+### Linux
+
+```bash
+chmod +x callai_*.AppImage
+./callai_*.AppImage
+# 或安装 .deb / .rpm
+```
+
+### CLI
+
+同一发布页提供 `callai-cli-*`，可无 GUI 运行 `run` / `daemon`。
+
+## 自动更新
+
+桌面版内置 **tauri-plugin-updater**：
+
+- 端点：`https://github.com/YuniqueUnic/callai/releases/latest/download/latest.json`
+- 更新包使用 minisign 签名，公钥写在 `src-tauri/tauri.conf.json`
+- 应用内：**设置 → 检查更新**
+
+维护者需在 GitHub Actions 配置密钥 `TAURI_SIGNING_PRIVATE_KEY`（及可选 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`），release CI 才能签名 updater 产物。私钥不要提交进仓库（本地 `.keys/` 已 gitignore）。
 
 ## 技术栈
 
 | 层级 | 技术 |
 | --- | --- |
 | 前端 | TypeScript · React · Vite 8 · Bun · [animal-island-ui](https://github.com/guokaigdg/animal-island-ui) |
-| 壳 | Tauri 2 |
+| 壳 | Tauri 2（含 updater） |
 | 核心 | Rust（`domain` / `app` / `infra`） |
 | 存储 | SQLite + `config.toml` 备份 |
 | 发布 | release-please（semver）+ GitHub Actions 多平台构建 |
 
 **当前版本：** `0.2.0` <!-- x-release-please-version -->
 
-## 快速开始
+## 快速开始（开发）
 
 ```bash
-# 依赖：bun、rustup stable、可选 just
 just setup
-just dev          # 桌面
-just dev-web      # 仅前端 mock
+just dev
+just dev-web
 ```
-
-等价命令：
 
 ```bash
 bun install
@@ -122,14 +164,12 @@ bun run tauri dev
 ```bash
 cargo build --manifest-path src-tauri/Cargo.toml
 ./src-tauri/target/debug/callai list
-./src-tauri/target/debug/callai run                 # 无 GUI 调度保活
-./src-tauri/target/debug/callai daemon              # run 别名
+./src-tauri/target/debug/callai run
+./src-tauri/target/debug/callai daemon
 ./src-tauri/target/debug/callai run-once <name|id>
 ./src-tauri/target/debug/callai validate
-./src-tauri/target/debug/callai app                 # 显式 GUI
+./src-tauri/target/debug/callai app
 ```
-
-或：`just cli-list` / `just cli-run` / `just cli-validate` …
 
 ### 数据位置
 
@@ -150,61 +190,38 @@ src-tauri/
   src/commands.rs    # Tauri 命令 + CLI 入口
 ```
 
-依赖方向：**UI → domain ← infra**。领域层不依赖 React / 网络 / 文件系统细节。
+依赖方向：**UI → domain ← infra**。
 
 ## 质量门禁
 
 ```bash
 ./scripts/check_versions.sh
 just gate
-# 或
-just ci
 ```
-
-覆盖：版本一致性（含 README 标记）、typecheck、前端测试与构建、`cargo fmt` / `test --lib` / `clippy -D warnings`、CLI smoke。
 
 ## CI / CD 与版本管理
 
-- **CI**（`.github/workflows/ci.yml`）— 每次 `main` 的 push / PR
-- **Release**（`.github/workflows/release.yml`）— [release-please](https://github.com/googleapis/release-please) 按 Conventional Commits 开 Release PR；合并后打 tag / 发 GitHub Release，并构建：
-  - 桌面：macOS arm64/x64、Linux、Windows（[tauri-action](https://github.com/tauri-apps/tauri-action)）
-  - CLI：同矩阵产物 `callai-cli-<target>`
+- **CI**：push / PR 到 `main`
+- **Release**：release-please 开 PR；合并后打 tag 并构建桌面 + CLI（配置签名密钥时附带 updater 产物）
 
-版本源（必须一致；发版时由 release-please 同步）：
+版本源：`package.json` / `tauri.conf.json` / `Cargo.toml` / `.release-please-manifest.json` / README 标记。
 
-| 文件 | 字段 |
-| --- | --- |
-| `package.json` | `version` |
-| `src-tauri/tauri.conf.json` | `version` |
-| `src-tauri/Cargo.toml` | `package.version` |
-| `.release-please-manifest.json` | `"."` |
-| `README.md` / `README.zh.md` | version badge 与 **当前版本** 行（`x-release-please-version`） |
-
-提交规范：[Conventional Commits](https://www.conventionalcommits.org/)（`feat:`、`fix:`、`chore:` …）。
-
-## 品牌脚本
+## 品牌 / 截图脚本
 
 ```bash
 just brand
-just brand-logo
-just brand-elements
-just brand-check
-python3 scripts/brand/make_tray_template.py --help
+./scripts/media/optimize_screenshots.sh
 ```
-
-托盘图为纯黑 + alpha 剪影，适配 macOS 菜单栏浅色 / 深色。
 
 ## 文档
 
-- [PRODUCT.md](./PRODUCT.md) — 产品定位
-- [DESIGN.md](./DESIGN.md) — 交互与结构
-- [usecases/](./usecases/) — 场景
+- [PRODUCT.md](./PRODUCT.md) · [DESIGN.md](./DESIGN.md) · [usecases/](./usecases/)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md)
 
 ## 许可
 
-- 本仓库源码：[MIT](./LICENSE)
-- UI 依赖：[`animal-island-ui`](https://github.com/guokaigdg/animal-island-ui) 为 **CC BY-NC 4.0**（非商业）。个人 / 非商业使用 callai 没问题；若要商业分发，需替换 UI 库或取得授权。详见 `LICENSE` 中第三方说明。
+- 源码：[MIT](./LICENSE)
+- UI：`animal-island-ui` 为 **CC BY-NC 4.0**。个人 / 非商业可用；商业分发需换库或授权。
 
 ---
 

@@ -39,6 +39,27 @@
 
 ---
 
+## Demo
+
+<p align="center">
+  <img src="docs/assets/screenshot/record-preview.webp" alt="callai demo preview" width="320" />
+</p>
+
+<p align="center">
+  <em>1.4× speed preview</em> ·
+  <a href="docs/assets/screenshot/record-preview.gif">GIF</a> ·
+  <a href="docs/assets/screenshot/record.mp4">full MP4</a> ·
+  <a href="docs/assets/screenshot/record.webp">full WebP</a>
+</p>
+
+### Screenshots
+
+| Alarms | New alarm |
+| :---: | :---: |
+| <img src="docs/assets/screenshot/alarms.webp" alt="alarms" width="220" /> | <img src="docs/assets/screenshot/new-alarm.webp" alt="new alarm" width="220" /> |
+| **Logs** | **Settings** |
+| <img src="docs/assets/screenshot/logs.webp" alt="logs" width="220" /> | <img src="docs/assets/screenshot/settings.webp" alt="settings" width="220" /> |
+
 ## Why callai?
 
 <p align="center">
@@ -67,40 +88,65 @@ Recommended cadence: a few gentle pings per day (for example 08:00 / 13:00 / 18:
 | <img src="docs/assets/elements/theme-light.png" height="48" alt="theme" /> | **Theme + i18n** | Light / dark / system · zh-CN + en |
 | <img src="docs/assets/elements/logs-clipboard.png" height="48" alt="logs" /> | **Logs & retries** | Local history, soft retries, failure notifications |
 | <img src="docs/assets/elements/notify-badge.png" height="48" alt="tray" /> | **Tray native** | macOS template tray icon (light/dark adaptive) |
+| <img src="docs/assets/elements/sync-refresh.png" height="48" alt="updater" /> | **Auto-update** | Tauri updater via GitHub Releases (`latest.json`) |
 | <img src="docs/assets/elements/multi-device.png" height="48" alt="cross platform" /> | **Cross-platform** | macOS · Windows · Linux builds via CI |
 
-## Island stickers
+## Download & first launch (unsigned builds)
 
-These are the same cutouts used inside the app UI (from `callai.elements.png`):
+Official installers on [Releases](https://github.com/YuniqueUnic/callai/releases) are **not Apple/Microsoft notarized** (open-source self-signed updater key only). Gatekeeper / SmartScreen may warn — that is expected.
 
-<p align="center">
-  <img src="docs/assets/elements/hero-perch.png" height="64" alt="hero-perch" />
-  <img src="docs/assets/elements/create-alarm.png" height="64" alt="create-alarm" />
-  <img src="docs/assets/elements/set-time.png" height="64" alt="set-time" />
-  <img src="docs/assets/elements/task-checklist.png" height="64" alt="task-checklist" />
-  <img src="docs/assets/elements/running.png" height="64" alt="running" />
-  <img src="docs/assets/elements/sprout-fresh.png" height="64" alt="sprout-fresh" />
-  <img src="docs/assets/elements/theme-light.png" height="64" alt="theme-light" />
-  <img src="docs/assets/elements/theme-dark.png" height="64" alt="theme-dark" />
-  <img src="docs/assets/elements/success-check.png" height="64" alt="success-check" />
-  <img src="docs/assets/elements/logs-clipboard.png" height="64" alt="logs-clipboard" />
-  <img src="docs/assets/elements/notify-badge.png" height="64" alt="notify-badge" />
-  <img src="docs/assets/elements/multi-device.png" height="64" alt="multi-device" />
-</p>
+### macOS
+
+```bash
+# after dragging callai.app into Applications:
+xattr -dr com.apple.quarantine /Applications/callai.app
+# or (broader clear of extended attributes):
+xattr -cr /Applications/callai.app
+open /Applications/callai.app
+```
+
+If macOS still blocks: **Right-click → Open** once, or **System Settings → Privacy & Security → Open Anyway**.
+
+### Windows
+
+1. Run the `.msi` or `-setup.exe` from Releases  
+2. If SmartScreen appears: **More info → Run anyway**
+
+### Linux
+
+```bash
+chmod +x callai_*.AppImage
+./callai_*.AppImage
+# or install the .deb / .rpm from Releases
+```
+
+### CLI
+
+Same release page ships `callai-cli-*` binaries for headless `run` / `daemon` without the GUI.
+
+## Auto-update
+
+Desktop builds include **tauri-plugin-updater**:
+
+- Endpoint: `https://github.com/YuniqueUnic/callai/releases/latest/download/latest.json`
+- Packages are minisign-signed; the public key is embedded in `src-tauri/tauri.conf.json`
+- In-app: **Settings → Check for updates**
+
+Maintainers: set GitHub Actions secrets `TAURI_SIGNING_PRIVATE_KEY` (and optional `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) so release CI can sign updater artifacts. Never commit the private key (see `.keys/` locally, gitignored).
 
 ## Stack
 
 | Layer | Tech |
 | --- | --- |
 | Frontend | TypeScript · React · Vite 8 · Bun · [animal-island-ui](https://github.com/guokaigdg/animal-island-ui) |
-| Shell | Tauri 2 |
+| Shell | Tauri 2 (+ updater) |
 | Core | Rust (`domain` / `app` / `infra`) |
 | Storage | SQLite + `config.toml` backups |
 | Release | release-please (semver) + GitHub Actions multi-platform build |
 
 **Current version:** `0.2.0` <!-- x-release-please-version -->
 
-## Quick start
+## Quick start (dev)
 
 ```bash
 # prerequisites: bun, rustup stable, just (optional)
@@ -108,8 +154,6 @@ just setup
 just dev          # desktop
 just dev-web      # frontend mock only
 ```
-
-Raw commands:
 
 ```bash
 bun install
@@ -127,8 +171,6 @@ cargo build --manifest-path src-tauri/Cargo.toml
 ./src-tauri/target/debug/callai validate
 ./src-tauri/target/debug/callai app                 # force GUI
 ```
-
-Or via just: `just cli-list`, `just cli-run`, `just cli-validate`, …
 
 ### Data locations
 
@@ -149,7 +191,7 @@ src-tauri/
   src/commands.rs    # Tauri commands + CLI entry
 ```
 
-Dependency rule: **UI → domain ← infra** (ports / DI). Domain stays free of React, HTTP, and filesystem details.
+Dependency rule: **UI → domain ← infra**. Domain stays free of React, HTTP, and filesystem details.
 
 ## Quality gates
 
@@ -160,16 +202,12 @@ just gate
 just ci
 ```
 
-Gate covers version sync (including README markers), typecheck, frontend tests/build, `cargo fmt` / `test --lib` / `clippy -D warnings`, CLI smoke.
-
 ## CI / CD & versioning
 
 - **CI** (`.github/workflows/ci.yml`) — every push/PR to `main`
-- **Release** (`.github/workflows/release.yml`) — [release-please](https://github.com/googleapis/release-please) opens a Release PR from Conventional Commits; merge creates the tag/GitHub Release and builds:
-  - Desktop: macOS arm64/x64, Linux, Windows ([tauri-action](https://github.com/tauri-apps/tauri-action))
-  - CLI: same matrix as `callai-cli-<target>`
+- **Release** (`.github/workflows/release.yml`) — release-please opens a Release PR; merge creates the tag/GitHub Release and builds desktop + CLI (+ updater `.sig` / `latest.json` when signing secrets exist)
 
-Version sources (must stay identical; release-please updates them):
+Version sources (must stay identical):
 
 | File | Field |
 | --- | --- |
@@ -177,33 +215,28 @@ Version sources (must stay identical; release-please updates them):
 | `src-tauri/tauri.conf.json` | `version` |
 | `src-tauri/Cargo.toml` | `package.version` |
 | `.release-please-manifest.json` | `"."` |
-| `README.md` / `README.zh.md` | version badges + **Current version** lines (`x-release-please-version`) |
+| `README.md` / `README.zh.md` | version badges + **Current version** (`x-release-please-version`) |
 
-Commit style: [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, …).
+Commit style: [Conventional Commits](https://www.conventionalcommits.org/).
 
-## Brand tooling
+## Brand / screenshot tooling
 
 ```bash
-just brand          # regenerate icons + element slices
-just brand-logo
-just brand-elements
+just brand
 just brand-check
 python3 scripts/brand/make_tray_template.py --help
+./scripts/media/optimize_screenshots.sh   # PNG/WebP + 1.4× demo video
 ```
-
-Tray templates are pure black + alpha silhouettes for macOS light/dark menu bars.
 
 ## Docs
 
-- [PRODUCT.md](./PRODUCT.md) — product intent
-- [DESIGN.md](./DESIGN.md) — interaction / structure
-- [usecases/](./usecases/) — scenarios
+- [PRODUCT.md](./PRODUCT.md) · [DESIGN.md](./DESIGN.md) · [usecases/](./usecases/)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md)
 
 ## License
 
 - Application source: [MIT](./LICENSE)
-- UI kit dependency: [`animal-island-ui`](https://github.com/guokaigdg/animal-island-ui) is **CC BY-NC 4.0** (non-commercial). Personal / non-commercial use of callai is fine; commercial redistribution requires replacing that UI stack or obtaining permission. See the third-party notice in `LICENSE`.
+- UI kit: [`animal-island-ui`](https://github.com/guokaigdg/animal-island-ui) is **CC BY-NC 4.0** (non-commercial). Personal use is fine; commercial redistribution needs a different UI stack or permission. See `LICENSE`.
 
 ---
 

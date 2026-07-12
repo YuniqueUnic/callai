@@ -20,5 +20,16 @@
   "deleteBackup": "Delete",
   "deleteBackupConfirm": "Delete this backup? This cannot be undone.",
   "deleteBackupSuccess": "Backup deleted.",
-  "backupKeepHint": "Up to 10 backups are kept; older ones are removed automatically."
+  "backupKeepHint": "Up to 10 backups are kept; older ones are removed automatically.",
+  "checkUpdate": "Check for updates",
+  "checkingUpdate": "Checking…",
+  "updateAvailable": "Update available: v{{version}}",
+  "updateUpToDate": "You're on the latest version.",
+  "updateInstall": "Download & install",
+  "updateInstalling": "Downloading update…",
+  "updateDone": "Update installed. Please restart callai.",
+  "updateError": "Could not check updates",
+  "updateUnsupported": "Updates are available in the desktop app build.",
+  "updateSection": "App updates",
+  "updateHint": "Signed update packages are fetched from GitHub Releases."
 }
