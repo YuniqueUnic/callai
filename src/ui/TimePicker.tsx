@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
-import { playTick, unlockAudio } from "./sounds";
+import { playSound, playTick, unlockAudio } from "./sounds";
 
 interface Props {
   value: string; // HH:mm
@@ -171,7 +171,14 @@ export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
           />
         </div>
         <div className="time-picker-actions">
-          <Button size="small" type="primary" onClick={() => setOpen(false)}>
+          <Button
+            size="small"
+            type="primary"
+            onClick={() => {
+              playSound("confirm");
+              setOpen(false);
+            }}
+          >
             {t("donePick")}
           </Button>
         </div>
@@ -202,6 +209,7 @@ export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
             size="small"
             type="primary"
             onClick={() => {
+              playSound("confirm");
               commit();
               onAdd();
               setOpen(false);

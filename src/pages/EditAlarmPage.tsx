@@ -22,7 +22,7 @@ import { IconButton } from "../ui/IconButton";
 import { IconBack, IconFolder, IconPlus, IconSave, IconTrash } from "../ui/icons";
 import { DurationPicker } from "../ui/DurationPicker";
 import { TimePicker } from "../ui/TimePicker";
-import { installSelectOptionTicks, playTick, unlockAudio } from "../ui/sounds";
+import { installSelectOptionTicks, playSound, playTick, unlockAudio } from "../ui/sounds";
 
 interface Props {
   alarmId?: string | null;
@@ -190,6 +190,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
               label={t("common:back")}
               icon={<IconBack size={18} />}
               tooltipPlacement="bottom"
+              sfx="cancel"
               onClick={onBack}
             />
             <IconButton
@@ -198,6 +199,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
               variant="primary"
               loading={saving}
               tooltipPlacement="bottom"
+              sfx="confirm"
               onClick={() => void save()}
             />
           </div>
@@ -265,6 +267,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                   type="button"
                   className={scheduleMode === mode ? "active" : ""}
                   onClick={() => {
+                    playSound("soft");
                     setScheduleMode(mode);
                     setDraft((d) => {
                       const times =
@@ -321,6 +324,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                         type="button"
                         className={`time-chip ${selected ? "active" : ""}`}
                         onClick={() => {
+                          playTick();
                           setDraft((prev) => {
                             const times =
                               prev.schedule.mode === "weekly" ||
@@ -364,6 +368,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                         type="button"
                         className={`time-chip ${selected ? "active" : ""}`}
                         onClick={() => {
+                          playTick();
                           setDraft((prev) => {
                             const times =
                               prev.schedule.mode === "monthly" ||
@@ -401,9 +406,10 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                     {time}
                     <button
                       type="button"
-                      onClick={() =>
-                        updateScheduleTimes(scheduleTimes.filter((x) => x !== time))
-                      }
+                      onClick={() => {
+                        playSound("soft");
+                        updateScheduleTimes(scheduleTimes.filter((x) => x !== time));
+                      }}
                     >
                       ×
                     </button>
@@ -532,6 +538,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                     <div className="env-actions">
                       <IconButton
                         label={t("common:delete")}
+                        sfx="warn"
                         icon={<IconTrash size={14} />}
                         variant="danger"
                         onClick={() =>
@@ -547,6 +554,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                 <div className="env-add">
                   <IconButton
                     label={t("alarms:addEnv")}
+                    sfx="confirm"
                     icon={<IconPlus size={16} />}
                     onClick={() =>
                       setDraft((d) => ({
@@ -585,12 +593,13 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                   key={interval}
                   type="button"
                   className={draft.retry.interval === interval ? "active" : ""}
-                  onClick={() =>
+                  onClick={() => {
+                    playSound("soft");
                     setDraft((d) => ({
                       ...d,
                       retry: { ...d.retry, interval, max_attempts: 3 },
-                    }))
-                  }
+                    }));
+                  }}
                 >
                   {t(`alarms:interval_${interval}` as "alarms:interval_2m")}
                 </button>

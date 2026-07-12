@@ -145,10 +145,9 @@ body.tauri #root {
   border-radius: var(--callai-window-radius, 16px);
   overflow: hidden;
   background: var(--callai-bg);
-  border: 2px solid color-mix(in srgb, var(--callai-border) 75%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, #000 8%, transparent),
-    0 18px 40px rgba(0, 0, 0, 0.22);
+  border: 1.5px solid color-mix(in srgb, var(--callai-border) 75%, transparent);
+  /* Browser preview may keep soft outer shadow; Tauri overrides to none (see FINAL). */
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
   /* fill transparent window */
   height: 100% !important;
   max-height: 100dvh !important;
@@ -3591,17 +3590,13 @@ body.callai-logs-open [class*="animal-body"] {
   align-items: center;
   gap: 8px;
   padding: 0 8px 0 10px;
-  /* transparent HUD: only soft scrim + blur, no solid band */
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--callai-bg) 55%, transparent) 0%,
-    color-mix(in srgb, var(--callai-bg) 22%, transparent) 70%,
-    transparent 100%
-  ) !important;
+  /* fully clear HUD: no band, no side-fade gradient, no blur plate */
+  background: transparent !important;
+  background-image: none !important;
   border-bottom: none !important;
   box-shadow: none !important;
-  backdrop-filter: blur(10px) saturate(1.05);
-  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   color: var(--callai-ink);
   user-select: none;
   z-index: 520 !important;
@@ -3766,13 +3761,12 @@ body.callai-logs-open [class*="animal-body"] {
 }
 
 [data-theme="dark"] .titlebar {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--callai-bg) 62%, transparent) 0%,
-    color-mix(in srgb, var(--callai-bg) 28%, transparent) 70%,
-    transparent 100%
-  ) !important;
+  background: transparent !important;
+  background-image: none !important;
   border-bottom: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
 }
 /* Dark: only rectangular chrome buttons — never wash traffic lights */
 [data-theme="dark"] .titlebar-btn:not(.is-traffic) {
@@ -4535,4 +4529,198 @@ html[data-theme="dark"] [class*="animal-option"][class*="animal-active"] {
 html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-pillBar"] {
   background: #5ee0d2 !important;
   opacity: 0.35 !important;
+}
+
+
+/* ── Rounded window: kill square outer ring (FINAL) ──
+   Transparent + decorations:false windows are still a rectangular bitmap.
+   OS drop-shadow and CSS outer box-shadow paint *outside* border-radius and
+   look like a square frame under the rounded island — especially at bottom.
+   Fix:
+   1) tauri.conf shadow: false (no rectangular OS chrome shadow)
+   2) no CSS outer drop-shadow on shell in Tauri
+   3) clip-path inset(round) hard-clips border + children (sea, tabs)
+   4) soft depth via *inset* highlight only (stays inside radius)
+*/
+html.tauri,
+html.tauri body,
+html.tauri body.tauri,
+html.tauri #root,
+html.tauri .cursor-root,
+html.tauri .callai-cursor,
+html.tauri [class*="animal-cursor"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  /* host must not paint edges */
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+html.tauri .app-shell.has-titlebar {
+  border-radius: var(--callai-window-radius, 16px) !important;
+  overflow: hidden !important;
+  /* hard clip: border, waves, and any child overflow follow radius */
+  clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
+  -webkit-clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
+  /* keep a thin island outline *inside* the clip (no outer drop-shadow) */
+  border: 1.5px solid color-mix(in srgb, var(--callai-border) 80%, transparent) !important;
+  /* inset only — outer CSS/OS shadows paint rectangular "ears" */
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000 10%, transparent) !important;
+  background: var(--callai-bg) !important;
+  background-clip: padding-box !important;
+  isolation: isolate;
+  transform: translateZ(0); /* promote layer; helps WKWebView clip */
+}
+
+html.tauri .app-shell.has-titlebar.is-maximized,
+html.tauri .app-shell.has-titlebar.is-fullscreen,
+html.callai-window-chrome-flat .app-shell.has-titlebar {
+  border-radius: 0 !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Footer sea: same radius, clip hard, no outer stroke */
+html.tauri .app-shell.has-titlebar .app-footer-band,
+html.tauri .app-shell.has-titlebar .sea-marquee,
+html.tauri .app-shell.has-titlebar .sea-layer {
+  overflow: hidden !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+html.tauri .app-shell.has-titlebar .app-footer-band {
+  border-bottom-left-radius: calc(var(--callai-window-radius, 16px) - 1px) !important;
+  border-bottom-right-radius: calc(var(--callai-window-radius, 16px) - 1px) !important;
+  /* double-clip with shell so bottom ears never show */
+  clip-path: inset(0 round 0 0 var(--callai-window-radius, 16px) var(--callai-window-radius, 16px)) !important;
+  -webkit-clip-path: inset(
+    0 round 0 0 var(--callai-window-radius, 16px) var(--callai-window-radius, 16px)
+  ) !important;
+}
+html.tauri .app-shell.has-titlebar.is-maximized .app-footer-band,
+html.tauri .app-shell.has-titlebar.is-fullscreen .app-footer-band {
+  border-radius: 0 !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+}
+
+/* Resize grips must not paint */
+html.tauri .window-resize-layer,
+html.tauri .window-resize-grip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+
+/* ── Logs Drawer: preserve rounded transparent window ──
+   animal-island Drawer portals to document.body:
+   1) mask = position:fixed; inset:0  → paints into transparent corner "holes"
+      → looks like square OS window again
+   2) panelRight = height 100vh + border-radius only on INNER edge
+      → window top-right / bottom-right become sharp panel corners
+   3) pushBackground=true mutates #root with scale/blur/borderRadius
+      → breaks shell clip-path / transparent chrome (disabled in App.tsx)
+
+   Fix: clip mask to same round rect as shell; round panel OUTER corners;
+   neutralize any leftover push styles on #root when logs open.
+*/
+html.tauri body.callai-logs-open [class*="animal-mask"],
+html.tauri body.callai-logs-open [data-animal-drawer-portal] [class*="animal-mask"] {
+  /* do not fill the transparent corner pixels outside the island shell */
+  border-radius: var(--callai-window-radius, 16px) !important;
+  clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
+  -webkit-clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
+  overflow: hidden !important;
+}
+
+/* Right drawer: outer (window) corners must match shell radius */
+html.tauri body.callai-logs-open [class*="animal-panelRight"],
+html.tauri body.callai-logs-open [class*="animal-panel"][class*="Right"],
+html.tauri body.callai-logs-open .logs-drawer[class*="animal-panel"] {
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  /* outer edge = window right side */
+  border-top-right-radius: var(--callai-window-radius, 16px) !important;
+  border-bottom-right-radius: var(--callai-window-radius, 16px) !important;
+  /* inner edge keeps soft drawer mouth */
+  border-top-left-radius: 20px !important;
+  border-bottom-left-radius: 20px !important;
+  overflow: hidden !important;
+}
+
+/* If a future pushBackground sneaks back, kill scale/blur on host tree */
+html.tauri body.callai-logs-open > #root,
+html.tauri body.callai-logs-open > #root.cursor-root,
+html.tauri body.callai-logs-open > .cursor-root {
+  transform: none !important;
+  filter: none !important;
+  border-radius: 0 !important;
+  /* keep host transparent; do not invent a rounded plate here */
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Shell must stay clipped while drawer is open */
+html.tauri body.callai-logs-open .app-shell.has-titlebar {
+  border-radius: var(--callai-window-radius, 16px) !important;
+  clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
+  -webkit-clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
+  overflow: hidden !important;
+}
+
+html.tauri body.callai-logs-open .app-shell.has-titlebar.is-maximized,
+html.tauri body.callai-logs-open .app-shell.has-titlebar.is-fullscreen {
+  border-radius: 0 !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+}
+
+/* Maximized: mask/panel rectangular — see :has rules below */
+html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-maximized) [class*="animal-mask"],
+html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-fullscreen) [class*="animal-mask"] {
+  border-radius: 0 !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+}
+html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-maximized) [class*="animal-panelRight"],
+html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-fullscreen) [class*="animal-panelRight"],
+html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-maximized) [class*="animal-panel"][class*="Right"],
+html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-fullscreen) [class*="animal-panel"][class*="Right"] {
+  border-radius: 0 !important;
+}
+
+
+/* ── Titlebar: no side gradient (FINAL) ──
+   Overlay HUD must not paint a top scrim band — linear-gradient fades read as
+   “gradients on both sides” over the island background. Controls stay readable
+   via their own button/pill surfaces + text-shadow where needed.
+*/
+html.tauri .titlebar,
+html.tauri .app-shell.has-titlebar > .titlebar,
+[data-theme="dark"] .titlebar,
+[data-theme="light"] .titlebar {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* keep title text legible over busy content without a bar */
+html.tauri .titlebar-title,
+html.tauri .titlebar-tagline {
+  text-shadow:
+    0 1px 0 color-mix(in srgb, var(--callai-bg) 70%, transparent),
+    0 0 8px color-mix(in srgb, var(--callai-bg) 55%, transparent);
 }

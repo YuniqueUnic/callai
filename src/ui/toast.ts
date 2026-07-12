@@ -1,5 +1,6 @@
 import { createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { playForToastKind } from "./sounds";
 
 type ToastKind = "success" | "info" | "warning" | "error";
 
@@ -131,6 +132,8 @@ function show(kind: ToastKind, input: string | ToastInput) {
   const cfg = typeof input === "string" ? { message: input } : input;
   const duration = cfg.duration ?? (kind === "error" ? 5.5 : 3.4);
   const id = cfg.key ?? `callai-toast-${Date.now()}-${++seq}`;
+  // Central feedback path: toast kind → cozy SFX (respects sound_enabled).
+  playForToastKind(kind);
 
   // update existing key
   const existing = items.findIndex((x) => x.id === id);

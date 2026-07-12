@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
-import { playTick, unlockAudio } from "./sounds";
+import { playSound, playTick, unlockAudio } from "./sounds";
 
 interface Props {
   /** IANA name, or "system" */
@@ -201,13 +201,21 @@ export function TimezonePicker({ value, detected, onChange }: Props) {
           <Button
             size="small"
             onClick={() => {
+              playSound("soft");
               setDraft("system");
               commit("system");
             }}
           >
             {t("settings:timezoneSystem")}
           </Button>
-          <Button size="small" type="primary" onClick={() => commit()}>
+          <Button
+            size="small"
+            type="primary"
+            onClick={() => {
+              playSound("confirm");
+              commit();
+            }}
+          >
             {t("common:confirm")}
           </Button>
         </div>

@@ -32,7 +32,7 @@
 | 11 | [11 包管理器分发](./11-packaging-brew-scoop-winget.md) | brew/scoop/winget；**winget 一应用一 PR + CLA** |
 | 12 | [12 运行时硬化与音效](./12-runtime-hardening-and-sfx.md) | 超时/取消/shlex/DurationPicker/SFX/去 hint |
 | 13 | [13 GitHub Issue/PR 周期](./13-github-issue-pr-lifecycle.md) | Issue→分支→PR→gate→rebase merge；#16–#19 样板 |
-| 14 | [14 自绘 Titlebar 与窗口铬](./14-custom-titlebar-and-window-chrome.md) | decorations/transparent/圆角坑；跨平台自绘；pin/fullscreen/grips |
+| 14 | [14 自绘 Titlebar 与窗口铬](./14-custom-titlebar-and-window-chrome.md) | decorations/transparent；圆角坑（host / fixed 海浪 / OS·CSS 外阴影 / Drawer mask）；clip-path；pin/fullscreen/grips |
 
 ### 路径 B · 只学「如何写 prompt」
 
@@ -48,7 +48,7 @@
 
 ### 路径 E · 只学桌面窗口铬 / 自绘 titlebar
 
-`02`（托盘）→ `04` → `14` → `05`（层级），配合三平台拖拽/圆角/close-to-tray 手测。
+`02`（托盘）→ `04` → `14`（含附录 C 海浪 fixed、**附录 E 外侧方框线**）→ `05`（层级），配合三平台拖拽/圆角/close-to-tray 手测。
 
 ## 提交时间线（证据）
 
