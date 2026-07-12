@@ -84,7 +84,7 @@ brew cask 命名 callai-app 避免冲突
 
 ### winget 真实偏差（必读）
 
-`microsoft/winget-pkgs` PR #401342 被拒：
+`microsoft/winget-pkgs` PR #401342 被拒（已关闭）：
 
 > The pull request contains more than one application.
 
@@ -100,3 +100,7 @@ PR2: manifests/y/YuniqueUnic/Callai.CLI/0.2.1 only
 Comment CLA: @microsoft-github-policy-service agree
 Do not mix identifiers in one PR.
 ```
+
+已拆分提交：
+- GUI: https://github.com/microsoft/winget-pkgs/pull/401366
+- CLI: https://github.com/microsoft/winget-pkgs/pull/401367

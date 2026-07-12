@@ -361,7 +361,7 @@ just brand
 
 - [Homebrew tap](https://github.com/YuniqueUnic/homebrew-callai)
 - [Scoop bucket](https://github.com/YuniqueUnic/scoop-callai)
-- [winget-pkgs（Callai / Callai.CLI 需分 PR）](https://github.com/microsoft/winget-pkgs/pulls?q=is%3Apr+author%3AYuniqueUnic+callai)
+- [winget GUI PR](https://github.com/microsoft/winget-pkgs/pull/401366) · [winget CLI PR](https://github.com/microsoft/winget-pkgs/pull/401367)
 - [GitHub](https://github.com/YuniqueUnic/callai)
 - [Releases](https://github.com/YuniqueUnic/callai/releases)
 - [LinuxDo](https://linux.do)
