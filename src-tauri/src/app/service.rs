@@ -5,8 +5,8 @@ use std::sync::{Arc, Mutex};
 use chrono::Utc;
 
 use crate::domain::{
-    expand_arg_templates, Alarm, AlarmDraft, AlarmLifecycle, AppSettings, DomainError,
-    DomainResult, ErrorCode, ExecutionLog, ExecutionStatus, LogFilter,
+    expand_arg_templates, resolve_process_argv, Alarm, AlarmDraft, AlarmLifecycle, AppSettings,
+    DomainError, DomainResult, ErrorCode, ExecutionLog, ExecutionStatus, LogFilter,
 };
 
 use super::{
@@ -226,7 +226,8 @@ impl AlarmService {
         self.store.upsert_alarm(alarm)?;
 
         let started = self.clock.now_utc();
-        let expanded_args = expand_arg_templates(&alarm.args, started);
+        let templated = expand_arg_templates(&alarm.args, started);
+        let (resolved_binary, expanded_args) = resolve_process_argv(&alarm.binary, &templated)?;
         let env: Vec<(String, String)> = alarm
             .env_vars
             .iter()
@@ -243,11 +244,7 @@ impl AlarmService {
             exit_code: None,
             duration_ms: None,
             retry_count: 0,
-            command_preview: {
-                let mut parts = vec![alarm.binary.clone()];
-                parts.extend(expanded_args.iter().cloned());
-                parts.join(" ")
-            },
+            command_preview: crate::domain::preview_command(&resolved_binary, &expanded_args),
             stdout: String::new(),
             stderr: String::new(),
         };
@@ -275,7 +272,7 @@ impl AlarmService {
             }
 
             match self.runner.run(
-                &alarm.binary,
+                &resolved_binary,
                 &expanded_args,
                 &env,
                 alarm.timeout_secs,

@@ -338,7 +338,9 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
               placeholder={t("alarms:argsPlaceholder")}
               onChange={(e) => setArgsText(e.target.value)}
             />
-            <div className="hint">{"{{date}} · {{datetime}} · {{timestamp}}"}</div>
+            <div className="hint">
+              {t("alarms:argsHint")} · {"{{date}}"} · {"{{datetime}}"} · {"{{timestamp}}"}
+            </div>
           </div>
 
           <div className="field" style={{ marginTop: 12 }}>

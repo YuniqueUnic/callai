@@ -10,7 +10,7 @@
   <h1>callai</h1>
   <p>
     <strong>Ciallo～(∠・ω&lt; )</strong><br />
-    A cozy desktop + CLI alarm that warms AI usage windows.
+    A cozy desktop + CLI scheduler for AI windows — and any geeky timed tasks.
   </p>
 </td>
 </tr>
@@ -87,7 +87,7 @@
 | --- | --- | --- |
 | Homebrew | `brew tap YuniqueUnic/callai && brew install --cask callai-app` | `brew tap YuniqueUnic/callai && brew install callai` |
 | Scoop | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai` | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai-cli` |
-| winget | pending community PR → then `winget install YuniqueUnic.Callai` (local: `--manifest packaging/winget/.../Callai/<ver>`) | pending community PR → then `winget install YuniqueUnic.Callai.CLI` |
+| winget | community PR (GUI only; one app per PR) → then `winget install YuniqueUnic.Callai` · local: `winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai/0.2.1` | separate PR for CLI → `winget install YuniqueUnic.Callai.CLI` · local: `--manifest .../Callai.CLI/0.2.1` |
 
 Full matrix, refresh scripts, and upstream submission notes: **[packaging/README.md](./packaging/README.md)**.
 
@@ -118,6 +118,106 @@ Claude, ChatGPT, Codex, and friends often use **rolling usage windows**. A commo
 **callai** is a tiny, Animal Crossing–inspired alarm: schedule lightweight tasks (`echo hi`, `codex exec hi`, …) so the rolling window starts earlier and stays fresher during your real work hours.
 
 Recommended cadence: a few gentle pings per day (for example 08:00 / 13:00 / 18:00).
+
+
+## Recipes (beyond AI windows)
+
+**callai** started as a gentle **AI rolling-window warmer**, but under the hood it is a **lightweight, cross-platform task trigger**: pick a time, run any binary/script, keep logs, retry, timeout, and cancel. Prefer that over fighting `crontab` syntax or the heavy Windows Task Scheduler UI.
+
+> Set **timeout** (default 20s) for interactive tools like dialogs / `say` — otherwise a modal can block forever.
+>
+> **Args parsing:** paste shell-style lines (e.g. `-e 'display dialog "hi"'`) — callai splits them with [`shlex`](https://docs.rs/shlex) before spawn, so outer quotes are not sent to the program.
+
+### 1) AI usage window (the original job)
+
+| Field | Example |
+| --- | --- |
+| Binary | `codex` / `claude` / `echo` |
+| Args | `exec` + `hi` · or `-p` + `hi` · or `callai warmup {{date}}` |
+| Schedule | Daily `08:00`, `13:00`, `18:00` |
+| Timeout | `30`–`120` s if the CLI is slow |
+
+```bash
+# headless smoke
+callai run-once morning-warmup
+callai list
+callai daemon   # keep scheduler alive without GUI
+```
+
+### 2) Force-break dialogs (workflow interrupt)
+
+**macOS** — system dialog (needs a real desktop session; set timeout ≥ 60s or click it):
+
+```bash
+osascript -e 'display dialog "已经连续写代码 2 小时了，喝口水？" buttons {"已喝", "等会"} default button 1 with icon caution'
+```
+
+In callai: binary `osascript`, one arg per line:
+
+```text
+-e
+display dialog "已经连续写代码 2 小时了，喝口水？" buttons {"已喝", "等会"} default button 1 with icon caution
+```
+
+**Linux** — Zenity:
+
+```bash
+zenity --question --text="写了这么久，要不要强行锁屏休息 5 分钟？" --ok-label="锁屏" --cancel-label="继续卷"
+```
+
+### 3) Voice / media alarms
+
+**macOS speak:**
+
+```bash
+say -v Mei-Jia "主人，你关注的股票好像跌惨了，快去看看吧"
+```
+
+**Play a file:**
+
+```bash
+# macOS
+afplay ~/Music/evangelion_warning.mp3
+# Linux
+aplay ~/Music/alarm.wav
+# or
+ffplay -nodisp -autoexit ~/Music/alarm.wav
+```
+
+### 4) Focus / end-of-day automation
+
+**macOS Shortcuts:**
+
+```bash
+shortcuts run "开启下班摸鱼模式"
+```
+
+Schedule at 18:30 — your Shortcut can close the IDE, open music, dim the display, etc.
+
+### 5) Quiet background automation
+
+**Silent git pull** (every 30 min via cron expression, or a few fixed times):
+
+```bash
+bash
+-lc
+cd ~/Projects/my-main-repo && git pull --ff-only origin main
+```
+
+**Local health check + notification:**
+
+```bash
+bash
+-lc
+curl -sf http://localhost:8080/health || osascript -e 'display notification "本地服务挂了！" with title "callai"'
+```
+
+### Tips
+
+- Prefer **absolute paths** or tools on `PATH` (`which codex`, `which say`).
+- Long interactive jobs: raise **timeout**, or use **Stop** from the UI / `Ctrl+C` on `run-once`.
+- Failed runs can send a **system notification** (Settings → notify on failure).
+- Desktop and CLI share `~/.config/callai` + `~/.local/share/callai`.
 
 ## Features
 
