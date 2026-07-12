@@ -247,7 +247,7 @@ main 保护策略下：**没有 gate 不能合**；**squash 若被禁用就用 r
 | #16 | `get_app_version` + Settings 关于区；CLI `version` / `--version` → `CARGO_PKG_VERSION` |
 | #17 | `global.css` dark 下 Edit/env/Select/icon 对比度 |
 | #18 | `get_backups_dir` + `@tauri-apps/plugin-opener` `openPath` + 备份区 icon button |
-| #19 | `tauri-plugin-autostart` + Settings 开关（与 `launch_minimized` 并列但不混淆） |
+| #19 | 自研 `infra::AutoStart` + `auto-launch` 0.6：macOS 13+ `SMAppService` / 旧版 `AppleScript`；Linux XDG；Windows Dynamic registry |
 
 Capabilities 增量：`autostart:default`、`opener:default`、`opener:allow-open-path`。
 

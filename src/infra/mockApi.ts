@@ -193,4 +193,10 @@ export const mockApi = {
   async openBackupsDir() {
     return "/tmp/callai-mock-backups";
   },
+  async getAutostartEnabled() {
+    return false;
+  },
+  async setAutostartEnabled(enabled: boolean) {
+    return enabled;
+  },
 };

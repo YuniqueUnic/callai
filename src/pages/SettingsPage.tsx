@@ -64,13 +64,10 @@ export function SettingsPage({ onOpenLogs }: Props) {
       } catch {
         setAppVersion("");
       }
-      if (isTauri()) {
-        try {
-          const { isEnabled } = await import("@tauri-apps/plugin-autostart");
-          setAutostartOn(await isEnabled());
-        } catch {
-          setAutostartOn(false);
-        }
+      try {
+        setAutostartOn(await client.getAutostartEnabled());
+      } catch {
+        setAutostartOn(false);
       }
     })();
   }, []);
@@ -200,17 +197,9 @@ export function SettingsPage({ onOpenLogs }: Props) {
               checked={autostartOn}
               onChange={(v) => {
                 void (async () => {
-                  if (!isTauri()) {
-                    setAutostartOn(v);
-                    return;
-                  }
                   try {
-                    const { enable, disable } = await import(
-                      "@tauri-apps/plugin-autostart"
-                    );
-                    if (v) await enable();
-                    else await disable();
-                    setAutostartOn(v);
+                    const enabled = await client.setAutostartEnabled(v);
+                    setAutostartOn(enabled);
                     toast.success({
                       message: t("settings:saved"),
                       key: "autostart",
