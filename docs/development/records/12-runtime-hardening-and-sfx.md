@@ -471,3 +471,29 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 > **会调度只是闹钟；会超时、会取消、会解析用户粘贴的真实命令、并在可配置的前提下发出轻反馈，才是可托付的 callai。**  
 > 把口语变成验收条，把偏差写进教材——这才是 AI coding 实战该教的东西。
+
+---
+
+## 附录 A · 时区与「下次触发」显示异常（续）
+
+### 现象
+
+闹钟配置每天 `08:00 / 13:00 / 18:00`，但「下次触发」出现 **21:00**。
+
+### 根因
+
+`cron` crate 按 **UTC 墙钟字段** 迭代。  
+`13:00` 被当成 13:00 UTC → 在 `Asia/Shanghai` 显示为 **21:00**。  
+调度与 UI 都走了同一路径，所以不是 UI 单独算错。
+
+### 修复
+
+1. **墙钟求值**：`next_trigger_after_in_tz` 把目标时区的 civil time 当作 pseudo-UTC 喂给 cron，再映射回真实 `Tz`。  
+2. **设置 `timezone`**：`system`（`iana-time-zone` 检测）或 IANA 名；UI 用 `TimezonePicker`（与 TimePicker 同交互），不是 segmented 长列表。  
+3. **调度扩展**：`daily` / `weekly` / `monthly` / `cron`；weekly=星期几+时间，monthly=日期+时间；cron 仍为完整 5/6 字段（经 `cron` crate）。
+
+### 验收
+
+- 上海时区、每天 08/13/18：中午过后下次必为 **13:00**（不是 21:00）。  
+- 设置里改 `America/New_York` 后 next 标签随之变化。  
+- 每周一 09:00：周日之后 next 落在周一 09:00。

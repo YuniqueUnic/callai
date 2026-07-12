@@ -6,6 +6,7 @@ import type { AppSettings, LocaleCode, ThemeMode } from "../domain/types";
 import { client } from "../infra/client";
 import { applyTheme } from "../theme/theme";
 import { ElementImage } from "../ui/ElementImage";
+import { TimezonePicker } from "../ui/TimezonePicker";
 import { IconButton } from "../ui/IconButton";
 import { IconLogs, IconRestore, IconTrash } from "../ui/icons";
 import { playSound, setSoundEnabled, unlockAudio } from "../ui/sounds";
@@ -43,11 +44,19 @@ export function SettingsPage({ onOpenLogs }: Props) {
   const [updateBusy, setUpdateBusy] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<string | null>(null);
   const [pendingInstall, setPendingInstall] = useState<null | (() => Promise<void>)>(null);
+  const [detectedTz, setDetectedTz] = useState<string>("");
 
   useEffect(() => {
     void (async () => {
       setSettings(await client.getSettings());
       setBackups(await client.listBackups());
+      try {
+        setDetectedTz(await client.detectTimezone());
+      } catch {
+        setDetectedTz(
+          Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        );
+      }
     })();
   }, []);
 
@@ -140,6 +149,21 @@ export function SettingsPage({ onOpenLogs }: Props) {
                   {t(`settings:${key}`)}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="field">
+            <label className="label">{t("settings:timezone")}</label>
+            <div style={{ marginTop: 8 }}>
+              <TimezonePicker
+                value={settings.timezone || "system"}
+                detected={detectedTz}
+                onChange={(tz) => {
+                  const next = { ...settings, timezone: tz };
+                  setSettings(next);
+                  void save(next);
+                }}
+              />
             </div>
           </div>
 

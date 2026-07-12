@@ -155,3 +155,10 @@ drawer: closed ──open──► open（FAB hidden, scroll body）
 ## 10. 关键
 
 `src/ui/toast.ts` · `SettingsPage` backups · `HomePage` run dialog · `2b5c142`
+
+---
+
+## 附录 · 设置控件形态
+
+时区等「长选项」不要用 segmented 堆按钮；与 **TimePicker / DurationPicker** 一致：触发器 + portal 滚轮/列表 + 确认。  
+调度模式扩展（每天/每周/每月/cron）见 record 12 附录 A。

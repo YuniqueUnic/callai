@@ -43,6 +43,8 @@ pub struct AppSettings {
     pub log_retention_days: u32,
     pub notify_on_failure: bool,
     pub sound_enabled: bool,
+    /// IANA timezone name, or "system" to auto-detect host timezone.
+    pub timezone: String,
     pub auto_backup_on_start: bool,
     pub backup_keep_count: u32,
 }
@@ -56,6 +58,7 @@ impl Default for AppSettings {
             log_retention_days: 30,
             notify_on_failure: false,
             sound_enabled: true,
+            timezone: "system".into(),
             auto_backup_on_start: true,
             backup_keep_count: 10,
         }

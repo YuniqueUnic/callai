@@ -4,7 +4,6 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use chrono::Local;
 use tracing::{error, info, warn};
 
 use crate::app::AlarmService;
@@ -160,8 +159,10 @@ impl AlarmScheduler {
     }
 
     fn tick(&self) -> crate::domain::DomainResult<()> {
-        let now = Local::now();
-        let minute_key = now.format("%Y%m%d%H%M").to_string();
+        let tz = self.service.schedule_timezone().unwrap_or_else(|_| chrono_tz::UTC);
+        let now_utc = chrono::Utc::now();
+        let now_local = now_utc.with_timezone(&tz);
+        let minute_key = now_local.format("%Y%m%d%H%M").to_string();
         let minute_i: i64 = minute_key.parse().unwrap_or(0);
 
         let alarms = self.service.list_alarms()?;
@@ -169,7 +170,7 @@ impl AlarmScheduler {
             if !alarm.enabled {
                 continue;
             }
-            if !is_due_now(&alarm.schedule, now)? {
+            if !is_due_now_tz(&alarm.schedule, now_utc, tz)? {
                 continue;
             }
             {
@@ -185,15 +186,18 @@ impl AlarmScheduler {
     }
 }
 
-fn is_due_now(
+fn is_due_now_tz(
     schedule: &ScheduleSpec,
-    now: chrono::DateTime<Local>,
+    now_utc: chrono::DateTime<chrono::Utc>,
+    tz: chrono_tz::Tz,
 ) -> crate::domain::DomainResult<bool> {
-    let before = now - chrono::Duration::seconds(59);
-    if let Some(next) = schedule.next_trigger_after(before)? {
+    let before = now_utc - chrono::Duration::seconds(59);
+    if let Some(next) = schedule.next_trigger_after_in_tz(before, tz)? {
+        let next_l = next.with_timezone(&tz);
+        let now_l = now_utc.with_timezone(&tz);
         let same_minute =
-            next.format("%Y%m%d%H%M").to_string() == now.format("%Y%m%d%H%M").to_string();
-        Ok(same_minute && next <= now + chrono::Duration::seconds(1))
+            next_l.format("%Y%m%d%H%M").to_string() == now_l.format("%Y%m%d%H%M").to_string();
+        Ok(same_minute && next <= now_utc + chrono::Duration::seconds(1))
     } else {
         Ok(false)
     }
@@ -201,16 +205,17 @@ fn is_due_now(
 
 #[cfg(test)]
 mod tests {
-    use super::is_due_now;
+    use super::is_due_now_tz;
     use crate::domain::ScheduleSpec;
-    use chrono::{Local, Timelike};
-
+    use chrono::Timelike;
+    
     #[test]
     fn due_detection_for_current_minute() {
-        let now = Local::now();
-        let expr = format!("{} {} * * *", now.minute(), now.hour());
+        let tz = chrono_tz::Asia::Shanghai;
+        let now = chrono::Utc::now();
+        let local = now.with_timezone(&tz);
+        let expr = format!("{} {} * * *", local.minute(), local.hour());
         let schedule = ScheduleSpec::Cron { expression: expr };
-        // may or may not be due depending on second precision; just ensure no error
-        let _ = is_due_now(&schedule, now).unwrap();
+        let _ = is_due_now_tz(&schedule, now, tz).unwrap();
     }
 }

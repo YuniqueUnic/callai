@@ -174,6 +174,7 @@ pub fn run() {
             commands::restore_backup,
             commands::delete_backup,
             commands::next_trigger,
+            commands::detect_timezone,
             commands::refresh_tray_menu,
         ])
         .setup(|app| {

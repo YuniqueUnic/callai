@@ -57,6 +57,7 @@ export const api = {
   restoreBackup: (name: string) => call<void>("restore_backup", { name }),
   deleteBackup: (name: string) => call<void>("delete_backup", { name }),
   nextTrigger: (id: string) => call<string | null>("next_trigger", { id }),
+  detectTimezone: () => call<string>("detect_timezone"),
 };
 
 /** Browser-only mock when not running inside Tauri. */

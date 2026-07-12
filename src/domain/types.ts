@@ -5,6 +5,8 @@ export type LocaleCode = "zh-CN" | "en";
 
 export type ScheduleSpec =
   | { mode: "daily"; times: string[] }
+  | { mode: "weekly"; days: number[]; times: string[] }
+  | { mode: "monthly"; days: number[]; times: string[] }
   | { mode: "cron"; expression: string };
 
 export type AlarmLifecycle =
@@ -80,6 +82,8 @@ export interface AppSettings {
   log_retention_days: number;
   notify_on_failure: boolean;
   sound_enabled: boolean;
+  /** IANA name or "system" */
+  timezone: string;
   auto_backup_on_start: boolean;
   backup_keep_count: number;
 }
