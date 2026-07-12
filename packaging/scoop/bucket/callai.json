@@ -1,12 +1,12 @@
 {
-  "version": "0.2.1",
+  "version": "0.2.4",
   "description": "Cozy AI window-warming alarm (desktop GUI)",
   "homepage": "https://github.com/YuniqueUnic/callai",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/YuniqueUnic/callai/releases/download/v0.2.1/callai_0.2.1_x64-setup.exe#/callai-setup.exe",
-      "hash": "6b734d91869fc65fd3de867251fe775dbe1842a0fbbc6a88a803080499bf79d1"
+      "url": "https://github.com/YuniqueUnic/callai/releases/download/v0.2.4/callai_0.2.4_x64-setup.exe#/callai-setup.exe",
+      "hash": "0a7a9224d913424a4e488110aa7703b6c2acbd2be7d9fbf43fb6d8f438bee299"
     }
   },
   "installer": {
@@ -14,15 +14,7 @@
       "Start-Process -FilePath \"$dir\\callai-setup.exe\" -ArgumentList '/S' -Wait"
     ]
   },
-  "uninstaller": {
-    "script": [
-      "$uninst = Join-Path $env:LOCALAPPDATA 'callai\\uninstall.exe'",
-      "if (Test-Path $uninst) { Start-Process -FilePath $uninst -ArgumentList '/S' -Wait }"
-    ]
-  },
-  "checkver": {
-    "github": "https://github.com/YuniqueUnic/callai"
-  },
+  "checkver": { "github": "https://github.com/YuniqueUnic/callai" },
   "autoupdate": {
     "architecture": {
       "64bit": {
@@ -31,7 +23,7 @@
     }
   },
   "notes": [
-    "Desktop installer is not EV code-signed. SmartScreen may warn: More info → Run anyway.",
-    "CLI-only users: scoop install callai-cli"
+    "Desktop installer is not EV code-signed. SmartScreen may warn.",
+    "CLI-only: scoop install callai-cli"
   ]
 }

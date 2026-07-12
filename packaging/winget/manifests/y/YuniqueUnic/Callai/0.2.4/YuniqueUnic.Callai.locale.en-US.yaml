@@ -1,0 +1,22 @@
+PackageIdentifier: YuniqueUnic.Callai
+PackageVersion: 0.2.4
+PackageLocale: en-US
+Publisher: YuniqueUnic
+PublisherUrl: https://github.com/YuniqueUnic
+PublisherSupportUrl: https://github.com/YuniqueUnic/callai/issues
+Author: unic
+PackageName: callai
+PackageUrl: https://github.com/YuniqueUnic/callai
+License: MIT
+LicenseUrl: https://github.com/YuniqueUnic/callai/blob/main/LICENSE
+ShortDescription: Cozy AI window-warming alarm (desktop)
+Description: callai schedules lightweight tasks to keep AI rolling usage windows warm. Tauri desktop + CLI.
+Moniker: callai
+Tags:
+  - ai
+  - alarm
+  - tauri
+  - scheduler
+ReleaseNotesUrl: https://github.com/YuniqueUnic/callai/releases/tag/v0.2.4
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

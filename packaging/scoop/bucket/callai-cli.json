@@ -1,27 +1,21 @@
 {
-  "version": "0.2.1",
+  "version": "0.2.4",
   "description": "Cozy AI window-warming alarm (CLI / daemon)",
   "homepage": "https://github.com/YuniqueUnic/callai",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/YuniqueUnic/callai/releases/download/v0.2.1/callai-cli-x86_64-pc-windows-msvc.exe#/callai.exe",
-      "hash": "0959b4a64ffefe04de7d4a1933b0377b66372d8dc637fb207583e7ac1ae1d003"
+      "url": "https://github.com/YuniqueUnic/callai/releases/download/v0.2.4/callai-cli-x86_64-pc-windows-msvc.exe#/callai.exe",
+      "hash": "cd8883e2e7c942b27ac98e04ab7b32ea585267fd124283468fa0fc8682943737"
     }
   },
   "bin": "callai.exe",
-  "checkver": {
-    "github": "https://github.com/YuniqueUnic/callai"
-  },
+  "checkver": { "github": "https://github.com/YuniqueUnic/callai" },
   "autoupdate": {
     "architecture": {
       "64bit": {
         "url": "https://github.com/YuniqueUnic/callai/releases/download/v$version/callai-cli-x86_64-pc-windows-msvc.exe#/callai.exe"
       }
     }
-  },
-  "notes": [
-    "Same binary family as the desktop app; shares ~/.config/callai and local DB paths when used on the same machine layout.",
-    "Try: callai --help | callai list | callai daemon"
-  ]
+  }
 }
