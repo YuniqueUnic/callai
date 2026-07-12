@@ -28,6 +28,7 @@
 | 7 | [07 Updater 与未签名安装](./07-updater-and-unsigned-install.md) | 信任模型与文档诚实 |
 | 8 | [08 媒体与 README](./08-media-readme-pipeline.md) | 素材卫生；展示即获客 |
 | 9 | [09 元数据与教学沉淀](./09-docs-meta-and-teaching.md) | 把对话炼成教材 |
+| 10 | [10 CI 现代化与仓库治理](./10-cicd-hardening-and-governance.md) | Node/runner 警告、分支保护、验收剧本 |
 
 ### 路径 B · 只学「如何写 prompt」
 
@@ -35,7 +36,7 @@
 
 ### 路径 C · 只学发布工程
 
-`06` → `07` → `08` → `09`，配合 `gh run list` / Releases 页实操。
+`06` → `10` → `07` → `08` → `09`，配合 `gh run list` / Releases 页实操。
 
 ## 提交时间线（证据）
 
@@ -51,6 +52,9 @@
 | 仓库开源化 | `f3ab0ff` `fec4fe6` | 06, 09 |
 | v0.2.0 | `6868380` | 06 |
 | Updater + 媒体 | `d8d9182` | 07–08 |
+| v0.2.1 + updater 产物 | `60110aa` | 06–07 |
+| CI Node24 / pin runners | `ea94e42` | 06, 10 |
+| 分支保护文档 | PR docs/protection | 10 |
 | 本教材 | `3f4a97f` + 本轮扩写 | 09 |
 
 ```bash
