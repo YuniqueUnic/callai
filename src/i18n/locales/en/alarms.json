@@ -19,7 +19,7 @@
   "binaryPlaceholder": "codex / claude / full path",
   "browse": "Browse",
   "args": "Arguments",
-  "argsPlaceholder": "One argument per line",
+  "argsPlaceholder": "One argument per line — or paste a shell-style line (auto-split)\ne.g. -e 'display dialog \"hi\"'",
   "env": "Environment",
   "addEnv": "Add env var",
   "retry": "Retry on failure",
@@ -73,5 +73,7 @@
   "stopSuccess": "Task stopped as you asked.",
   "stopMiss": "That task already finished.",
   "ERR_EXECUTION_CANCELED": "Task was canceled by user.",
-  "ERR_INVALID_ARGS": "Some fields look off — check timeout (1–3600s) and env vars."
+  "ERR_INVALID_ARGS": "Some fields look off — check timeout (1–3600s) and env vars.",
+  "argsHint": "Shell-style quotes are parsed with shlex. You can paste osascript/say snippets as one line.",
+  "argsShellOk": "Args parsed with shell rules"
 }

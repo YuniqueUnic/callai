@@ -10,7 +10,7 @@
   <h1>callai</h1>
   <p>
     <strong>Ciallo～(∠・ω&lt; )</strong><br />
-    给 AI 定闹钟，让额度窗口保持新鲜。
+    给 AI 定闹钟，也是跨平台轻量定时触发器。
   </p>
 </td>
 </tr>
@@ -87,7 +87,7 @@
 | --- | --- | --- |
 | Homebrew | `brew tap YuniqueUnic/callai && brew install --cask callai-app` | `brew tap YuniqueUnic/callai && brew install callai` |
 | Scoop | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai` | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai-cli` |
-| winget | 社区 PR 审核中 → 通过后 `winget install YuniqueUnic.Callai`（本地可用 `--manifest`） | 社区 PR 审核中 → 通过后 `winget install YuniqueUnic.Callai.CLI` |
+| winget | 社区 PR（**每个 PR 只能一个应用**，GUI 单独一条）→ 通过后 `winget install YuniqueUnic.Callai` · 本地：`winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai/0.2.1` | CLI 需**另开 PR** → `winget install YuniqueUnic.Callai.CLI` · 本地：`--manifest .../Callai.CLI/0.2.1` |
 
 完整矩阵、刷新脚本与上游提交说明见 **[packaging/README.md](./packaging/README.md)**。
 
@@ -118,6 +118,103 @@ Claude、ChatGPT、Codex 等常见 AI 工具普遍采用**滚动窗口（Rolling
 **callai** 是一个动森气质的小闹钟：在设定时间触发极轻量任务（如 `echo hi` / `codex exec hi`），提前“占位”，让黄金工作时段窗口更新鲜。
 
 推荐配置：每天几次温和触发（例如 08:00 / 13:00 / 18:00）。
+
+
+## 玩法菜谱（不止 AI 额度）
+
+**callai** 的原点是温柔的 **AI 滚动额度窗口** 管理，但底层是一个 **轻量、跨平台的定时触发器**：定时间 → 跑任意 binary/脚本 → 有日志、重试、超时、手动停止。比系统 `crontab` 更友好，也比 Windows「任务计划程序」更轻。
+
+> 弹窗 / `say` 等交互命令请设置 **超时**（默认 20s）。否则对话框不点会一直 Running。
+>
+> **参数解析：** 可直接粘贴 shell 风格一行（如 `-e 'display dialog "hi"'`）。执行前会用 [`shlex`](https://docs.rs/shlex) 拆成真实 argv，不会把外层引号原样塞给程序。
+
+### 1）AI 额度窗口（本职工作）
+
+| 字段 | 示例 |
+| --- | --- |
+| 程序 | `codex` / `claude` / `echo` |
+| 参数 | `exec` + `hi` · 或 `-p` + `hi` · 或 `callai warmup {{date}}` |
+| 时间 | 每天 `08:00` / `13:00` / `18:00` |
+| 超时 | CLI 较慢时用 `30`–`120` 秒 |
+
+```bash
+callai run-once morning-warmup
+callai list
+callai daemon   # 无 GUI 保活调度
+```
+
+### 2）定时强制弹窗（强力打断）
+
+**macOS**（需要图形会话；超时建议 ≥ 60，或你点掉对话框）：
+
+```bash
+osascript -e 'display dialog "已经连续写代码 2 小时了，喝口水？" buttons {"已喝", "等会"} default button 1 with icon caution'
+```
+
+在 callai 里：binary 填 `osascript`，参数每行一个：
+
+```text
+-e
+display dialog "已经连续写代码 2 小时了，喝口水？" buttons {"已喝", "等会"} default button 1 with icon caution
+```
+
+**Linux（Zenity）：**
+
+```bash
+zenity --question --text="写了这么久，要不要强行锁屏休息 5 分钟？" --ok-label="锁屏" --cancel-label="继续卷"
+```
+
+### 3）语音 / 多媒体闹钟
+
+**macOS 语音：**
+
+```bash
+say -v Mei-Jia "主人，你关注的股票好像跌惨了，快去看看吧"
+```
+
+**播音频：**
+
+```bash
+# macOS
+afplay ~/Music/evangelion_warning.mp3
+# Linux
+aplay ~/Music/alarm.wav
+```
+
+### 4）环境自动切换
+
+**macOS 快捷指令：**
+
+```bash
+shortcuts run "开启下班摸鱼模式"
+```
+
+例如 18:30 触发：关 IDE、开音乐、调暗屏幕……都写在快捷指令里即可。
+
+### 5）静默后台自动化
+
+**定时 git pull：**
+
+```bash
+bash
+-lc
+cd ~/Projects/my-main-repo && git pull --ff-only origin main
+```
+
+**本地服务探活 + 通知：**
+
+```bash
+bash
+-lc
+curl -sf http://localhost:8080/health || osascript -e 'display notification "本地服务挂了！" with title "callai"'
+```
+
+### 小提示
+
+- 优先用 **绝对路径** 或确认在 `PATH` 上（`which codex` / `which say`）。
+- 交互任务：加大 **超时**，或用 UI **停止** / CLI `run-once` 时 **Ctrl+C**。
+- 失败可开 **系统通知**（设置页）。
+- 桌面端与 CLI 共用 `~/.config/callai` 与 `~/.local/share/callai`。
 
 ## 功能概览
 
@@ -264,7 +361,7 @@ just brand
 
 - [Homebrew tap](https://github.com/YuniqueUnic/homebrew-callai)
 - [Scoop bucket](https://github.com/YuniqueUnic/scoop-callai)
-- [winget-pkgs PR](https://github.com/microsoft/winget-pkgs/pull/401342)
+- [winget-pkgs（Callai / Callai.CLI 需分 PR）](https://github.com/microsoft/winget-pkgs/pulls?q=is%3Apr+author%3AYuniqueUnic+callai)
 - [GitHub](https://github.com/YuniqueUnic/callai)
 - [Releases](https://github.com/YuniqueUnic/callai/releases)
 - [LinuxDo](https://linux.do)

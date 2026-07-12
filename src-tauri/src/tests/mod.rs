@@ -1,5 +1,6 @@
 mod backup_prune;
 mod domain_alarm;
+mod domain_argv;
 mod domain_retry;
 mod domain_schedule;
 mod process_timeout;

@@ -1,4 +1,5 @@
 pub mod alarm;
+pub mod argv;
 pub mod error;
 pub mod log_entry;
 pub mod retry;
@@ -7,6 +8,7 @@ pub mod settings;
 pub mod templates;
 
 pub use alarm::*;
+pub use argv::*;
 pub use error::*;
 pub use log_entry::*;
 pub use retry::*;

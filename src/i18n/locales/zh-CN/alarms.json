@@ -19,7 +19,7 @@
   "binaryPlaceholder": "codex / claude / 完整路径",
   "browse": "浏览",
   "args": "参数",
-  "argsPlaceholder": "每行一个参数",
+  "argsPlaceholder": "每行一个参数；也可粘贴整行 shell 写法（会自动拆分）\n例如：-e 'display dialog \"hi\"'",
   "env": "环境变量",
   "addEnv": "添加环境变量",
   "retry": "失败重试",
@@ -73,5 +73,7 @@
   "stopSuccess": "任务已按你的意思停下来啦～",
   "stopMiss": "这个任务好像已经结束了～",
   "ERR_EXECUTION_CANCELED": "任务被手动停掉了。",
-  "ERR_INVALID_ARGS": "参数有点不对劲～ 检查一下超时时间（1–3600 秒）和环境变量吧。"
+  "ERR_INVALID_ARGS": "参数有点不对劲～ 检查一下超时时间（1–3600 秒）和环境变量吧。",
+  "argsHint": "支持 shell 风格引号（由 shlex 解析）。osascript / say 可直接粘贴文档里的一行命令参数。",
+  "argsShellOk": "已按 shell 规则解析参数"
 }
