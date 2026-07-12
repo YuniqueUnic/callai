@@ -1,9 +1,9 @@
 cask "callai-app" do
   arch arm: "aarch64", intel: "x64"
 
-  version "0.2.1"
-  sha256 arm:   "16a331fde9f13cbfa08adabd17b76eb9547463f2a1b137b6d5d2925e2918f310",
-         intel: "468037baf487fda87d4e0cbe8f98eaccee4e728461a8af5c288141cbc09e5bd0"
+  version "0.2.4"
+  sha256 arm:   "9c793789cf2c969f27b02118ceebf3e315bf00af1d5bc75fcae46f7f9ff3530e",
+         intel: "996d0e12cc975f516dce66e0db708797d63b2f2eff4782aebc0f880c614941bd"
 
   url "https://github.com/YuniqueUnic/callai/releases/download/v#{version}/callai_#{version}_#{arch}.dmg",
       verified: "github.com/YuniqueUnic/callai/"
@@ -20,8 +20,6 @@ cask "callai-app" do
 
   app "callai.app"
 
-  # Unsigned builds: users may need:
-  #   xattr -cr /Applications/callai.app
   caveats <<~EOS
     callai desktop builds are not Apple-notarized yet.
     If Gatekeeper blocks the app:
