@@ -204,12 +204,13 @@ pub fn delete_backup(state: State<'_, AppState>, name: String) -> Result<(), Str
 
 #[tauri::command]
 pub fn next_trigger(state: State<'_, AppState>, id: String) -> Result<Option<String>, String> {
-    let alarm = state.service.get_alarm(&id).map_err(map_err)?;
-    let next = alarm
-        .schedule
-        .next_trigger_after(chrono::Local::now())
-        .map_err(map_err)?;
+    let next = state.service.next_trigger_utc(&id).map_err(map_err)?;
     Ok(next.map(|d| d.to_rfc3339()))
+}
+
+#[tauri::command]
+pub fn detect_timezone() -> Result<String, String> {
+    Ok(crate::domain::detect_system_timezone().name().to_string())
 }
 
 #[tauri::command]

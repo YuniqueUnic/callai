@@ -36,7 +36,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
   const [draft, setDraft] = useState<AlarmDraft>(defaultDraft());
   const [templates, setTemplates] = useState<TemplateDto[]>([]);
   const [binaryPath, setBinaryPath] = useState<string | null>(null);
-  const [scheduleMode, setScheduleMode] = useState<"daily" | "cron">("daily");
+  const [scheduleMode, setScheduleMode] = useState<"daily" | "weekly" | "monthly" | "cron">("daily");
   const [newTime, setNewTime] = useState("09:00");
   const [saving, setSaving] = useState(false);
   const [argsText, setArgsText] = useState("callai warmup {{date}}");
@@ -58,7 +58,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
         };
         setDraft(d);
         setArgsText(a.args.join("\n"));
-        setScheduleMode(a.schedule.mode);
+        setScheduleMode(a.schedule.mode as "daily" | "weekly" | "monthly" | "cron");
       }
     })();
   }, [alarmId]);
@@ -75,8 +75,16 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
     [draft.binary, argsText],
   );
 
-  function updateDailyTimes(times: string[]) {
-    setDraft((d) => ({ ...d, schedule: { mode: "daily", times } }));
+  function updateScheduleTimes(times: string[]) {
+    setDraft((d) => {
+      if (d.schedule.mode === "weekly") {
+        return { ...d, schedule: { ...d.schedule, times } };
+      }
+      if (d.schedule.mode === "monthly") {
+        return { ...d, schedule: { ...d.schedule, times } };
+      }
+      return { ...d, schedule: { mode: "daily", times } };
+    });
   }
 
   async function onTemplate(id: string) {
@@ -84,7 +92,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
     if (!d) return;
     setDraft(d);
     setArgsText(d.args.join("\n"));
-    setScheduleMode(d.schedule.mode);
+    setScheduleMode(d.schedule.mode as "daily" | "weekly" | "monthly" | "cron");
   }
 
   async function save() {
@@ -94,14 +102,30 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean),
-      schedule:
-        scheduleMode === "daily"
-          ? draft.schedule.mode === "daily"
-            ? draft.schedule
-            : { mode: "daily", times: ["08:00"] }
-          : draft.schedule.mode === "cron"
-            ? draft.schedule
-            : { mode: "cron", expression: "0 8,13,18 * * *" },
+      schedule: (() => {
+        const times =
+          draft.schedule.mode === "daily" ||
+          draft.schedule.mode === "weekly" ||
+          draft.schedule.mode === "monthly"
+            ? draft.schedule.times
+            : ["08:00", "13:00", "18:00"];
+        if (scheduleMode === "daily") {
+          return { mode: "daily" as const, times };
+        }
+        if (scheduleMode === "weekly") {
+          const days =
+            draft.schedule.mode === "weekly" ? draft.schedule.days : [1, 2, 3, 4, 5];
+          return { mode: "weekly" as const, days, times };
+        }
+        if (scheduleMode === "monthly") {
+          const days =
+            draft.schedule.mode === "monthly" ? draft.schedule.days : [1];
+          return { mode: "monthly" as const, days, times };
+        }
+        return draft.schedule.mode === "cron"
+          ? draft.schedule
+          : { mode: "cron" as const, expression: "0 8,13,18 * * *" };
+      })(),
     };
     const code = validateDraft(next);
     if (code) {
@@ -130,8 +154,12 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
     }
   }
 
-  const dailyTimes =
-    draft.schedule.mode === "daily" ? draft.schedule.times : ["08:00", "13:00", "18:00"];
+  const scheduleTimes =
+    draft.schedule.mode === "daily" ||
+    draft.schedule.mode === "weekly" ||
+    draft.schedule.mode === "monthly"
+      ? draft.schedule.times
+      : ["08:00", "13:00", "18:00"];
 
   return (
     <div className="edit-page">
@@ -212,51 +240,157 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           </div>
           <div className="field">
             <div className="schedule-mode" role="radiogroup" aria-label={t("alarms:schedule")}>
-              <button
-                type="button"
-                className={scheduleMode === "daily" ? "active" : ""}
-                onClick={() => {
-                  setScheduleMode("daily");
-                  setDraft((d) => ({
-                    ...d,
-                    schedule: { mode: "daily", times: dailyTimes },
-                  }));
-                }}
-              >
-                {t("alarms:daily")}
-              </button>
-              <button
-                type="button"
-                className={scheduleMode === "cron" ? "active" : ""}
-                onClick={() => {
-                  setScheduleMode("cron");
-                  setDraft((d) => ({
-                    ...d,
-                    schedule: {
-                      mode: "cron",
-                      expression:
-                        d.schedule.mode === "cron"
-                          ? d.schedule.expression
-                          : "0 8,13,18 * * *",
-                    },
-                  }));
-                }}
-              >
-                {t("alarms:cron")}
-              </button>
+              {(
+                [
+                  ["daily", "alarms:daily"],
+                  ["weekly", "alarms:weekly"],
+                  ["monthly", "alarms:monthly"],
+                  ["cron", "alarms:cron"],
+                ] as const
+              ).map(([mode, key]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={scheduleMode === mode ? "active" : ""}
+                  onClick={() => {
+                    setScheduleMode(mode);
+                    setDraft((d) => {
+                      const times =
+                        d.schedule.mode === "daily" ||
+                        d.schedule.mode === "weekly" ||
+                        d.schedule.mode === "monthly"
+                          ? d.schedule.times
+                          : scheduleTimes;
+                      if (mode === "daily") {
+                        return { ...d, schedule: { mode: "daily", times } };
+                      }
+                      if (mode === "weekly") {
+                        const days =
+                          d.schedule.mode === "weekly"
+                            ? d.schedule.days
+                            : [1, 2, 3, 4, 5];
+                        return { ...d, schedule: { mode: "weekly", days, times } };
+                      }
+                      if (mode === "monthly") {
+                        const days =
+                          d.schedule.mode === "monthly" ? d.schedule.days : [1];
+                        return { ...d, schedule: { mode: "monthly", days, times } };
+                      }
+                      return {
+                        ...d,
+                        schedule: {
+                          mode: "cron",
+                          expression:
+                            d.schedule.mode === "cron"
+                              ? d.schedule.expression
+                              : "0 8,13,18 * * *",
+                        },
+                      };
+                    });
+                  }}
+                >
+                  {t(key)}
+                </button>
+              ))}
             </div>
           </div>
 
-          {scheduleMode === "daily" ? (
+          {scheduleMode !== "cron" ? (
             <div className="field" style={{ marginTop: 12 }}>
+              {scheduleMode === "weekly" ? (
+                <div className="times-row" style={{ marginBottom: 10 }} role="group" aria-label={t("alarms:weekdays")}>
+                  {[0, 1, 2, 3, 4, 5, 6].map((d) => {
+                    const selected =
+                      draft.schedule.mode === "weekly" &&
+                      draft.schedule.days.includes(d);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        className={`time-chip ${selected ? "active" : ""}`}
+                        onClick={() => {
+                          setDraft((prev) => {
+                            const times =
+                              prev.schedule.mode === "weekly" ||
+                              prev.schedule.mode === "daily" ||
+                              prev.schedule.mode === "monthly"
+                                ? prev.schedule.times
+                                : scheduleTimes;
+                            const days =
+                              prev.schedule.mode === "weekly"
+                                ? [...prev.schedule.days]
+                                : [1, 2, 3, 4, 5];
+                            const next = selected
+                              ? days.filter((x) => x !== d)
+                              : [...days, d].sort((a, b) => a - b);
+                            return {
+                              ...prev,
+                              schedule: {
+                                mode: "weekly",
+                                days: next.length ? next : [d],
+                                times,
+                              },
+                            };
+                          });
+                        }}
+                      >
+                        {t(`alarms:dow_${d}` as "alarms:dow_0")}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {scheduleMode === "monthly" ? (
+                <div className="times-row" style={{ marginBottom: 10, flexWrap: "wrap" }} role="group" aria-label={t("alarms:monthDays")}>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => {
+                    const selected =
+                      draft.schedule.mode === "monthly" &&
+                      draft.schedule.days.includes(d);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        className={`time-chip ${selected ? "active" : ""}`}
+                        onClick={() => {
+                          setDraft((prev) => {
+                            const times =
+                              prev.schedule.mode === "monthly" ||
+                              prev.schedule.mode === "daily" ||
+                              prev.schedule.mode === "weekly"
+                                ? prev.schedule.times
+                                : scheduleTimes;
+                            const days =
+                              prev.schedule.mode === "monthly"
+                                ? [...prev.schedule.days]
+                                : [1];
+                            const next = selected
+                              ? days.filter((x) => x !== d)
+                              : [...days, d].sort((a, b) => a - b);
+                            return {
+                              ...prev,
+                              schedule: {
+                                mode: "monthly",
+                                days: next.length ? next : [d],
+                                times,
+                              },
+                            };
+                          });
+                        }}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
               <div className="times-row">
-                {dailyTimes.map((time) => (
+                {scheduleTimes.map((time) => (
                   <span className="time-chip" key={time}>
                     {time}
                     <button
                       type="button"
                       onClick={() =>
-                        updateDailyTimes(dailyTimes.filter((x) => x !== time))
+                        updateScheduleTimes(scheduleTimes.filter((x) => x !== time))
                       }
                     >
                       ×
@@ -271,8 +405,8 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
                   addLabel={t("alarms:addTime")}
                   onAdd={() => {
                     if (!newTime) return;
-                    if (!dailyTimes.includes(newTime)) {
-                      updateDailyTimes([...dailyTimes, newTime].sort());
+                    if (!scheduleTimes.includes(newTime)) {
+                      updateScheduleTimes([...scheduleTimes, newTime].sort());
                     }
                   }}
                 />

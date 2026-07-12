@@ -2705,3 +2705,57 @@ body.callai-logs-open [class*="animal-body"] {
   flex: 1;
   min-width: 0;
 }
+
+
+/* TimezonePicker — same chrome as TimePicker */
+.timezone-picker-trigger {
+  min-width: min(100%, 280px);
+  max-width: 100%;
+  justify-content: space-between;
+}
+.timezone-picker-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 0.9rem;
+}
+.timezone-wheels {
+  width: 100%;
+}
+.timezone-wheel-col {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+}
+.timezone-wheel-item {
+  font-size: 0.82rem !important;
+  letter-spacing: 0;
+  padding: 0 10px;
+  justify-content: flex-start !important;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.timezone-picker-caption {
+  padding: 8px 12px 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--callai-ink-soft);
+  text-align: center;
+}
+.timezone-picker-popup {
+  min-height: 260px;
+}
+
+.time-chip.active {
+  background: #8fbf9f;
+  border-color: #5f8f72;
+  color: #1f3d2a;
+}
+[data-theme="dark"] .time-chip.active {
+  background: #4a7a5c;
+  border-color: #7ab892;
+  color: #eaf6ee;
+}

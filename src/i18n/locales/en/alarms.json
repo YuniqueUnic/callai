@@ -78,5 +78,16 @@
   "argsShellOk": "Args parsed with shell rules",
   "timeoutMin": "min",
   "timeoutSec": "sec",
-  "timeoutApply": "Set timeout"
+  "timeoutApply": "Set timeout",
+  "weekly": "Weekly",
+  "monthly": "Monthly",
+  "weekdays": "Weekdays",
+  "monthDays": "Days of month",
+  "dow_0": "Sun",
+  "dow_1": "Mon",
+  "dow_2": "Tue",
+  "dow_3": "Wed",
+  "dow_4": "Thu",
+  "dow_5": "Fri",
+  "dow_6": "Sat"
 }

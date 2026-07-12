@@ -301,15 +301,27 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
                           const chips = scheduleTimeChips(alarm.schedule, 2);
                           return (
                             <>
-                              {chips.kind === "daily" ? (
-                                <Tag color="brown" size="small" variant="outlined">
-                                  {t("alarms:daily")}
-                                </Tag>
-                              ) : (
-                                <Tag color="purple" size="small" variant="outlined">
-                                  {t("alarms:cron")}
-                                </Tag>
-                              )}
+                              <Tag
+                                color={
+                                  chips.kind === "daily"
+                                    ? "brown"
+                                    : chips.kind === "weekly"
+                                      ? "app-teal"
+                                      : chips.kind === "monthly"
+                                        ? "app-orange"
+                                        : "purple"
+                                }
+                                size="small"
+                                variant="outlined"
+                              >
+                                {chips.kind === "daily"
+                                  ? t("alarms:daily")
+                                  : chips.kind === "weekly"
+                                    ? t("alarms:weekly")
+                                    : chips.kind === "monthly"
+                                      ? t("alarms:monthly")
+                                      : t("alarms:cron")}
+                              </Tag>
                               {chips.visible.map((time) => (
                                 <Tag
                                   key={time}

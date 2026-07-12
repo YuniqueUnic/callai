@@ -78,5 +78,16 @@
   "argsShellOk": "已按 shell 规则解析参数",
   "timeoutMin": "分",
   "timeoutSec": "秒",
-  "timeoutApply": "确认超时"
+  "timeoutApply": "确认超时",
+  "weekly": "每周",
+  "monthly": "每月",
+  "weekdays": "星期",
+  "monthDays": "日期",
+  "dow_0": "日",
+  "dow_1": "一",
+  "dow_2": "二",
+  "dow_3": "三",
+  "dow_4": "四",
+  "dow_5": "五",
+  "dow_6": "六"
 }

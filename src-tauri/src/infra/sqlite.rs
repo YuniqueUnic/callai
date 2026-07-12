@@ -98,6 +98,7 @@ impl SqliteStore {
                 log_retention_days INTEGER NOT NULL,
                 notify_on_failure INTEGER NOT NULL,
                 sound_enabled INTEGER NOT NULL DEFAULT 1,
+                timezone TEXT NOT NULL DEFAULT 'system',
                 auto_backup_on_start INTEGER NOT NULL,
                 backup_keep_count INTEGER NOT NULL
             );
@@ -118,6 +119,10 @@ impl SqliteStore {
         );
         let _ = conn.execute(
             "ALTER TABLE app_settings ADD COLUMN sound_enabled INTEGER NOT NULL DEFAULT 1",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE app_settings ADD COLUMN timezone TEXT NOT NULL DEFAULT 'system'",
             [],
         );
         Ok(())
@@ -444,7 +449,7 @@ impl AlarmStore for SqliteStore {
         let conn = self.conn.lock().unwrap();
         conn.query_row(
             "SELECT theme, locale, launch_minimized, log_retention_days,
-                    notify_on_failure, sound_enabled, auto_backup_on_start, backup_keep_count
+                    notify_on_failure, sound_enabled, timezone, auto_backup_on_start, backup_keep_count
              FROM app_settings WHERE id = 1",
             [],
             |row| {
@@ -459,8 +464,16 @@ impl AlarmStore for SqliteStore {
                     log_retention_days: row.get::<_, i64>(3)? as u32,
                     notify_on_failure: row.get::<_, i64>(4)? != 0,
                     sound_enabled: row.get::<_, i64>(5)? != 0,
-                    auto_backup_on_start: row.get::<_, i64>(6)? != 0,
-                    backup_keep_count: row.get::<_, i64>(7)? as u32,
+                    timezone: {
+                        let tz: String = row.get(6)?;
+                        if tz.trim().is_empty() {
+                            "system".into()
+                        } else {
+                            tz
+                        }
+                    },
+                    auto_backup_on_start: row.get::<_, i64>(7)? != 0,
+                    backup_keep_count: row.get::<_, i64>(8)? as u32,
                 })
             },
         )
@@ -472,7 +485,8 @@ impl AlarmStore for SqliteStore {
         conn.execute(
             "UPDATE app_settings SET
                 theme=?1, locale=?2, launch_minimized=?3, log_retention_days=?4,
-                notify_on_failure=?5, sound_enabled=?6, auto_backup_on_start=?7, backup_keep_count=?8
+                notify_on_failure=?5, sound_enabled=?6, timezone=?7,
+                auto_backup_on_start=?8, backup_keep_count=?9
              WHERE id=1",
             params![
                 match settings.theme {
@@ -485,6 +499,7 @@ impl AlarmStore for SqliteStore {
                 settings.log_retention_days as i64,
                 if settings.notify_on_failure { 1 } else { 0 },
                 if settings.sound_enabled { 1 } else { 0 },
+                settings.timezone.as_str(),
                 if settings.auto_backup_on_start { 1 } else { 0 },
                 settings.backup_keep_count as i64,
             ],

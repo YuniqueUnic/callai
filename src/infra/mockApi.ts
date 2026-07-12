@@ -17,6 +17,7 @@ let settings: AppSettings = {
   log_retention_days: 30,
   notify_on_failure: false,
   sound_enabled: true,
+  timezone: "system",
   auto_backup_on_start: true,
   backup_keep_count: 10,
 };
@@ -123,6 +124,9 @@ export const mockApi = {
       );
     }
     return out.slice(0, filter.limit);
+  },
+  async detectTimezone() {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   },
   async getSettings() {
     return { ...settings };

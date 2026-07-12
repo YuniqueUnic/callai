@@ -129,6 +129,16 @@ pub fn run(args: Vec<String>) -> Result<(), String> {
             for a in alarms {
                 let sched = match &a.schedule {
                     ScheduleSpec::Daily { times } => format!("daily {}", times.join(",")),
+                    ScheduleSpec::Weekly { days, times } => format!(
+                        "weekly {} {}",
+                        days.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(","),
+                        times.join(",")
+                    ),
+                    ScheduleSpec::Monthly { days, times } => format!(
+                        "monthly {} {}",
+                        days.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(","),
+                        times.join(",")
+                    ),
                     ScheduleSpec::Cron { expression } => format!("cron {expression}"),
                 };
                 println!(

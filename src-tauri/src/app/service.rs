@@ -5,8 +5,9 @@ use std::sync::{Arc, Mutex};
 use chrono::Utc;
 
 use crate::domain::{
-    expand_arg_templates, resolve_process_argv, Alarm, AlarmDraft, AlarmLifecycle, AppSettings,
-    DomainError, DomainResult, ErrorCode, ExecutionLog, ExecutionStatus, LogFilter,
+    expand_arg_templates, resolve_process_argv, resolve_timezone, Alarm, AlarmDraft,
+    AlarmLifecycle, AppSettings, DomainError, DomainResult, ErrorCode, ExecutionLog,
+    ExecutionStatus, LogFilter,
 };
 
 use super::{
@@ -118,7 +119,23 @@ impl AlarmService {
         self.store.get_settings()
     }
 
+    pub fn schedule_timezone(&self) -> DomainResult<chrono_tz::Tz> {
+        let settings = self.store.get_settings()?;
+        resolve_timezone(&settings.timezone)
+    }
+
+    pub fn next_trigger_utc(&self, id: &str) -> DomainResult<Option<chrono::DateTime<chrono::Utc>>> {
+        let alarm = self.get_alarm(id)?;
+        let tz = self.schedule_timezone()?;
+        alarm
+            .schedule
+            .next_trigger_after_in_tz(chrono::Utc::now(), tz)
+    }
+
+
     pub fn save_settings(&self, settings: AppSettings) -> DomainResult<AppSettings> {
+        // Validate IANA / system token early.
+        let _ = resolve_timezone(&settings.timezone)?;
         self.store.save_settings(&settings)?;
         self.sync_export()?;
         Ok(settings)

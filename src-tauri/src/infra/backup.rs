@@ -26,12 +26,18 @@ struct TomlSettings {
     notify_on_failure: bool,
     #[serde(default = "default_true")]
     sound_enabled: bool,
+    #[serde(default = "default_system_tz")]
+    timezone: String,
     auto_backup_on_start: bool,
     backup_keep_count: u32,
 }
 
 fn default_true() -> bool {
     true
+}
+
+fn default_system_tz() -> String {
+    "system".into()
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -178,6 +184,7 @@ impl ConfigBackup for TomlConfigBackup {
                 log_retention_days: settings.log_retention_days,
                 notify_on_failure: settings.notify_on_failure,
                 sound_enabled: settings.sound_enabled,
+                timezone: settings.timezone.clone(),
                 auto_backup_on_start: settings.auto_backup_on_start,
                 backup_keep_count: settings.backup_keep_count,
             },
@@ -186,6 +193,22 @@ impl ConfigBackup for TomlConfigBackup {
                 .map(|a| {
                     let (mode, value) = match &a.schedule {
                         ScheduleSpec::Daily { times } => ("daily".into(), times.join(",")),
+                        ScheduleSpec::Weekly { days, times } => (
+                            "weekly".into(),
+                            format!(
+                                "{};{}",
+                                days.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(","),
+                                times.join(",")
+                            ),
+                        ),
+                        ScheduleSpec::Monthly { days, times } => (
+                            "monthly".into(),
+                            format!(
+                                "{};{}",
+                                days.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(","),
+                                times.join(",")
+                            ),
+                        ),
                         ScheduleSpec::Cron { expression } => ("cron".into(), expression.clone()),
                     };
                     TomlAlarm {
@@ -237,6 +260,7 @@ impl ConfigBackup for TomlConfigBackup {
             log_retention_days: root.settings.log_retention_days,
             notify_on_failure: root.settings.notify_on_failure,
             sound_enabled: root.settings.sound_enabled,
+            timezone: root.settings.timezone,
             auto_backup_on_start: root.settings.auto_backup_on_start,
             backup_keep_count: root.settings.backup_keep_count,
         };
@@ -244,19 +268,50 @@ impl ConfigBackup for TomlConfigBackup {
             .alarms
             .into_iter()
             .map(|a| {
-                let schedule = if a.schedule_mode == "cron" {
-                    ScheduleSpec::Cron {
+                let schedule = match a.schedule_mode.as_str() {
+                    "cron" => ScheduleSpec::Cron {
                         expression: a.schedule_value,
+                    },
+                    "weekly" => {
+                        let (days_s, times_s) = a
+                            .schedule_value
+                            .split_once(';')
+                            .unwrap_or((a.schedule_value.as_str(), "09:00"));
+                        let days = days_s
+                            .split(',')
+                            .filter_map(|s| s.trim().parse().ok())
+                            .collect();
+                        let times = times_s
+                            .split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+                        ScheduleSpec::Weekly { days, times }
                     }
-                } else {
-                    ScheduleSpec::Daily {
+                    "monthly" => {
+                        let (days_s, times_s) = a
+                            .schedule_value
+                            .split_once(';')
+                            .unwrap_or((a.schedule_value.as_str(), "09:00"));
+                        let days = days_s
+                            .split(',')
+                            .filter_map(|s| s.trim().parse().ok())
+                            .collect();
+                        let times = times_s
+                            .split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+                        ScheduleSpec::Monthly { days, times }
+                    }
+                    _ => ScheduleSpec::Daily {
                         times: a
                             .schedule_value
                             .split(',')
                             .map(|s| s.trim().to_string())
                             .filter(|s| !s.is_empty())
                             .collect(),
-                    }
+                    },
                 };
                 AlarmDraft {
                     name: a.name,

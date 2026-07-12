@@ -34,5 +34,8 @@
   "updateHint": "Signed update packages are fetched from GitHub Releases.",
   "soundEnabled": "UI sounds",
   "soundHint": "Soft procedural chimes when a task starts, succeeds, or fails",
-  "soundPreview": "Preview"
+  "soundPreview": "Preview",
+  "timezone": "Timezone",
+  "timezoneSystem": "System",
+  "timezoneDetected": "Detected"
 }
