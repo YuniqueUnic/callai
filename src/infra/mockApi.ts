@@ -37,6 +37,7 @@ function toAlarm(draft: AlarmDraft, id?: string): Alarm {
     args: draft.args,
     env_vars: draft.env_vars,
     retry: draft.retry,
+    timeout_secs: draft.timeout_secs ?? 20,
     lifecycle: "idle",
     created_at: ts,
     updated_at: ts,
@@ -95,6 +96,18 @@ export const mockApi = {
     };
     logs = [log, ...logs];
     return log;
+  },
+  async deleteLog(id: number) {
+    logs = logs.filter((l) => l.id !== id);
+  },
+  async deleteLogs(ids: number[]) {
+    const set = new Set(ids);
+    const before = logs.length;
+    logs = logs.filter((l) => !set.has(l.id));
+    return before - logs.length;
+  },
+  async cancelAlarmRun(_id: string) {
+    return false;
   },
   async listLogs(filter: LogFilter) {
     let out = [...logs];

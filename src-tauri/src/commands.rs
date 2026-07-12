@@ -120,11 +120,26 @@ fn maybe_notify_failure(app: &tauri::AppHandle, state: &AppState, name: &str) {
 }
 
 #[tauri::command]
+pub fn cancel_alarm_run(state: State<'_, AppState>, id: String) -> Result<bool, String> {
+    state.service.cancel_alarm_run(&id).map_err(map_err)
+}
+
+#[tauri::command]
 pub fn list_logs(
     state: State<'_, AppState>,
     filter: LogFilter,
 ) -> Result<Vec<ExecutionLog>, String> {
     state.service.list_logs(filter).map_err(map_err)
+}
+
+#[tauri::command]
+pub fn delete_log(state: State<'_, AppState>, id: i64) -> Result<(), String> {
+    state.service.delete_log(id).map_err(map_err)
+}
+
+#[tauri::command]
+pub fn delete_logs(state: State<'_, AppState>, ids: Vec<i64>) -> Result<u64, String> {
+    state.service.delete_logs(&ids).map_err(map_err)
 }
 
 #[tauri::command]

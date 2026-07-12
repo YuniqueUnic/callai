@@ -8,6 +8,8 @@ pub enum ExecutionStatus {
     Success,
     Failed,
     Retrying,
+    Canceled,
+    Timeout,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

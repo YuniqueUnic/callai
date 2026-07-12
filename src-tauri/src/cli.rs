@@ -1,4 +1,5 @@
 //! Headless CLI surface (DESIGN.md tasker commands), sharing the same domain/app/infra as the GUI.
+use std::io::{self, Write};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
@@ -141,22 +142,48 @@ pub fn run(args: Vec<String>) -> Result<(), String> {
             Ok(())
         }
         Commands::RunOnce { name } => {
-            let svc = open_service(false).map_err(err_str)?;
+            let svc = Arc::new(open_service(false).map_err(err_str)?);
             let alarm = svc.find_alarm_by_name(&name).map_err(err_str)?;
-            println!("running {} ({}) ...", alarm.name, alarm.id);
-            let log = svc.run_alarm_once(&alarm.id).map_err(err_str)?;
+            println!(
+                "running {} ({}) timeout={}s ... (Ctrl+C to cancel)",
+                alarm.name, alarm.id, alarm.timeout_secs
+            );
+
+            let cancel_svc = Arc::clone(&svc);
+            let cancel_id = alarm.id.clone();
+            // Best-effort Ctrl+C: set cancel flag so process runner kills the child.
+            let _ = ctrlc::set_handler(move || {
+                let _ = cancel_svc.cancel_alarm_run(&cancel_id);
+                let _ = writeln!(io::stderr(), "\n^C cancel requested…");
+            });
+
+            let log = svc
+                .run_alarm_once_with(
+                    &alarm.id,
+                    Some(&|chunk: &str, is_err: bool| {
+                        if is_err {
+                            let _ = write!(io::stderr(), "{chunk}");
+                            let _ = io::stderr().flush();
+                        } else {
+                            let _ = write!(io::stdout(), "{chunk}");
+                            let _ = io::stdout().flush();
+                        }
+                    }),
+                )
+                .map_err(err_str)?;
+            println!();
             println!(
                 "status={:?} exit={:?} retries={} duration_ms={:?}",
                 log.status, log.exit_code, log.retry_count, log.duration_ms
             );
             if !log.stdout.is_empty() {
-                println!("--- stdout ---\n{}", log.stdout.trim_end());
-            }
-            if !log.stderr.is_empty() {
-                println!("--- stderr ---\n{}", log.stderr.trim_end());
+                // already streamed live; still print summary if empty stream edge-case
             }
             if !matches!(log.status, crate::domain::ExecutionStatus::Success) {
-                return Err("run-once finished without success".into());
+                return Err(format!(
+                    "run-once finished without success ({:?})",
+                    log.status
+                ));
             }
             Ok(())
         }
@@ -328,6 +355,7 @@ fn validate(config_path: Option<&std::path::Path>) -> DomainResult<()> {
             args: vec![],
             env_vars: vec![],
             retry: RetryPolicy::default(),
+            timeout_secs: 20,
         },
     );
     Ok(())

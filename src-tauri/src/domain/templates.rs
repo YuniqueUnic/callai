@@ -45,6 +45,7 @@ pub fn draft_from_template(template_id: &str) -> Option<AlarmDraft> {
         args: t.args.iter().map(|s| (*s).to_string()).collect(),
         env_vars: vec![],
         retry: RetryPolicy::default(),
+        timeout_secs: super::DEFAULT_TIMEOUT_SECS,
     })
 }
 

@@ -53,6 +53,7 @@ clap = { version = "4", default-features = false, features = [
   "error-context",
 ] }
 tauri-plugin-updater = { version = "2", default-features = false, features = ["rustls-tls"] }
+ctrlc = { version = "3", default-features = false }
 
 [dev-dependencies]
 tempfile = "3"

@@ -61,5 +61,17 @@
   "tabAlarms": "闹钟",
   "tabSettings": "设置",
   "openLogsFromSettings": "查看执行日志",
-  "logsHint": "看看小闹钟们最近的工作记录"
+  "logsHint": "看看小闹钟们最近的工作记录",
+  "timeout": "执行超时",
+  "timeoutHint": "超过该时间会结束进程（默认 20 秒）。适合 say / 弹窗 / 可能卡住的交互命令。",
+  "timeoutUnit": "秒",
+  "ERR_EXECUTION_TIMEOUT": "这个任务跑太久被停掉啦～ 可以在闹钟设置里把超时时间调大一点哦。",
+  "stop": "停止",
+  "stopping": "正在停止…",
+  "stopConfirm": "真的要手动停止这个正在执行的任务吗？",
+  "stopRequested": "已发出停止请求，稍等一下就会停下～",
+  "stopSuccess": "任务已按你的意思停下来啦～",
+  "stopMiss": "这个任务好像已经结束了～",
+  "ERR_EXECUTION_CANCELED": "任务被手动停掉了。",
+  "ERR_INVALID_ARGS": "参数有点不对劲～ 检查一下超时时间（1–3600 秒）和环境变量吧。"
 }

@@ -13,6 +13,7 @@ pub enum ErrorCode {
     AlarmNotFound,
     AlarmBusy,
     ExecutionFailed,
+    ExecutionTimeout,
     BinaryNotFound,
     PermissionDenied,
     ConfigCorrupt,

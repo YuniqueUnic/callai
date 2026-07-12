@@ -1,5 +1,6 @@
 #![allow(dead_code)]
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
 
@@ -8,7 +9,10 @@ use crate::domain::{
     DomainResult, ErrorCode, ExecutionLog, ExecutionStatus, LogFilter,
 };
 
-use super::{AlarmStore, Clock, ConfigBackup, ProcessOutput, ProcessRunner, Sleeper};
+use super::{
+    AlarmStore, CancelFlag, Clock, ConfigBackup, OutputChunkFn, ProcessOutput, ProcessRunner,
+    Sleeper,
+};
 
 pub struct AlarmService {
     store: Arc<dyn AlarmStore>,
@@ -16,6 +20,8 @@ pub struct AlarmService {
     clock: Arc<dyn Clock>,
     backup: Arc<dyn ConfigBackup>,
     sleeper: Arc<dyn Sleeper>,
+    /// Active run cancel tokens keyed by alarm id.
+    active: Mutex<HashMap<String, Arc<CancelFlag>>>,
 }
 
 impl AlarmService {
@@ -32,6 +38,7 @@ impl AlarmService {
             clock,
             backup,
             sleeper,
+            active: Mutex::new(HashMap::new()),
         }
     }
 
@@ -99,6 +106,14 @@ impl AlarmService {
         self.store.list_logs(&filter)
     }
 
+    pub fn delete_log(&self, id: i64) -> DomainResult<()> {
+        self.store.delete_log(id)
+    }
+
+    pub fn delete_logs(&self, ids: &[i64]) -> DomainResult<u64> {
+        self.store.delete_logs(ids)
+    }
+
     pub fn get_settings(&self) -> DomainResult<AppSettings> {
         self.store.get_settings()
     }
@@ -129,12 +144,36 @@ impl AlarmService {
         self.backup.delete_backup(name)
     }
 
+    /// Request cooperative cancel for a running alarm. Returns true if a run was active.
+    pub fn cancel_alarm_run(&self, id: &str) -> DomainResult<bool> {
+        let map = self.active.lock().unwrap();
+        if let Some(flag) = map.get(id) {
+            flag.request();
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    pub fn is_alarm_running(&self, id: &str) -> bool {
+        self.active.lock().unwrap().contains_key(id)
+    }
+
     pub fn run_alarm_now_blocking(&self, id: &str) -> DomainResult<ExecutionLog> {
         self.run_alarm_once(id)
     }
 
     /// Run alarm once with retry policy. Uses injected sleeper between retries.
     pub fn run_alarm_once(&self, id: &str) -> DomainResult<ExecutionLog> {
+        self.run_alarm_once_with(id, None)
+    }
+
+    /// Same as run_alarm_once, optionally streaming live process chunks (CLI).
+    pub fn run_alarm_once_with(
+        &self,
+        id: &str,
+        on_chunk: Option<&OutputChunkFn>,
+    ) -> DomainResult<ExecutionLog> {
         let mut alarm = self.get_alarm(id)?;
         if matches!(
             alarm.lifecycle,
@@ -145,9 +184,46 @@ impl AlarmService {
                 "alarm is already running",
             ));
         }
+        {
+            let map = self.active.lock().unwrap();
+            if map.contains_key(id) {
+                return Err(DomainError::new(
+                    ErrorCode::AlarmBusy,
+                    "alarm is already running",
+                ));
+            }
+        }
 
+        let cancel = CancelFlag::new();
+        {
+            let mut map = self.active.lock().unwrap();
+            map.insert(id.to_string(), Arc::clone(&cancel));
+        }
+
+        let result = self.execute_alarm_loop(&mut alarm, Arc::clone(&cancel), on_chunk);
+
+        {
+            let mut map = self.active.lock().unwrap();
+            map.remove(id);
+        }
+
+        // Always release lifecycle even if execute failed hard.
+        if let Ok(mut a) = self.get_alarm(id) {
+            a.mark_idle();
+            let _ = self.store.upsert_alarm(&a);
+        }
+
+        result
+    }
+
+    fn execute_alarm_loop(
+        &self,
+        alarm: &mut Alarm,
+        cancel: Arc<CancelFlag>,
+        on_chunk: Option<&OutputChunkFn>,
+    ) -> DomainResult<ExecutionLog> {
         alarm.mark_running();
-        self.store.upsert_alarm(&alarm)?;
+        self.store.upsert_alarm(alarm)?;
 
         let started = self.clock.now_utc();
         let expanded_args = expand_arg_templates(&alarm.args, started);
@@ -181,16 +257,44 @@ impl AlarmService {
         #[allow(unused_assignments)]
         let mut last_output: Option<ProcessOutput> = None;
         let mut success = false;
+        let mut canceled = false;
+        let mut timed_out = false;
 
         loop {
-            match self.runner.run(&alarm.binary, &expanded_args, &env) {
-                Ok(out) if out.exit_code == 0 => {
+            if cancel.is_requested() {
+                canceled = true;
+                last_output = Some(ProcessOutput {
+                    exit_code: -1,
+                    stdout: String::new(),
+                    stderr: "execution canceled by user".into(),
+                    duration_ms: 0,
+                    canceled: true,
+                    timed_out: false,
+                });
+                break;
+            }
+
+            match self.runner.run(
+                &alarm.binary,
+                &expanded_args,
+                &env,
+                alarm.timeout_secs,
+                Some(Arc::clone(&cancel)),
+                on_chunk,
+            ) {
+                Ok(out) if out.exit_code == 0 && !out.canceled && !out.timed_out => {
                     last_output = Some(out);
                     success = true;
                     break;
                 }
                 Ok(out) => {
+                    canceled = out.canceled;
+                    timed_out = out.timed_out;
                     last_output = Some(out);
+                    // Cancel / timeout: do not retry.
+                    if canceled || timed_out {
+                        break;
+                    }
                 }
                 Err(err) => {
                     last_output = Some(ProcessOutput {
@@ -198,6 +302,8 @@ impl AlarmService {
                         stdout: String::new(),
                         stderr: err.message,
                         duration_ms: 0,
+                        canceled: false,
+                        timed_out: false,
                     });
                 }
             }
@@ -207,13 +313,47 @@ impl AlarmService {
             }
             attempt += 1;
             alarm.mark_retrying(attempt);
-            self.store.upsert_alarm(&alarm)?;
+            self.store.upsert_alarm(alarm)?;
             log.status = ExecutionStatus::Retrying;
             log.retry_count = attempt;
             self.store.update_log(&log)?;
 
             if let Some(secs) = alarm.retry.wait_seconds_for_attempt(attempt - 1) {
-                self.sleeper.sleep_secs(secs);
+                // Cooperative cancel during retry wait (poll, no long uninterruptible sleep).
+                let mut remaining = secs;
+                while remaining > 0 {
+                    if cancel.is_requested() {
+                        canceled = true;
+                        last_output = Some(ProcessOutput {
+                            exit_code: -1,
+                            stdout: last_output
+                                .as_ref()
+                                .map(|o| o.stdout.clone())
+                                .unwrap_or_default(),
+                            stderr: {
+                                let mut s = last_output
+                                    .as_ref()
+                                    .map(|o| o.stderr.clone())
+                                    .unwrap_or_default();
+                                if !s.is_empty() {
+                                    s.push('\n');
+                                }
+                                s.push_str("execution canceled by user");
+                                s
+                            },
+                            duration_ms: last_output.as_ref().map(|o| o.duration_ms).unwrap_or(0),
+                            canceled: true,
+                            timed_out: false,
+                        });
+                        break;
+                    }
+                    let step = remaining.min(1);
+                    self.sleeper.sleep_secs(step);
+                    remaining = remaining.saturating_sub(step);
+                }
+                if canceled {
+                    break;
+                }
             }
         }
 
@@ -223,6 +363,8 @@ impl AlarmService {
             stdout: String::new(),
             stderr: "no output".into(),
             duration_ms: 0,
+            canceled: false,
+            timed_out: false,
         });
 
         log.finished_at = Some(finished);
@@ -233,13 +375,17 @@ impl AlarmService {
         log.stderr = out.stderr;
         log.status = if success {
             ExecutionStatus::Success
+        } else if canceled || out.canceled {
+            ExecutionStatus::Canceled
+        } else if timed_out || out.timed_out {
+            ExecutionStatus::Timeout
         } else {
             ExecutionStatus::Failed
         };
         self.store.update_log(&log)?;
 
         alarm.mark_idle();
-        self.store.upsert_alarm(&alarm)?;
+        self.store.upsert_alarm(alarm)?;
         Ok(log)
     }
 

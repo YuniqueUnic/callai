@@ -61,5 +61,17 @@
   "tabAlarms": "Alarms",
   "tabSettings": "Settings",
   "openLogsFromSettings": "View run logs",
-  "logsHint": "See how your alarms have been doing"
+  "logsHint": "See how your alarms have been doing",
+  "timeout": "Run timeout",
+  "timeoutHint": "Kill the process if it runs longer than this (default 20s). Useful for dialogs / say / interactive tools.",
+  "timeoutUnit": "seconds",
+  "ERR_EXECUTION_TIMEOUT": "This task took too long and was stopped. You can raise the timeout in the alarm settings.",
+  "stop": "Stop",
+  "stopping": "Stopping…",
+  "stopConfirm": "Stop this running task now?",
+  "stopRequested": "Stop requested — wrapping up…",
+  "stopSuccess": "Task stopped as you asked.",
+  "stopMiss": "That task already finished.",
+  "ERR_EXECUTION_CANCELED": "Task was canceled by user.",
+  "ERR_INVALID_ARGS": "Some fields look off — check timeout (1–3600s) and env vars."
 }

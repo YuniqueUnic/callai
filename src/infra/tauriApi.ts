@@ -42,7 +42,10 @@ export const api = {
   setAllEnabled: (enabled: boolean) =>
     call<Alarm[]>("set_all_enabled", { enabled }),
   runNow: (id: string) => call<ExecutionLog>("run_alarm_now", { id }),
+  cancelAlarmRun: (id: string) => call<boolean>("cancel_alarm_run", { id }),
   listLogs: (filter: LogFilter) => call<ExecutionLog[]>("list_logs", { filter }),
+  deleteLog: (id: number) => call<void>("delete_log", { id }),
+  deleteLogs: (ids: number[]) => call<number>("delete_logs", { ids }),
   getSettings: () => call<AppSettings>("get_settings"),
   saveSettings: (settings: AppSettings) =>
     call<AppSettings>("save_settings", { settings }),

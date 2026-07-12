@@ -5,6 +5,10 @@ use uuid::Uuid;
 
 use super::{DomainError, DomainResult, ErrorCode, RetryPolicy, ScheduleSpec};
 
+pub const DEFAULT_TIMEOUT_SECS: u32 = 20;
+pub const MIN_TIMEOUT_SECS: u32 = 1;
+pub const MAX_TIMEOUT_SECS: u32 = 3600;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AlarmLifecycle {
@@ -29,6 +33,8 @@ pub struct Alarm {
     pub args: Vec<String>,
     pub env_vars: Vec<EnvVar>,
     pub retry: RetryPolicy,
+    /// Soft wall-clock timeout for one attempt (seconds). Default 20.
+    pub timeout_secs: u32,
     pub lifecycle: AlarmLifecycle,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -43,6 +49,7 @@ pub struct AlarmDraft {
     pub args: Vec<String>,
     pub env_vars: Vec<EnvVar>,
     pub retry: RetryPolicy,
+    pub timeout_secs: u32,
 }
 
 impl AlarmDraft {
@@ -69,6 +76,12 @@ impl AlarmDraft {
                 ));
             }
         }
+        if self.timeout_secs == 0 || self.timeout_secs > 3600 {
+            return Err(DomainError::new(
+                ErrorCode::InvalidArgs,
+                "timeout must be between 1 and 3600 seconds",
+            ));
+        }
         Ok(())
     }
 }
@@ -86,6 +99,7 @@ impl Alarm {
             args: draft.args,
             env_vars: draft.env_vars,
             retry: draft.retry,
+            timeout_secs: draft.timeout_secs,
             lifecycle: AlarmLifecycle::Idle,
             created_at: now,
             updated_at: now,
@@ -110,6 +124,7 @@ impl Alarm {
         self.args = draft.args;
         self.env_vars = draft.env_vars;
         self.retry = draft.retry;
+        self.timeout_secs = draft.timeout_secs;
         self.updated_at = Utc::now();
         Ok(())
     }
