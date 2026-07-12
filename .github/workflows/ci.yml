@@ -13,11 +13,12 @@ concurrency:
 jobs:
   gate:
     name: gate
-    runs-on: ubuntu-22.04
+    # Pin Ubuntu LTS image (avoid floating ubuntu-latest surprises).
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2

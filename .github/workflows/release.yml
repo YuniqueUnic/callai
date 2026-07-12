@@ -16,7 +16,8 @@ concurrency:
 jobs:
   release-please:
     name: release-please
-    runs-on: ubuntu-latest
+    # Pin image; release-please-action@v5 runs on Node.js 24.
+    runs-on: ubuntu-24.04
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -24,7 +25,7 @@ jobs:
     steps:
       - name: Release Please
         id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
@@ -40,26 +41,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Pin macOS 15 to avoid macos-latest → macOS 26 migration (June 2026).
+          # macos-15 is arm64; x86_64 desktop/CLI is cross-compiled via rust target.
           - name: macos-aarch64
-            os: macos-latest
+            os: macos-15
             rust_target: aarch64-apple-darwin
             tauri_args: --target aarch64-apple-darwin
             cli_bin: callai
             cli_asset: callai-cli-aarch64-apple-darwin
           - name: macos-x86_64
-            os: macos-latest
+            os: macos-15
             rust_target: x86_64-apple-darwin
             tauri_args: --target x86_64-apple-darwin
             cli_bin: callai
             cli_asset: callai-cli-x86_64-apple-darwin
           - name: linux-x86_64
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             rust_target: x86_64-unknown-linux-gnu
             tauri_args: ""
             cli_bin: callai
             cli_asset: callai-cli-x86_64-unknown-linux-gnu
           - name: windows-x86_64
-            os: windows-latest
+            os: windows-2025
             rust_target: x86_64-pc-windows-msvc
             tauri_args: ""
             cli_bin: callai.exe
@@ -69,7 +72,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
 
@@ -90,7 +93,7 @@ jobs:
           shared-key: release-${{ matrix.name }}
 
       - name: Install Linux deps
-        if: matrix.os == 'ubuntu-22.04'
+        if: startsWith(matrix.os, 'ubuntu-')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -149,7 +152,7 @@ jobs:
           ls -la dist-cli/
 
       - name: Upload CLI to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
           files: dist-cli/${{ matrix.cli_asset }}
