@@ -61,6 +61,9 @@ export const api = {
   getAppVersion: () => call<string>("get_app_version"),
   getBackupsDir: () => call<string>("get_backups_dir"),
   openBackupsDir: () => call<string>("open_backups_dir"),
+  getAutostartEnabled: () => call<boolean>("get_autostart_enabled"),
+  setAutostartEnabled: (enabled: boolean) =>
+    call<boolean>("set_autostart_enabled", { enabled }),
 };
 
 

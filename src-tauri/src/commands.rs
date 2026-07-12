@@ -208,6 +208,21 @@ pub fn detect_timezone() -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn get_autostart_enabled() -> Result<bool, String> {
+    crate::infra::AutoStart::for_current_exe("callai", &[])
+        .and_then(|a| a.is_enabled())
+        .map_err(map_err)
+}
+
+#[tauri::command]
+pub fn set_autostart_enabled(enabled: bool) -> Result<bool, String> {
+    crate::infra::AutoStart::for_current_exe("callai", &[])
+        .and_then(|a| a.sync_enabled(enabled))
+        .map(|s| s.enabled)
+        .map_err(map_err)
+}
+
+#[tauri::command]
 pub fn get_app_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }

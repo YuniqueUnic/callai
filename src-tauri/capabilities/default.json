@@ -14,7 +14,6 @@
     "updater:default",
     "updater:allow-check",
     "updater:allow-download-and-install",
-    "autostart:default",
     "opener:default",
     "opener:allow-open-path",
     "opener:allow-reveal-item-in-dir"
