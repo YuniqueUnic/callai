@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "callai",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "identifier": "com.yunxuan.callai",
   "build": {
     "beforeDevCommand": "bun run dev",

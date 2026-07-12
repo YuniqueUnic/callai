@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.5](https://github.com/YuniqueUnic/callai/compare/v0.2.4...v0.2.5) (2026-07-12)
+
+
+### Features
+
+* **domain:** add portable built-in alarm binary for cross-platform execution ([368db2a](https://github.com/YuniqueUnic/callai/commit/368db2a9f1506dec0de3411016595b232559e4b2))
+* **ui:** custom cross-platform titlebar + dark modal contrast ([685c6a8](https://github.com/YuniqueUnic/callai/commit/685c6a8f0a00d1e44cf1b163526a5d7cc5a38e34))
+
+
+### Bug Fixes
+
+* **drawer:** preserve rounded window when logs panel opens ([4dad919](https://github.com/YuniqueUnic/callai/commit/4dad9193973adbb42393877d66283a68194500df))
+* **performance:** resolve UI switching lag through component keep-alive and caching ([368db2a](https://github.com/YuniqueUnic/callai/commit/368db2a9f1506dec0de3411016595b232559e4b2))
+* **rust:** clippy needless_return in builtin_alarm ([919a24d](https://github.com/YuniqueUnic/callai/commit/919a24d304ed9c0cb42e8f679cc4dd0059ee5bba))
+* **ui:** restore dark-mode contrast on modals and overlays ([409eb5f](https://github.com/YuniqueUnic/callai/commit/409eb5fdb069761062053d27ef002a1fbea28e52))
+* **window:** implement transparent rounded window with clip-path ([4dad919](https://github.com/YuniqueUnic/callai/commit/4dad9193973adbb42393877d66283a68194500df))
+
 ## [0.2.4](https://github.com/YuniqueUnic/callai/compare/v0.2.3...v0.2.4) (2026-07-12)
 
 
