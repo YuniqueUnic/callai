@@ -1,12 +1,20 @@
-<p align="center">
-  <img src="docs/assets/callai-logo.png" alt="callai logo" width="144" />
-</p>
 
-<h1 align="center">callai</h1>
 
 <p align="center">
-  <strong>Ciallo～(∠・ω&lt; )</strong><br />
-  给 AI 定闹钟，让额度窗口保持新鲜。
+<table align="center">
+<tr>
+<td width="160" align="center" valign="middle">
+  <img src="docs/assets/callai-logo.png" alt="callai logo" width="128" />
+</td>
+<td align="left" valign="middle">
+  <h1>callai</h1>
+  <p>
+    <strong>Ciallo～(∠・ω&lt; )</strong><br />
+    给 AI 定闹钟，让额度窗口保持新鲜。
+  </p>
+</td>
+</tr>
+</table>
 </p>
 
 <p align="center">
@@ -31,7 +39,7 @@
   <a href="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-0.2.1?logo=github" alt="version 0.2.0" /><!-- x-release-please-version -->
+  <img src="https://img.shields.io/badge/version-0.2.1-88c0d0?logo=github" alt="version 0.2.1" /><!-- x-release-please-version -->
   <img src="https://img.shields.io/badge/Tauri-2-ffc131?logo=tauri&logoColor=white" alt="Tauri 2" />
   <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust&logoColor=white" alt="Rust" />
   <img src="https://img.shields.io/badge/Bun-React-fbf0df?logo=bun&logoColor=black" alt="Bun React" />
@@ -69,6 +77,29 @@
 </tr>
 </table>
 
+
+
+## 安装
+
+### 包管理器（GUI + CLI）
+
+| 管理器 | GUI | CLI |
+| --- | --- | --- |
+| Homebrew | `brew install --cask ./packaging/homebrew/Casks/callai-app.rb` | `brew install ./packaging/homebrew/Formula/callai.rb` |
+| Scoop | `scoop install ./packaging/scoop/bucket/callai.json` | `scoop install ./packaging/scoop/bucket/callai-cli.json` |
+| winget | `winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai/<ver>` | `winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai.CLI/<ver>` |
+
+完整矩阵、刷新脚本与上游提交说明见 **[packaging/README.md](./packaging/README.md)**。
+
+```bash
+# 发版后刷新清单 hash/version
+./packaging/scripts/generate_from_release.sh v0.2.1
+just packaging-validate
+```
+
+### 直接下载
+
+安装包与 CLI 二进制见 [Releases](https://github.com/YuniqueUnic/callai/releases)。
 
 ## 为什么需要 callai？
 
