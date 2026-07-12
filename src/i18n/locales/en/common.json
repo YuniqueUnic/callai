@@ -25,5 +25,10 @@
   "trayQuit": "Quit",
   "trayTooltip": "callai",
   "tabAlarms": "Alarms",
-  "tabSettings": "Settings"
+  "tabSettings": "Settings",
+  "windowControls": "Window controls",
+  "windowMinimize": "Minimize",
+  "windowMaximize": "Maximize",
+  "windowRestore": "Restore",
+  "windowClose": "Close"
 }

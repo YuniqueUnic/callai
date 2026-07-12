@@ -10,6 +10,7 @@ import { LogsPanel } from "./pages/LogsPanel";
 import { SettingsPage } from "./pages/SettingsPage";
 import { applyTheme, readStoredTheme } from "./theme/theme";
 import { SeaMarquee } from "./ui/SeaMarquee";
+import { TitleBar } from "./ui/TitleBar";
 import { warmToast } from "./ui/toast";
 import { setSoundEnabled, unlockAudio } from "./ui/sounds";
 
@@ -113,8 +114,9 @@ export default function App() {
       }}
     >
       <div
-        className={`app-shell ${inTabs ? "with-tabs" : "immersive-edit"} ${logsOpen ? "drawer-open" : ""}`}
+        className={`app-shell has-titlebar ${inTabs ? "with-tabs" : "immersive-edit"} ${logsOpen ? "drawer-open" : ""}`}
       >
+        <TitleBar />
         {page === "edit" ? (
           <EditAlarmPage
             alarmId={editId}
