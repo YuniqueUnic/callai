@@ -237,9 +237,8 @@ pub fn resolve_timezone(setting: &str) -> DomainResult<Tz> {
     if s.is_empty() || s.eq_ignore_ascii_case("system") || s.eq_ignore_ascii_case("auto") {
         return Ok(detect_system_timezone());
     }
-    s.parse::<Tz>().map_err(|_| {
-        DomainError::new(ErrorCode::InvalidArgs, format!("unknown timezone: {s}"))
-    })
+    s.parse::<Tz>()
+        .map_err(|_| DomainError::new(ErrorCode::InvalidArgs, format!("unknown timezone: {s}")))
 }
 
 /// Evaluate cron as wall-clock in `tz` (not UTC).

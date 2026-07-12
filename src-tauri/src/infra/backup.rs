@@ -197,7 +197,10 @@ impl ConfigBackup for TomlConfigBackup {
                             "weekly".into(),
                             format!(
                                 "{};{}",
-                                days.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(","),
+                                days.iter()
+                                    .map(|d| d.to_string())
+                                    .collect::<Vec<_>>()
+                                    .join(","),
                                 times.join(",")
                             ),
                         ),
@@ -205,7 +208,10 @@ impl ConfigBackup for TomlConfigBackup {
                             "monthly".into(),
                             format!(
                                 "{};{}",
-                                days.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(","),
+                                days.iter()
+                                    .map(|d| d.to_string())
+                                    .collect::<Vec<_>>()
+                                    .join(","),
                                 times.join(",")
                             ),
                         ),

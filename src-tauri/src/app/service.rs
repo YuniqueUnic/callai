@@ -124,14 +124,16 @@ impl AlarmService {
         resolve_timezone(&settings.timezone)
     }
 
-    pub fn next_trigger_utc(&self, id: &str) -> DomainResult<Option<chrono::DateTime<chrono::Utc>>> {
+    pub fn next_trigger_utc(
+        &self,
+        id: &str,
+    ) -> DomainResult<Option<chrono::DateTime<chrono::Utc>>> {
         let alarm = self.get_alarm(id)?;
         let tz = self.schedule_timezone()?;
         alarm
             .schedule
             .next_trigger_after_in_tz(chrono::Utc::now(), tz)
     }
-
 
     pub fn save_settings(&self, settings: AppSettings) -> DomainResult<AppSettings> {
         // Validate IANA / system token early.
