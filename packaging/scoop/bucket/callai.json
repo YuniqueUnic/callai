@@ -1,12 +1,12 @@
 {
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Cozy AI window-warming alarm (desktop GUI)",
   "homepage": "https://github.com/YuniqueUnic/callai",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/YuniqueUnic/callai/releases/download/v0.2.4/callai_0.2.4_x64-setup.exe#/callai-setup.exe",
-      "hash": "0a7a9224d913424a4e488110aa7703b6c2acbd2be7d9fbf43fb6d8f438bee299"
+      "url": "https://github.com/YuniqueUnic/callai/releases/download/v0.2.5/callai_0.2.5_x64-setup.exe#/callai-setup.exe",
+      "hash": "c1f4129acf00f6661076faad34fcf3437057959919536dd153f9ea19ffb8be68"
     }
   },
   "installer": {

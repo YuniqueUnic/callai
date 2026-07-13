@@ -1,0 +1,17 @@
+PackageIdentifier: YuniqueUnic.Callai
+PackageVersion: 0.2.5
+InstallerLocale: en-US
+InstallerType: wix
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+UpgradeBehavior: install
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/YuniqueUnic/callai/releases/download/v0.2.5/callai_0.2.5_x64_en-US.msi
+    InstallerSha256: 6792FDD0528C98F36366EE41A584CAE12876074EE01AFFDCAC88CB983207B091
+    ProductCode: '{A2C80742-EA7B-4C94-931C-AF7B42024CEA}'
+ManifestType: installer
+ManifestVersion: 1.6.0
