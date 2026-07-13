@@ -1,3 +1,4 @@
+pub mod alarm_sound;
 pub mod autostart;
 pub mod backup;
 pub mod builtin_alarm;

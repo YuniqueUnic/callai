@@ -89,5 +89,19 @@
   "dow_3": "三",
   "dow_4": "四",
   "dow_5": "五",
-  "dow_6": "六"
+  "dow_6": "六",
+  "notification": "通知设置",
+  "notificationHint": "此闹钟触发时",
+  "notifyEnable": "启用通知",
+  "notifyType": "通知方式",
+  "notifySystemOnly": "仅系统通知",
+  "notifyWithSound": "通知+声音",
+  "notifySound": "提示音",
+  "notifySoundDefault": "默认",
+  "previewSound": "试听",
+  "soundSoftChime": "轻柔钟声",
+  "soundIslandBell": "小岛铃",
+  "soundWoodKnock": "木敲",
+  "soundWarmRise": "暖升",
+  "soundGentlePing": "轻点"
 }

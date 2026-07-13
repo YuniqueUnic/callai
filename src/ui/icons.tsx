@@ -181,3 +181,27 @@ export function IconSettings(props: IconSvgProps) {
     </svg>
   );
 }
+
+export function IconCopy(props: IconSvgProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M6 15V6.5A1.5 1.5 0 0 1 7.5 5H15"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function IconVolume(props: IconSvgProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 10v4h3.5L12 18V6L7.5 10H4z" fill="currentColor" />
+      <path d="M15.5 9.5a3.5 3.5 0 0 1 0 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M17.5 7.5a6 6 0 0 1 0 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}

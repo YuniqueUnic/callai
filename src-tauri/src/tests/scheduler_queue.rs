@@ -90,6 +90,7 @@ fn enqueue_dedupes_while_running() {
             env_vars: vec![],
             retry: RetryPolicy::default(),
             timeout_secs: 20,
+            notification: Default::default(),
         })
         .unwrap();
 

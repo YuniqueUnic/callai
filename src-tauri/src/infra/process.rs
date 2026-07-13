@@ -23,7 +23,17 @@ impl ProcessRunner for SystemProcessRunner {
         on_chunk: Option<&OutputChunkFn>,
     ) -> DomainResult<ProcessOutput> {
         if crate::infra::builtin_alarm::is_builtin_alarm(binary) {
-            let out = crate::infra::builtin_alarm::run_builtin_alarm(args, timeout_secs, cancel)?;
+            let notification = env
+                .iter()
+                .find(|(k, _)| k == "CALLAI_NOTIFY")
+                .and_then(|(_, v)| serde_json::from_str(v).ok())
+                .unwrap_or_default();
+            let out = crate::infra::builtin_alarm::run_builtin_alarm(
+                args,
+                timeout_secs,
+                cancel,
+                &notification,
+            )?;
             if let Some(cb) = on_chunk {
                 if !out.stdout.is_empty() {
                     cb(&out.stdout, false);
@@ -32,7 +42,6 @@ impl ProcessRunner for SystemProcessRunner {
                     cb(&out.stderr, true);
                 }
             }
-            let _ = env; // builtins ignore process env
             return Ok(out);
         }
 

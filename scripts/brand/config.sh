@@ -7,12 +7,14 @@ BRAND_ROOT="$(cd "${_brand_config_dir}/../.." && pwd)"
 
 # Source art (repo root)
 LOGO_SRC="${BRAND_ROOT}/callai.logo.png"
+TRAY_SRC="${BRAND_ROOT}/callai.tray.png"
 ELEMENTS_SRC="${BRAND_ROOT}/callai.elements.png"
 
 # Intermediate brand outputs
 BRAND_DIR="${BRAND_ROOT}/assets/brand"
 LOGO_MASTER="${BRAND_DIR}/callai-icon-master.png"  # canonical transparent logo
 LOGO_1024="${BRAND_DIR}/callai-icon-1024.png"
+TRAY_MASTER="${BRAND_DIR}/callai-tray-master.png"  # transparent tray source
 ELEMENTS_RAW_DIR="${BRAND_DIR}/elements-raw"
 ELEMENTS_OUT_DIR="${BRAND_DIR}/elements"
 CATALOG_BRAND="${BRAND_DIR}/elements-catalog.json"

@@ -4474,33 +4474,79 @@ html[data-theme="dark"] body > .time-picker-popup-portal button.animal-btn-prima
   font-weight: 800 !important;
 }
 
-/* animal-island Select (template etc.): scoped dark trigger */
+/* animal-island Select: all edit-page / form selects */
+html[data-theme="dark"] .edit-page [class*="animal-wrapper"],
+html[data-theme="dark"] .edit-page [class*="animal-trigger"],
+html[data-theme="dark"] .form-panel [class*="animal-wrapper"],
+html[data-theme="dark"] .form-panel [class*="animal-trigger"],
+html[data-theme="dark"] .field-select [class*="animal-wrapper"],
+html[data-theme="dark"] .field-select [class*="animal-trigger"],
 html[data-theme="dark"] .field-template [class*="animal-wrapper"],
-html[data-theme="dark"] .field-template [class*="animal-trigger"],
-html[data-theme="dark"] .edit-page .field-template [class*="animal-trigger"] {
+html[data-theme="dark"] .field-template [class*="animal-trigger"] {
   color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
 }
-html[data-theme="dark"] .field-template [class*="animal-trigger"],
-html[data-theme="dark"] .edit-page .field-template [class*="animal-trigger"] {
+html[data-theme="dark"] .edit-page [class*="animal-trigger"],
+html[data-theme="dark"] .form-panel [class*="animal-trigger"],
+html[data-theme="dark"] .field-select [class*="animal-trigger"],
+html[data-theme="dark"] .field-template [class*="animal-trigger"] {
   background: #15201c !important;
   background-color: #15201c !important;
   border: 2px solid #a8c0b4 !important;
   color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
 }
+html[data-theme="dark"] .edit-page [class*="animal-value"],
+html[data-theme="dark"] .form-panel [class*="animal-value"],
+html[data-theme="dark"] .field-select [class*="animal-value"],
 html[data-theme="dark"] .field-template [class*="animal-value"],
-html[data-theme="dark"] .edit-page .field-template [class*="animal-value"] {
+html[data-theme="dark"] .edit-page [class*="animal-trigger"] *,
+html[data-theme="dark"] .field-select [class*="animal-trigger"] * {
   color: #fffaf0 !important;
   -webkit-text-fill-color: #fffaf0 !important;
 }
-html[data-theme="dark"] .field-template [class*="animal-placeholder"],
-html[data-theme="dark"] .edit-page .field-template [class*="animal-placeholder"] {
+html[data-theme="dark"] .edit-page [class*="animal-placeholder"],
+html[data-theme="dark"] .field-select [class*="animal-placeholder"],
+html[data-theme="dark"] .field-template [class*="animal-placeholder"] {
   color: #c8b89a !important;
   -webkit-text-fill-color: #c8b89a !important;
 }
-html[data-theme="dark"] .field-template [class*="animal-arrow"],
-html[data-theme="dark"] .edit-page .field-template [class*="animal-arrow"] {
+html[data-theme="dark"] .edit-page [class*="animal-arrow"],
+html[data-theme="dark"] .field-select [class*="animal-arrow"],
+html[data-theme="dark"] .field-template [class*="animal-arrow"] {
   color: #c8b89a !important;
+  -webkit-text-fill-color: #c8b89a !important;
 }
+
+/* Sound row: preview IconButton stays dark-ink on light chip */
+html[data-theme="dark"] .sound-select-row .icon-btn,
+html[data-theme="dark"] .sound-select-row .icon-btn svg {
+  color: #2a1c0e !important;
+  -webkit-text-fill-color: #2a1c0e !important;
+}
+
+/* Ensure dropdown options never inherit #root brown fill on dark */
+html[data-theme="dark"] [class*="animal-dropdown"],
+html[data-theme="dark"] [class*="animal-dropdown"] *,
+html[data-theme="dark"] [class*="animal-select-popup"],
+html[data-theme="dark"] [class*="animal-select-popup"] * {
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"],
+html[data-theme="dark"] [class*="animal-select-popup"] [class*="animal-option"] {
+  color: #e8dcc0 !important;
+  -webkit-text-fill-color: #e8dcc0 !important;
+  background: transparent !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"][class*="animal-active"],
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"][class*="active"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 800 !important;
+  background: rgba(94, 224, 210, 0.18) !important;
+}
+
 
 /* Portaled / absolute Select dropdown list (class is unique: animal-dropdown-*) */
 html[data-theme="dark"] [class*="animal-dropdown"],

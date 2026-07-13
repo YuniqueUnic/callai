@@ -100,6 +100,7 @@ fn draft() -> AlarmDraft {
         env_vars: vec![],
         retry: RetryPolicy::default(),
         timeout_secs: 20,
+        notification: Default::default(),
     }
 }
 
@@ -303,4 +304,68 @@ fn migrate_adds_sound_enabled_on_legacy_db() {
     let store = SqliteStore::open(&path).expect("migrate legacy db");
     let s = store.get_settings().unwrap();
     assert!(s.sound_enabled);
+}
+
+#[test]
+fn migrate_adds_notification_json_on_legacy_alarms() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("legacy_notify.db");
+    {
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        conn.execute_batch(
+            r#"
+            CREATE TABLE app_settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                theme TEXT NOT NULL,
+                locale TEXT NOT NULL,
+                launch_minimized INTEGER NOT NULL,
+                log_retention_days INTEGER NOT NULL,
+                notify_on_failure INTEGER NOT NULL,
+                auto_backup_on_start INTEGER NOT NULL,
+                backup_keep_count INTEGER NOT NULL
+            );
+            INSERT INTO app_settings VALUES (1, 'system', 'zh-CN', 0, 30, 0, 1, 10);
+            CREATE TABLE alarms (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                enabled INTEGER NOT NULL,
+                schedule_json TEXT NOT NULL,
+                binary_path TEXT NOT NULL,
+                args_json TEXT NOT NULL,
+                env_json TEXT NOT NULL,
+                retry_interval TEXT NOT NULL,
+                timeout_secs INTEGER NOT NULL DEFAULT 20,
+                lifecycle_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            INSERT INTO alarms VALUES (
+                'a1', 'old', 1, '{"mode":"daily","times":["08:00"]}', 'echo', '["hi"]', '[]',
+                '2m', 20, '"idle"', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'
+            );
+            CREATE TABLE execution_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                alarm_id TEXT NOT NULL,
+                alarm_name TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                finished_at TEXT,
+                status TEXT NOT NULL,
+                exit_code INTEGER,
+                duration_ms INTEGER,
+                retry_count INTEGER NOT NULL DEFAULT 0,
+                command_preview TEXT NOT NULL,
+                stdout TEXT NOT NULL DEFAULT '',
+                stderr TEXT NOT NULL DEFAULT ''
+            );
+            "#,
+        )
+        .unwrap();
+    }
+    let store = SqliteStore::open(&path).expect("migrate legacy db");
+    let a = store.get_alarm("a1").unwrap().expect("alarm");
+    assert!(a.notification.enabled);
+    assert!(matches!(
+        a.notification.notification_type,
+        crate::domain::NotificationType::WithSound
+    ));
 }

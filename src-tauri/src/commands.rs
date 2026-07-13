@@ -6,9 +6,10 @@ use tauri::State;
 
 use crate::app::AlarmService;
 use crate::domain::{
-    draft_from_template, Alarm, AlarmDraft, AppSettings, DomainError, ExecutionLog, LogFilter,
-    TEMPLATES,
+    draft_from_template, Alarm, AlarmDraft, AppSettings, BuiltinSoundId, DomainError, ExecutionLog,
+    LogFilter, TEMPLATES,
 };
+use crate::infra::alarm_sound;
 use crate::infra::AlarmScheduler;
 
 #[derive(Debug, Serialize)]
@@ -274,4 +275,23 @@ fn rebuild_tray_menu(
 pub struct AppState {
     pub service: Arc<AlarmService>,
     pub scheduler: Arc<AlarmScheduler>,
+}
+
+#[tauri::command]
+pub fn list_alarm_sounds() -> Result<Vec<String>, String> {
+    Ok(BuiltinSoundId::ALL
+        .into_iter()
+        .map(|s| s.as_str().to_string())
+        .collect())
+}
+
+/// Preview a built-in algorithmic sound. Always allowed even in silent mode
+/// (user-initiated), but still honors OS output mute/volume.
+#[tauri::command]
+pub fn preview_alarm_sound(sound_id: Option<String>) -> Result<bool, String> {
+    let id = sound_id
+        .as_deref()
+        .and_then(BuiltinSoundId::parse)
+        .unwrap_or_default();
+    alarm_sound::play_sound(id)
 }

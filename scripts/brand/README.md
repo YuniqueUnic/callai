@@ -6,7 +6,8 @@
 
 | 文件 | 用途 |
 |------|------|
-| `callai.logo.png` | 主品牌图（鸟 + 闹钟）→ app/tray/favicon |
+| `callai.logo.png` | 主品牌图（鸟 + 闹钟）→ app/favicon |
+| `callai.tray.png` | 托盘专用源图 → macOS tray template + public tray |
 | `callai.elements.png` | 8×2 精灵表 → UI 插画 |
 
 ## 脚本
@@ -43,12 +44,14 @@ just brand-check    # 校验
 ```
 # 源图（仓库根，手改入口）
 callai.logo.png
+callai.tray.png
 callai.elements.png
 
 # 品牌中间态（尽量少）
 assets/brand/
   callai-icon-master.png      # 透明主 logo（唯一品牌主图）
   callai-icon-1024.png        # 方图，供生成多尺寸 icons
+  callai-tray-master.png      # 透明托盘源图
   elements-catalog.json       # 切片目录元数据
 
 # 应用真正使用
@@ -99,3 +102,19 @@ just brand-qa
 
 - Screenshot/demo media: [`../media/README.md`](../media/README.md)
 - Scripts index: [`../README.md`](../README.md)
+
+## Tray 清晰度（macOS / Windows / Linux）
+
+`make_tray_template.py` 从 `callai.tray.png`（去背景 master）生成：
+
+| 平台 | 运行时图标 | 说明 |
+|------|------------|------|
+| macOS | `nathan.k@example.net` (36px template) | 逻辑高度 18pt，@2x 位图防 Retina 发糊；`icon_as_template=true` |
+| Windows | `tray-color-32.png` | 彩色 32px，系统托盘 |
+| Linux | `tray-color-64.png` | 彩色 64px，HiDPI 状态栏 |
+
+生成时：Lanczos 缩小 + unsharp + alpha 硬化（去掉雾状半透明）。重生成：
+
+```bash
+just brand-icons   # 或 ./scripts/brand/generate_logo_icons.sh
+```

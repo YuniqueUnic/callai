@@ -1,4 +1,5 @@
 import type { AlarmDraft, ScheduleSpec } from "./types";
+import { DEFAULT_NOTIFICATION } from "./types";
 
 export function defaultDraft(): AlarmDraft {
   return {
@@ -10,6 +11,7 @@ export function defaultDraft(): AlarmDraft {
     env_vars: [],
     retry: { interval: "2m", max_attempts: 3 },
     timeout_secs: 20,
+    notification: { ...DEFAULT_NOTIFICATION },
   };
 }
 

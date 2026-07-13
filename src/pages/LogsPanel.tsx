@@ -6,13 +6,56 @@ import { formatDateTime } from "../domain/format";
 import { client } from "../infra/client";
 import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
-import { IconSearch, IconTrash } from "../ui/icons";
+import { IconCopy, IconSearch, IconTrash } from "../ui/icons";
 import { toast } from "../ui/toast";
 import { playSound } from "../ui/sounds";
 
 interface Props {
   alarmId?: string | null;
 }
+
+function formatLogCopy(log: ExecutionLog, labels: {
+  command: string;
+  exitCode: string;
+  stdout: string;
+  stderr: string;
+}): string {
+  const lines = [
+    `${labels.command}: ${log.command_preview}`,
+    `${labels.exitCode}: ${log.exit_code ?? "—"}`,
+    labels.stdout,
+    log.stdout || "—",
+  ];
+  if (log.stderr?.trim()) {
+    lines.push(labels.stderr, log.stderr);
+  }
+  return lines.join("\n");
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 
 export function LogsPanel({ alarmId }: Props) {
   const { t, i18n } = useTranslation(["logs", "common"]);
@@ -95,6 +138,28 @@ export function LogsPanel({ alarmId }: Props) {
                 <div className="row" style={{ justifyContent: "space-between", gap: 8 }}>
                   <strong style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{log.alarm_name}</strong>
                   <div className="row" style={{ gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                    <IconButton
+                      label={t("logs:copy")}
+                      icon={<IconCopy size={14} />}
+                      onClick={() => {
+                        void (async () => {
+                          const text = formatLogCopy(log, {
+                            command: t("logs:command"),
+                            exitCode: t("logs:exitCode"),
+                            stdout: t("logs:stdout"),
+                            stderr: t("logs:stderr"),
+                          });
+                          const ok = await copyText(text);
+                          if (ok) {
+                            playSound("confirm");
+                            toast.success({ message: t("logs:copySuccess") });
+                          } else {
+                            playSound("error");
+                            toast.error({ message: t("logs:copyFailed") });
+                          }
+                        })();
+                      }}
+                    />
                     <IconButton
                       label={t("logs:delete")}
                       icon={<IconTrash size={14} />}

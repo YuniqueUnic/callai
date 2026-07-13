@@ -17,5 +17,8 @@
   "deleteSuccess": "Deleted",
   "deleteSelected": "Delete selected",
   "canceled": "Canceled",
-  "timeout": "Timeout"
+  "timeout": "Timeout",
+  "copy": "Copy",
+  "copySuccess": "Copied",
+  "copyFailed": "Copy failed"
 }
