@@ -1,6 +1,6 @@
 [package]
 name = "callai"
-version = "0.2.6"
+version = "0.2.7"
 description = "callai — a cozy AI window-warming alarm"
 license = "MIT"
 repository = "https://github.com/YuniqueUnic/callai"

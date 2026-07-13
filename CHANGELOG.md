@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.7](https://github.com/YuniqueUnic/callai/compare/v0.2.6...v0.2.7) (2026-07-13)
+
+
+### Bug Fixes
+
+* **packaging:** Homebrew depends_on macos symbol form ([#33](https://github.com/YuniqueUnic/callai/issues/33)) ([15894d1](https://github.com/YuniqueUnic/callai/commit/15894d185e501d6bfb629c03c5275fa87eb579cf))
+* **packaging:** use symbol form for Homebrew macos depends_on ([15894d1](https://github.com/YuniqueUnic/callai/commit/15894d185e501d6bfb629c03c5275fa87eb579cf))
+
 ## [0.2.6](https://github.com/YuniqueUnic/callai/compare/v0.2.5...v0.2.6) (2026-07-13)
 
 
