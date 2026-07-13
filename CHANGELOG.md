@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/YuniqueUnic/callai/compare/v0.2.5...v0.2.6) (2026-07-13)
+
+
+### Features
+
+* per-alarm notifications, log copy, crisp tray icons ([1996736](https://github.com/YuniqueUnic/callai/commit/199673637ef60a2503fea42da58a2bc102bdda9e))
+
 ## [0.2.5](https://github.com/YuniqueUnic/callai/compare/v0.2.4...v0.2.5) (2026-07-12)
 
 
