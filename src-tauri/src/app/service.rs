@@ -247,11 +247,26 @@ impl AlarmService {
         let started = self.clock.now_utc();
         let templated = expand_arg_templates(&alarm.args, started);
         let (resolved_binary, expanded_args) = resolve_process_argv(&alarm.binary, &templated)?;
-        let env: Vec<(String, String)> = alarm
+        let mut env: Vec<(String, String)> = alarm
             .env_vars
             .iter()
             .map(|e| (e.key.clone(), e.value.clone()))
             .collect();
+        // Pass per-alarm notification settings to built-in alarm runtime.
+        if let Ok(json) = serde_json::to_string(&alarm.notification) {
+            env.push(("CALLAI_NOTIFY".into(), json));
+        }
+
+        // Non-builtin tasks: optional trigger notification when execution starts.
+        if !crate::infra::builtin_alarm::is_builtin_alarm(&alarm.binary)
+            && alarm.notification.wants_notification()
+        {
+            let _ = crate::infra::builtin_alarm::notify_trigger(
+                &alarm.name,
+                &alarm.command_preview(),
+                &alarm.notification,
+            );
+        }
 
         let mut log = ExecutionLog {
             id: 0,

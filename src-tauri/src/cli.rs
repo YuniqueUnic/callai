@@ -380,6 +380,7 @@ fn validate(config_path: Option<&std::path::Path>) -> DomainResult<()> {
             env_vars: vec![],
             retry: RetryPolicy::default(),
             timeout_secs: 20,
+            notification: Default::default(),
         },
     );
     Ok(())

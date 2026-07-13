@@ -8,18 +8,19 @@ use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::app::AlarmStore;
 use crate::domain::{
-    Alarm, AlarmLifecycle, AppSettings, DomainError, DomainResult, EnvVar, ErrorCode, ExecutionLog,
-    ExecutionStatus, LocaleCode, LogFilter, RetryInterval, RetryPolicy, ScheduleSpec, ThemeMode,
+    Alarm, AlarmLifecycle, AlarmNotificationSettings, AppSettings, DomainError, DomainResult,
+    EnvVar, ErrorCode, ExecutionLog, ExecutionStatus, LocaleCode, LogFilter, RetryInterval,
+    RetryPolicy, ScheduleSpec, ThemeMode,
 };
 
 const SQL_LIST_ALARMS: &str = concat!(
     "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json, ",
-    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at ",
+    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json ",
     "FROM alarms ORDER BY created_at DESC"
 );
 const SQL_GET_ALARM: &str = concat!(
     "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json, ",
-    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at ",
+    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json ",
     "FROM alarms WHERE id = ?1"
 );
 const SQL_DELETE_LOG: &str = "DELETE FROM execution_logs WHERE id = ?1";
@@ -72,7 +73,8 @@ impl SqliteStore {
                 timeout_secs INTEGER NOT NULL DEFAULT 20,
                 lifecycle_json TEXT NOT NULL,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+                updated_at TEXT NOT NULL,
+                notification_json TEXT NOT NULL DEFAULT '{"enabled":true,"notification_type":"with_sound"}'
             );
 
             CREATE TABLE IF NOT EXISTS execution_logs (
@@ -125,6 +127,10 @@ impl SqliteStore {
             "ALTER TABLE app_settings ADD COLUMN timezone TEXT NOT NULL DEFAULT 'system'",
             [],
         );
+        let _ = conn.execute(
+            "ALTER TABLE alarms ADD COLUMN notification_json TEXT NOT NULL DEFAULT '{\"enabled\":true,\"notification_type\":\"with_sound\"}'",
+            [],
+        );
         Ok(())
     }
 }
@@ -152,6 +158,7 @@ fn alarm_from_row(
     lifecycle_json: String,
     created_at: String,
     updated_at: String,
+    notification_json: String,
 ) -> DomainResult<Alarm> {
     let schedule: ScheduleSpec = serde_json::from_str(&schedule_json)
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("schedule json: {e}")))?;
@@ -161,6 +168,11 @@ fn alarm_from_row(
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("env json: {e}")))?;
     let lifecycle: AlarmLifecycle = serde_json::from_str(&lifecycle_json)
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("lifecycle json: {e}")))?;
+    let notification: AlarmNotificationSettings = if notification_json.trim().is_empty() {
+        AlarmNotificationSettings::default()
+    } else {
+        serde_json::from_str(&notification_json).unwrap_or_default()
+    };
     Ok(Alarm {
         id,
         name,
@@ -171,6 +183,7 @@ fn alarm_from_row(
         env_vars,
         retry: RetryPolicy::new(RetryInterval::parse(&retry_interval)?),
         timeout_secs: timeout_secs.clamp(1, 3600) as u32,
+        notification,
         lifecycle,
         created_at: str_to_dt(&created_at)?,
         updated_at: str_to_dt(&updated_at)?,
@@ -198,6 +211,7 @@ impl AlarmStore for SqliteStore {
                     row.get::<_, String>(9)?,
                     row.get::<_, String>(10)?,
                     row.get::<_, String>(11)?,
+                    row.get::<_, String>(12)?,
                 ))
             })
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
@@ -206,7 +220,7 @@ impl AlarmStore for SqliteStore {
         for r in rows {
             let t = r.map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
             out.push(alarm_from_row(
-                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11,
+                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12,
             )?);
         }
         Ok(out)
@@ -229,13 +243,14 @@ impl AlarmStore for SqliteStore {
                     row.get::<_, String>(9)?,
                     row.get::<_, String>(10)?,
                     row.get::<_, String>(11)?,
+                    row.get::<_, String>(12)?,
                 ))
             })
             .optional()
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         match row {
             Some(t) => Ok(Some(alarm_from_row(
-                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11,
+                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12,
             )?)),
             None => Ok(None),
         }
@@ -251,11 +266,14 @@ impl AlarmStore for SqliteStore {
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         let lifecycle_json = serde_json::to_string(&alarm.lifecycle)
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
+        let notification_json = serde_json::to_string(&alarm.notification)
+            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         conn.execute(
             "INSERT INTO alarms (
                 id, name, enabled, schedule_json, binary_path, args_json, env_json,
-                retry_interval, timeout_secs, lifecycle_json, created_at, updated_at
-             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)
+                retry_interval, timeout_secs, lifecycle_json, created_at, updated_at,
+                notification_json
+             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)
              ON CONFLICT(id) DO UPDATE SET
                 name=excluded.name,
                 enabled=excluded.enabled,
@@ -266,7 +284,8 @@ impl AlarmStore for SqliteStore {
                 retry_interval=excluded.retry_interval,
                 timeout_secs=excluded.timeout_secs,
                 lifecycle_json=excluded.lifecycle_json,
-                updated_at=excluded.updated_at",
+                updated_at=excluded.updated_at,
+                notification_json=excluded.notification_json",
             params![
                 alarm.id,
                 alarm.name,
@@ -280,6 +299,7 @@ impl AlarmStore for SqliteStore {
                 lifecycle_json,
                 dt_to_str(alarm.created_at),
                 dt_to_str(alarm.updated_at),
+                notification_json,
             ],
         )
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;

@@ -64,6 +64,9 @@ export const api = {
   getAutostartEnabled: () => call<boolean>("get_autostart_enabled"),
   setAutostartEnabled: (enabled: boolean) =>
     call<boolean>("set_autostart_enabled", { enabled }),
+  listAlarmSounds: () => call<string[]>("list_alarm_sounds"),
+  previewAlarmSound: (sound_id?: string | null) =>
+    call<boolean>("preview_alarm_sound", { soundId: sound_id ?? null }),
 };
 
 

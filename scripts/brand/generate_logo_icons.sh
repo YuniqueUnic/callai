@@ -17,8 +17,18 @@ remove_cream_bg "${LOGO_SRC}" "${LOGO_MASTER}"
 log "logo → 1024 square"
 square_extent "${LOGO_MASTER}" 1024 "${LOGO_1024}" 920
 
-log "logo → tray 44x44"
-square_extent "${LOGO_MASTER}" 44 "${PUBLIC_ICONS_DIR}/tray.png" 44
+# Tray uses dedicated source when present; falls back to logo master.
+if [[ -f "${TRAY_SRC}" ]]; then
+  log "tray → transparent master (from callai.tray.png)"
+  remove_cream_bg "${TRAY_SRC}" "${TRAY_MASTER}"
+  TRAY_ICON_SRC="${TRAY_MASTER}"
+else
+  log "tray → fallback to logo master (no callai.tray.png)"
+  TRAY_ICON_SRC="${LOGO_MASTER}"
+fi
+
+log "tray → public tray 44x44"
+square_extent "${TRAY_ICON_SRC}" 44 "${PUBLIC_ICONS_DIR}/tray.png" 44
 
 log "logo → Tauri icon set"
 # name:size pairs
@@ -81,10 +91,19 @@ fi
 rm -rf "${ICONSET_TMP}"
 
 
-log "logo → macOS tray template (black silhouette, pale-highlight punch)"
-python3 "${SCRIPT_DIR}/make_tray_template.py" "${LOGO_MASTER}" "${TAURI_ICONS_DIR}" 512 0.30
-cp -f "${TAURI_ICONS_DIR}/trayTemplate.png" "${PUBLIC_ICONS_DIR}/trayTemplate.png"
-cp -f "${TAURI_ICONS_DIR}/nathan.k@example.net" "${PUBLIC_ICONS_DIR}/nathan.k@example.net"
+log "tray → crisp multi-size tray icons (macOS template + Win/Linux color)"
+# work=768, punch=0.28: thicker body at menu-bar sizes, less lace holes
+python3 "${SCRIPT_DIR}/make_tray_template.py" "${TRAY_ICON_SRC}" "${TAURI_ICONS_DIR}" 768 0.28
+for f in trayTemplate.png nathan.k@example.net trayTemplate@3x.png          tray-color-16.png tray-color-24.png tray-color-32.png tray-color-48.png tray-color-64.png; do
+  if [[ -f "${TAURI_ICONS_DIR}/${f}" ]]; then
+    cp -f "${TAURI_ICONS_DIR}/${f}" "${PUBLIC_ICONS_DIR}/${f}"
+  fi
+done
+# Prefer a sharper public tray preview (32 color) over tiny 44 crop from logo pipeline.
+if [[ -f "${TAURI_ICONS_DIR}/tray-color-32.png" ]]; then
+  # public tray.png remains a small color glyph for docs/UI
+  magick "${TRAY_ICON_SRC}" -background none -gravity center     -filter Lanczos -resize 36x36 -unsharp 0x0.8+0.8+0.01 -extent 44x44     PNG32:"${PUBLIC_ICONS_DIR}/tray.png"
+fi
 
 
 log "logo → public favicon / icons"

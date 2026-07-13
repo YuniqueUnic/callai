@@ -89,5 +89,19 @@
   "dow_3": "Wed",
   "dow_4": "Thu",
   "dow_5": "Fri",
-  "dow_6": "Sat"
+  "dow_6": "Sat",
+  "notification": "Notification",
+  "notificationHint": "When this alarm triggers",
+  "notifyEnable": "Enable notification",
+  "notifyType": "Notification type",
+  "notifySystemOnly": "System only",
+  "notifyWithSound": "With sound",
+  "notifySound": "Sound",
+  "notifySoundDefault": "Default",
+  "previewSound": "Preview",
+  "soundSoftChime": "Soft chime",
+  "soundIslandBell": "Island bell",
+  "soundWoodKnock": "Wood knock",
+  "soundWarmRise": "Warm rise",
+  "soundGentlePing": "Gentle ping"
 }

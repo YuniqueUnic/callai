@@ -14,6 +14,7 @@ fn sample_draft() -> AlarmDraft {
         env_vars: vec![],
         retry: RetryPolicy::default(),
         timeout_secs: 20,
+        notification: Default::default(),
     }
 }
 
@@ -44,4 +45,35 @@ fn busy_alarm_cannot_edit() {
     alarm.mark_running();
     let err = alarm.apply_draft(sample_draft()).unwrap_err();
     assert!(matches!(err.code, crate::domain::ErrorCode::AlarmBusy));
+}
+
+#[test]
+fn notification_defaults_enabled_with_sound() {
+    let alarm = Alarm::from_draft(sample_draft()).unwrap();
+    assert!(alarm.notification.enabled);
+    assert!(matches!(
+        alarm.notification.notification_type,
+        crate::domain::NotificationType::WithSound
+    ));
+    assert_eq!(alarm.notification.resolved_sound().as_str(), "soft_chime");
+}
+
+#[test]
+fn notification_sound_parse_and_wants() {
+    use crate::domain::{AlarmNotificationSettings, BuiltinSoundId, NotificationType};
+    let mut n = AlarmNotificationSettings::default();
+    assert!(n.wants_notification());
+    assert!(n.wants_sound());
+    n.notification_type = NotificationType::SystemOnly;
+    assert!(!n.wants_sound());
+    n.enabled = false;
+    assert!(!n.wants_notification());
+    assert_eq!(
+        BuiltinSoundId::parse("island_bell"),
+        Some(BuiltinSoundId::IslandBell)
+    );
+    assert_eq!(
+        BuiltinSoundId::parse("default"),
+        Some(BuiltinSoundId::SoftChime)
+    );
 }

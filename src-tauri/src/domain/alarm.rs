@@ -14,6 +14,94 @@ pub const BUILTIN_ALARM_ALIAS: &str = "callai-alarm";
 pub const MIN_TIMEOUT_SECS: u32 = 1;
 pub const MAX_TIMEOUT_SECS: u32 = 3600;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum NotificationType {
+    SystemOnly,
+    #[default]
+    WithSound,
+}
+
+/// Algorithmically generated built-in attention sounds (no static audio files).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BuiltinSoundId {
+    #[default]
+    SoftChime,
+    IslandBell,
+    WoodKnock,
+    WarmRise,
+    GentlePing,
+}
+
+impl BuiltinSoundId {
+    pub const ALL: [Self; 5] = [
+        Self::SoftChime,
+        Self::IslandBell,
+        Self::WoodKnock,
+        Self::WarmRise,
+        Self::GentlePing,
+    ];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::SoftChime => "soft_chime",
+            Self::IslandBell => "island_bell",
+            Self::WoodKnock => "wood_knock",
+            Self::WarmRise => "warm_rise",
+            Self::GentlePing => "gentle_ping",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim() {
+            "soft_chime" | "default" | "" => Some(Self::SoftChime),
+            "island_bell" => Some(Self::IslandBell),
+            "wood_knock" => Some(Self::WoodKnock),
+            "warm_rise" => Some(Self::WarmRise),
+            "gentle_ping" => Some(Self::GentlePing),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AlarmNotificationSettings {
+    /// Whether to send a notification when the alarm triggers.
+    pub enabled: bool,
+    pub notification_type: NotificationType,
+    /// Built-in sound id when type is `with_sound`. `None` = default sound.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sound_id: Option<String>,
+}
+
+impl Default for AlarmNotificationSettings {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            notification_type: NotificationType::WithSound,
+            sound_id: None,
+        }
+    }
+}
+
+impl AlarmNotificationSettings {
+    pub fn resolved_sound(&self) -> BuiltinSoundId {
+        self.sound_id
+            .as_deref()
+            .and_then(BuiltinSoundId::parse)
+            .unwrap_or_default()
+    }
+
+    pub fn wants_sound(&self) -> bool {
+        self.enabled && matches!(self.notification_type, NotificationType::WithSound)
+    }
+
+    pub fn wants_notification(&self) -> bool {
+        self.enabled
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AlarmLifecycle {
@@ -40,6 +128,8 @@ pub struct Alarm {
     pub retry: RetryPolicy,
     /// Soft wall-clock timeout for one attempt (seconds). Default 20.
     pub timeout_secs: u32,
+    /// Per-alarm desktop notification / sound when triggered.
+    pub notification: AlarmNotificationSettings,
     pub lifecycle: AlarmLifecycle,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -55,6 +145,8 @@ pub struct AlarmDraft {
     pub env_vars: Vec<EnvVar>,
     pub retry: RetryPolicy,
     pub timeout_secs: u32,
+    #[serde(default)]
+    pub notification: AlarmNotificationSettings,
 }
 
 impl AlarmDraft {
@@ -105,6 +197,7 @@ impl Alarm {
             env_vars: draft.env_vars,
             retry: draft.retry,
             timeout_secs: draft.timeout_secs,
+            notification: draft.notification,
             lifecycle: AlarmLifecycle::Idle,
             created_at: now,
             updated_at: now,
@@ -130,6 +223,7 @@ impl Alarm {
         self.env_vars = draft.env_vars;
         self.retry = draft.retry;
         self.timeout_secs = draft.timeout_secs;
+        self.notification = draft.notification;
         self.updated_at = Utc::now();
         Ok(())
     }

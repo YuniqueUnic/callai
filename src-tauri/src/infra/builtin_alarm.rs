@@ -17,11 +17,33 @@ use std::time::{Duration, Instant};
 
 use crate::app::{CancelFlag, ProcessOutput};
 
-use crate::domain::{DomainResult, BUILTIN_ALARM_ALIAS, BUILTIN_ALARM_BINARY};
+use crate::domain::{
+    AlarmNotificationSettings, DomainResult, NotificationType, BUILTIN_ALARM_ALIAS,
+    BUILTIN_ALARM_BINARY,
+};
+use crate::infra::alarm_sound;
 
 pub fn is_builtin_alarm(binary: &str) -> bool {
     let b = binary.trim();
     b == BUILTIN_ALARM_BINARY || b.eq_ignore_ascii_case(BUILTIN_ALARM_ALIAS)
+}
+
+/// Best-effort trigger notification for ordinary (non-builtin) alarms.
+pub fn notify_trigger(
+    title: &str,
+    body: &str,
+    notification: &AlarmNotificationSettings,
+) -> Result<(), String> {
+    if !notification.wants_notification() {
+        return Ok(());
+    }
+    let with_sys_sound = matches!(notification.notification_type, NotificationType::WithSound);
+    let _ = notify_desktop(title, body, with_sys_sound);
+    if notification.wants_sound() {
+        let sound = notification.resolved_sound();
+        let _ = alarm_sound::play_sound(sound);
+    }
+    Ok(())
 }
 
 /// Args convention:
@@ -32,6 +54,7 @@ pub fn run_builtin_alarm(
     args: &[String],
     timeout_secs: u32,
     cancel: Option<Arc<CancelFlag>>,
+    notification: &AlarmNotificationSettings,
 ) -> DomainResult<ProcessOutput> {
     let started = Instant::now();
     let message = args
@@ -58,18 +81,28 @@ pub fn run_builtin_alarm(
 
     let mut steps: Vec<String> = Vec::new();
 
-    // 1) Non-blocking notification (always best-effort).
-    match notify_desktop(&title, &message) {
-        Ok(true) => steps.push("notify=ok".into()),
-        Ok(false) => steps.push("notify=skip".into()),
-        Err(e) => steps.push(format!("notify=err:{e}")),
+    // 1) Notification (optional, per-alarm settings).
+    if notification.wants_notification() {
+        let with_sys_sound = matches!(notification.notification_type, NotificationType::WithSound);
+        match notify_desktop(&title, &message, with_sys_sound) {
+            Ok(true) => steps.push("notify=ok".into()),
+            Ok(false) => steps.push("notify=skip".into()),
+            Err(e) => steps.push(format!("notify=err:{e}")),
+        }
+    } else {
+        steps.push("notify=off".into());
     }
 
-    // 2) Attention sound / beep.
-    match play_attention_sound() {
-        Ok(true) => steps.push("sound=ok".into()),
-        Ok(false) => steps.push("sound=skip".into()),
-        Err(e) => steps.push(format!("sound=err:{e}")),
+    // 2) Algorithmic attention sound when enabled (respects system volume/mute).
+    if notification.wants_sound() {
+        let sound = notification.resolved_sound();
+        match alarm_sound::play_sound(sound) {
+            Ok(true) => steps.push(format!("sound=ok:{}", sound.as_str())),
+            Ok(false) => steps.push(format!("sound=skip:{}", sound.as_str())),
+            Err(e) => steps.push(format!("sound=err:{e}")),
+        }
+    } else {
+        steps.push("sound=off".into());
     }
 
     if cancel.as_ref().is_some_and(|c| c.is_requested()) {
@@ -133,15 +166,27 @@ enum DialogResult {
     TimedOut,
 }
 
-fn notify_desktop(title: &str, message: &str) -> Result<bool, String> {
+fn notify_desktop(title: &str, message: &str, with_sound: bool) -> Result<bool, String> {
+    if cfg!(test) {
+        let _ = (title, message, with_sound);
+        return Ok(true);
+    }
     #[cfg(target_os = "macos")]
     {
-        // display notification is non-blocking
-        let script = format!(
-            r#"display notification {msg} with title {title} sound name "Glass""#,
-            msg = apple_str(message),
-            title = apple_str(title),
-        );
+        // display notification is non-blocking; system sound respects mute/DND.
+        let script = if with_sound {
+            format!(
+                r#"display notification {msg} with title {title} sound name "Glass""#,
+                msg = apple_str(message),
+                title = apple_str(title),
+            )
+        } else {
+            format!(
+                r#"display notification {msg} with title {title}"#,
+                msg = apple_str(message),
+                title = apple_str(title),
+            )
+        };
         let status = Command::new("osascript")
             .args(["-e", &script])
             .stdin(Stdio::null())
@@ -153,6 +198,7 @@ fn notify_desktop(title: &str, message: &str) -> Result<bool, String> {
     }
     #[cfg(target_os = "linux")]
     {
+        let _ = with_sound;
         // notify-send if present
         if which_exists("notify-send") {
             let status = Command::new("notify-send")
@@ -168,6 +214,7 @@ fn notify_desktop(title: &str, message: &str) -> Result<bool, String> {
     }
     #[cfg(target_os = "windows")]
     {
+        let _ = with_sound;
         // Lightweight balloon via PowerShell (no extra deps). Best-effort.
         let ps = format!(
             r#"
@@ -195,100 +242,8 @@ $ErrorActionPreference='SilentlyContinue'
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     {
-        let _ = (title, message);
+        let _ = (title, message, with_sound);
         Ok(false)
-    }
-}
-
-fn play_attention_sound() -> Result<bool, String> {
-    // Alarm clocks need several bursts — a single Glass/beep is easy to miss.
-    const BURSTS: u32 = 5;
-    #[cfg(target_os = "macos")]
-    {
-        let glass = std::path::Path::new("/System/Library/Sounds/Glass.aiff");
-        let sosumi = std::path::Path::new("/System/Library/Sounds/Sosumi.aiff");
-        let sound = if glass.exists() {
-            Some(glass)
-        } else if sosumi.exists() {
-            Some(sosumi)
-        } else {
-            None
-        };
-        if let Some(path) = sound {
-            for i in 0..BURSTS {
-                let _ = Command::new("afplay")
-                    .arg(path)
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::null())
-                    .stderr(Stdio::null())
-                    .status();
-                if i + 1 < BURSTS {
-                    thread::sleep(Duration::from_millis(220));
-                }
-            }
-        } else {
-            for _ in 0..2 {
-                let _ = Command::new("osascript").args(["-e", "beep 3"]).status();
-                thread::sleep(Duration::from_millis(180));
-            }
-        }
-        let _ = Command::new("osascript").args(["-e", "beep 2"]).status();
-        Ok(true)
-    }
-    #[cfg(target_os = "linux")]
-    {
-        if which_exists("paplay") {
-            let candidates = [
-                "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga",
-                "/usr/share/sounds/freedesktop/stereo/complete.oga",
-                "/usr/share/sounds/freedesktop/stereo/message.oga",
-            ];
-            for c in candidates {
-                if std::path::Path::new(c).exists() {
-                    for i in 0..BURSTS {
-                        let _ = Command::new("paplay")
-                            .arg(c)
-                            .stdin(Stdio::null())
-                            .stdout(Stdio::null())
-                            .stderr(Stdio::null())
-                            .status();
-                        if i + 1 < BURSTS {
-                            thread::sleep(Duration::from_millis(250));
-                        }
-                    }
-                    return Ok(true);
-                }
-            }
-        }
-        for _ in 0..BURSTS {
-            eprint!("\x07");
-            let _ = std::io::Write::flush(&mut std::io::stderr());
-            thread::sleep(Duration::from_millis(280));
-        }
-        Ok(true)
-    }
-    #[cfg(target_os = "windows")]
-    {
-        let status = Command::new("powershell")
-            .args([
-                "-NoProfile",
-                "-Command",
-                "1..5 | ForEach-Object { [Console]::Beep(880,220); [Console]::Beep(1175,220); Start-Sleep -Milliseconds 120 }",
-            ])
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .map_err(|e| e.to_string())?;
-        return Ok(status.success());
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
-    {
-        for _ in 0..BURSTS {
-            eprint!("\x07");
-            thread::sleep(Duration::from_millis(250));
-        }
-        Ok(true)
     }
 }
 

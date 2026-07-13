@@ -17,5 +17,8 @@
   "deleteSuccess": "已删除",
   "deleteSelected": "删除所选",
   "canceled": "已取消",
-  "timeout": "超时"
+  "timeout": "超时",
+  "copy": "复制",
+  "copySuccess": "已复制",
+  "copyFailed": "复制失败"
 }

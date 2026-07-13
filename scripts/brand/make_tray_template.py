@@ -1,9 +1,23 @@
 #!/usr/bin/env python3
-"""Build macOS menu-bar template icons (pure black + alpha silhouette).
+"""Build crisp system-tray icons from a transparent master PNG.
 
-Punch ~30% brightest / warmest interior pixels so the bird silhouette has
-readable internal shape, while keeping the outline solid. RGB is forced pure
-black so macOS can recolor for light/dark menu bars.
+Outputs (into out-dir):
+  macOS template (black + alpha, menu-bar recolors for light/dark):
+    trayTemplate.png      18x18  (@1x)
+    nathan.k@example.net   36x36  (@2x)  ← runtime default on macOS Retina
+    trayTemplate@3x.png   54x54  (@3x)
+  Color tray (Windows / Linux status area — full color, hard edges):
+    tray-color-16.png
+    tray-color-24.png
+    tray-color-32.png     ← runtime default on Windows
+    tray-color-48.png
+    tray-color-64.png     ← runtime default on Linux HiDPI
+
+Clarity strategy:
+  - Silhouette at high work size with binary alpha (no mushy interiors).
+  - Downscale with Lanczos + mild unsharp, then re-harden alpha
+    (keeps at most a 1px AA fringe, not foggy semi-transparency).
+  - Content fills ~82% of canvas so strokes are thicker / less hairline.
 """
 
 from __future__ import annotations
@@ -15,7 +29,8 @@ import tempfile
 import zlib
 from pathlib import Path
 
-DEFAULT_PUNCH_RATIO = 0.36
+DEFAULT_PUNCH_RATIO = 0.60  # less punch = thicker solid body at tiny sizes
+CONTENT_RATIO = 0.82  # of final canvas used by the glyph
 
 
 def read_png(path: Path) -> tuple[int, int, bytearray]:
@@ -99,6 +114,26 @@ def write_png(path: Path, w: int, h: int, rgba: bytearray) -> None:
     )
 
 
+def harden_alpha(rgba: bytearray, low: int = 96, high: int = 160) -> None:
+    """Collapse foggy alpha into solid + 1-step AA fringe."""
+    for i in range(3, len(rgba), 4):
+        a = rgba[i]
+        if a <= low:
+            rgba[i] = 0
+        elif a >= high:
+            rgba[i] = 255
+        else:
+            # single mid band for mild AA
+            rgba[i] = 180
+
+
+def force_template_black(rgba: bytearray) -> None:
+    for i in range(0, len(rgba), 4):
+        rgba[i] = 0
+        rgba[i + 1] = 0
+        rgba[i + 2] = 0
+
+
 def build_silhouette(src: Path, out: Path, punch_ratio: float = DEFAULT_PUNCH_RATIO) -> None:
     w, h, px = read_png(src)
     scores: list[tuple[float, int]] = []
@@ -117,14 +152,15 @@ def build_silhouette(src: Path, out: Path, punch_ratio: float = DEFAULT_PUNCH_RA
             scores.append((score, y * w + x))
 
     scores.sort(reverse=True)
-    n_punch = int(len(scores) * punch_ratio)
+    # Cap punch so tiny menu-bar sizes keep a solid body (avoid lace holes).
+    n_punch = min(int(len(scores) * punch_ratio), int(len(scores) * 0.32))
     punch_set = {idx for _, idx in scores[:n_punch]}
 
     alpha = [0] * (w * h)
     for idx in opaque_idx:
         alpha[idx] = 0 if idx in punch_set else 255
 
-    # 1px outer dilate into exterior only (keep punched interiors empty)
+    # 1px outer dilate into exterior only (thicker outline for small sizes)
     alpha2 = alpha[:]
     for y in range(1, h - 1):
         for x in range(1, w - 1):
@@ -150,22 +186,61 @@ def build_silhouette(src: Path, out: Path, punch_ratio: float = DEFAULT_PUNCH_RA
     )
 
 
+def magick_resize_square(src: Path, dest: Path, size: int, content: int) -> None:
+    """Lanczos downscale + unsharp, centered on transparent canvas."""
+    subprocess.check_call(
+        [
+            "magick",
+            str(src),
+            "-background",
+            "none",
+            "-gravity",
+            "center",
+            "-filter",
+            "Lanczos",
+            "-resize",
+            f"{content}x{content}",
+            "-unsharp",
+            "0x0.9+0.9+0.01",
+            "-extent",
+            f"{size}x{size}",
+            f"PNG32:{dest}",
+        ]
+    )
+
+
+def post_crisp_template(path: Path) -> None:
+    w, h, rgba = read_png(path)
+    harden_alpha(rgba, low=90, high=150)
+    force_template_black(rgba)
+    write_png(path, w, h, rgba)
+
+
+def post_crisp_color(path: Path) -> None:
+    w, h, rgba = read_png(path)
+    harden_alpha(rgba, low=40, high=140)
+    write_png(path, w, h, rgba)
+
+
 def main() -> int:
     if len(sys.argv) < 3:
         print(
-            "usage: make_tray_template.py <logo-master.png> <out-dir> [work-size] [punch-ratio]",
+            "usage: make_tray_template.py <master.png> <out-dir> [work-size] [punch-ratio]",
             file=sys.stderr,
         )
         return 2
     master = Path(sys.argv[1])
     out_dir = Path(sys.argv[2])
-    work = int(sys.argv[3]) if len(sys.argv) > 3 else 512
+    work = int(sys.argv[3]) if len(sys.argv) > 3 else 768
     punch = float(sys.argv[4]) if len(sys.argv) > 4 else DEFAULT_PUNCH_RATIO
     out_dir.mkdir(parents=True, exist_ok=True)
+
     with tempfile.TemporaryDirectory(prefix="callai-tray-") as td:
         tmp = Path(td)
         work_png = tmp / f"src_{work}.png"
         sil_png = tmp / f"sil_{work}.png"
+
+        # Square padded master for stable silhouette crop.
         subprocess.check_call(
             [
                 "magick",
@@ -174,6 +249,8 @@ def main() -> int:
                 "none",
                 "-gravity",
                 "center",
+                "-filter",
+                "Lanczos",
                 "-resize",
                 f"{work}x{work}",
                 "-extent",
@@ -183,30 +260,28 @@ def main() -> int:
         )
         build_silhouette(work_png, sil_png, punch_ratio=punch)
 
-        for size, name in ((18, "trayTemplate.png"), (36, "nathan.k@example.net")):
+        # --- macOS monochrome templates ---
+        template_sizes = (
+            (18, "trayTemplate.png"),
+            (36, "nathan.k@example.net"),
+            (54, "trayTemplate@3x.png"),
+        )
+        for size, name in template_sizes:
             dest = out_dir / name
-            subprocess.check_call(
-                [
-                    "magick",
-                    str(sil_png),
-                    "-background",
-                    "none",
-                    "-gravity",
-                    "center",
-                    "-resize",
-                    f"{size}x{size}",
-                    "-extent",
-                    f"{size}x{size}",
-                    "-channel",
-                    "RGB",
-                    "-evaluate",
-                    "set",
-                    "0",
-                    "+channel",
-                    f"PNG32:{dest}",
-                ]
-            )
+            content = max(8, int(round(size * CONTENT_RATIO)))
+            magick_resize_square(sil_png, dest, size, content)
+            post_crisp_template(dest)
             print("wrote", dest)
+
+        # --- Windows / Linux color tray ---
+        color_sizes = (16, 24, 32, 48, 64)
+        for size in color_sizes:
+            dest = out_dir / f"tray-color-{size}.png"
+            content = max(8, int(round(size * CONTENT_RATIO)))
+            magick_resize_square(work_png, dest, size, content)
+            post_crisp_color(dest)
+            print("wrote", dest)
+
     return 0
 
 

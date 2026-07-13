@@ -115,6 +115,63 @@ fn notify_failure(app: &AppHandle, name: &str, locale: LocaleCode) {
     let _ = app.notification().builder().title(title).body(body).show();
 }
 
+/// Load the sharpest tray icon for the current desktop platform.
+/// Returns (image, icon_as_template).
+fn load_tray_icon() -> Option<(tauri::image::Image<'static>, bool)> {
+    // Prefer higher-density bitmaps. tray-icon on macOS always draws at 18pt logical height;
+    // a 36px PNG becomes a true @2x representation and stays crisp on Retina.
+    #[cfg(target_os = "macos")]
+    {
+        const CANDIDATES: &[(&[u8], bool)] = &[
+            (include_bytes!("../icons/nathan.k@example.net"), true),
+            (include_bytes!("../icons/trayTemplate@3x.png"), true),
+            (include_bytes!("../icons/trayTemplate.png"), true),
+        ];
+        for (bytes, as_template) in CANDIDATES {
+            if let Ok(img) = tauri::image::Image::from_bytes(bytes) {
+                return Some((img, *as_template));
+            }
+        }
+        None
+    }
+    #[cfg(target_os = "windows")]
+    {
+        const CANDIDATES: &[&[u8]] = &[
+            include_bytes!("../icons/tray-color-32.png"),
+            include_bytes!("../icons/tray-color-48.png"),
+            include_bytes!("../icons/tray-color-64.png"),
+            include_bytes!("../icons/tray-color-24.png"),
+            include_bytes!("../icons/nathan.k@example.net"),
+        ];
+        for bytes in CANDIDATES {
+            if let Ok(img) = tauri::image::Image::from_bytes(bytes) {
+                return Some((img, false));
+            }
+        }
+        None
+    }
+    #[cfg(target_os = "linux")]
+    {
+        const CANDIDATES: &[&[u8]] = &[
+            include_bytes!("../icons/tray-color-64.png"),
+            include_bytes!("../icons/tray-color-48.png"),
+            include_bytes!("../icons/tray-color-32.png"),
+            include_bytes!("../icons/tray-color-24.png"),
+            include_bytes!("../icons/nathan.k@example.net"),
+        ];
+        for bytes in CANDIDATES {
+            if let Ok(img) = tauri::image::Image::from_bytes(bytes) {
+                return Some((img, false));
+            }
+        }
+        None
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        None
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _ = tracing_subscriber::fmt()
@@ -176,6 +233,8 @@ pub fn run() {
             commands::get_backups_dir,
             commands::open_backups_dir,
             commands::refresh_tray_menu,
+            commands::list_alarm_sounds,
+            commands::preview_alarm_sound,
         ])
         .setup(|app| {
             let locale = app
@@ -188,11 +247,16 @@ pub fn run() {
             let menu = build_tray_menu_public(app.handle(), &copy)?;
 
             let mut tray_builder = TrayIconBuilder::with_id("main-tray").menu(&menu);
-            match tauri::image::Image::from_bytes(include_bytes!("../icons/trayTemplate.png")) {
-                Ok(icon) => {
-                    tray_builder = tray_builder.icon(icon).icon_as_template(true);
+            // Platform tray icons:
+            // - macOS: monochrome template at @2x (36px, displayed at 18pt) for Retina sharpness
+            // - Windows: 32px color (system tray) — template mode not used
+            // - Linux: 64px color (HiDPI status areas scale down cleanly)
+            let tray_icon = load_tray_icon();
+            match tray_icon {
+                Some((icon, as_template)) => {
+                    tray_builder = tray_builder.icon(icon).icon_as_template(as_template);
                 }
-                Err(_) => {
+                None => {
                     if let Some(icon) = app.default_window_icon() {
                         tray_builder = tray_builder.icon(icon.clone());
                     }

@@ -360,7 +360,7 @@ dependencies = [
 
 [[package]]
 name = "callai"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "auto-launch",
  "chrono",

@@ -6,7 +6,9 @@ import type {
   LogFilter,
   TemplateDto,
 } from "../domain/types";
+import { DEFAULT_NOTIFICATION } from "../domain/types";
 import { defaultDraft } from "../domain/alarmRules";
+import { playAlarmSoundPreview } from "../ui/alarmSounds";
 
 let alarms: Alarm[] = [];
 let logs: ExecutionLog[] = [];
@@ -40,6 +42,7 @@ function toAlarm(draft: AlarmDraft, id?: string): Alarm {
     env_vars: draft.env_vars,
     retry: draft.retry,
     timeout_secs: draft.timeout_secs ?? 20,
+    notification: draft.notification ?? { ...DEFAULT_NOTIFICATION },
     lifecycle: "idle",
     created_at: ts,
     updated_at: ts,
@@ -217,5 +220,13 @@ export const mockApi = {
   },
   async setAutostartEnabled(enabled: boolean) {
     return enabled;
+  },
+
+  async listAlarmSounds() {
+    return ["soft_chime", "island_bell", "wood_knock", "warm_rise", "gentle_ping"];
+  },
+  async previewAlarmSound(sound_id?: string | null) {
+    playAlarmSoundPreview(sound_id ?? "soft_chime");
+    return true;
   },
 };
