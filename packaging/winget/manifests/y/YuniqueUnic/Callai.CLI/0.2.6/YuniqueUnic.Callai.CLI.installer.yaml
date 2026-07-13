@@ -1,0 +1,13 @@
+PackageIdentifier: YuniqueUnic.Callai.CLI
+PackageVersion: 0.2.6
+InstallerLocale: en-US
+InstallerType: portable
+Commands:
+  - callai
+UpgradeBehavior: install
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/YuniqueUnic/callai/releases/download/v0.2.6/callai-cli-x86_64-pc-windows-msvc.exe
+    InstallerSha256: 274E8509FF634001291D5101E21A0102128023E01FB4FA07F31A70DF5F552F99
+ManifestType: installer
+ManifestVersion: 1.6.0
