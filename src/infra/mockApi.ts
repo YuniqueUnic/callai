@@ -279,6 +279,46 @@ export const mockApi = {
   async clearMcpLogs() {
     return 0;
   },
+  async aiChatCompletion(opts: {
+    provider: string;
+    base_url: string;
+    api_key: string;
+    model: string;
+    system: string;
+    user: string;
+    temperature?: number;
+  }) {
+    // Deterministic mock for browser / vitest — not a real model.
+    const u = opts.user.toLowerCase();
+    if (u.includes("plugin") || u.includes("插件")) {
+      return JSON.stringify({
+        manifest: {
+          id: "mock-plugin",
+          name: "Mock Plugin",
+          version: "0.1.0",
+          description: "browser mock",
+          permissions: ["storage"],
+          ui: "ui.html",
+        },
+        ui_html: "<!doctype html><html><body><h1>mock</h1></body></html>",
+      });
+    }
+    return JSON.stringify({
+      name: "Mock Alarm",
+      enabled: true,
+      schedule: { mode: "daily", times: ["16:50"] },
+      binary: "__callai_alarm__",
+      args: ["TODO time"],
+      env_vars: [],
+      retry: { interval: "1m", max_attempts: 1 },
+      timeout_secs: 20,
+      notification: {
+        enabled: true,
+        notification_type: "with_sound",
+        sound_id: "soft_chime",
+      },
+    });
+  },
   async getAiRuntimeContext() {
     const { buildBrowserRuntimeContext } = await import("../ai/runtimeContext");
     return buildBrowserRuntimeContext();

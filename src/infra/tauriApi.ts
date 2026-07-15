@@ -90,6 +90,24 @@ export const api = {
     call<import("../ai/runtimeContext").AiRuntimeContextDto>("get_ai_runtime_context"),
   listPrompts: () => call<string[]>("list_prompts"),
   generateSecretToken: () => call<string>("generate_secret_token"),
+  aiChatCompletion: (opts: {
+    provider: string;
+    base_url: string;
+    api_key: string;
+    model: string;
+    system: string;
+    user: string;
+    temperature?: number;
+  }) =>
+    call<string>("ai_chat_completion", {
+      provider: opts.provider,
+      baseUrl: opts.base_url,
+      apiKey: opts.api_key,
+      model: opts.model,
+      system: opts.system,
+      user: opts.user,
+      temperature: opts.temperature ?? null,
+    }),
   listAiModels: (provider: string, base_url: string, api_key: string) =>
     call<string[]>("list_ai_models", {
       provider,

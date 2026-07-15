@@ -70,3 +70,12 @@ CLI and desktop app share:
 
 - `~/.config/callai`
 - `~/.local/share/callai`
+
+
+## In-app AI HTTP (not MCP)
+
+The desktop AI assistant does **not** call the LLM from the WebView.
+
+- UI → `invoke("ai_chat_completion")` → Rust `ureq` → user-configured OpenAI-compatible base URL
+- This avoids CORS (`Origin: http://localhost:1420`) and forbidden `User-Agent` headers in WebKit
+- Chat Completions only: `{base}/chat/completions`

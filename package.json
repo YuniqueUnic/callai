@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node scripts/patch-animal-island-ui.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.14",

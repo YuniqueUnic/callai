@@ -151,3 +151,155 @@ mod tests {
         assert!(ids.contains(&"gemini-2.5-pro".to_string()));
     }
 }
+
+/// One-shot OpenAI-compatible chat completion (non-streaming).
+/// Used by the desktop UI so requests never leave the WebView origin (no CORS).
+pub fn chat_completion(
+    provider: &str,
+    base_url: &str,
+    api_key: &str,
+    model: &str,
+    system: &str,
+    user: &str,
+    temperature: f32,
+) -> DomainResult<String> {
+    let base = base_url.trim().trim_end_matches('/');
+    let key = api_key.trim();
+    let model = model.trim();
+    if base.is_empty() {
+        return Err(DomainError::new(
+            ErrorCode::InvalidArgs,
+            "AI base URL is empty",
+        ));
+    }
+    if key.is_empty() {
+        return Err(DomainError::new(
+            ErrorCode::InvalidArgs,
+            "AI API key is empty",
+        ));
+    }
+    if model.is_empty() {
+        return Err(DomainError::new(ErrorCode::InvalidArgs, "AI model is empty"));
+    }
+
+    let provider = provider.trim().to_ascii_lowercase();
+    let url = format!("{base}/chat/completions");
+    let temp = temperature.clamp(0.0, 2.0);
+
+    let body = serde_json::json!({
+        "model": model,
+        "temperature": temp,
+        "messages": [
+            { "role": "system", "content": system },
+            { "role": "user", "content": user },
+        ],
+    });
+
+    let agent: Agent = Agent::config_builder()
+        .timeout_global(Some(Duration::from_secs(120)))
+        .build()
+        .into();
+
+    let mut request = agent.post(&url);
+    request = if provider == "claude" || provider == "anthropic" {
+        // Many gateways still expect OpenAI shape even for Claude keys;
+        // Anthropic native is /messages — prefer OpenAI-compat path here.
+        request
+            .header("x-api-key", key)
+            .header("anthropic-version", "2023-06-01")
+            .header("content-type", "application/json")
+            .header("Authorization", &format!("Bearer {key}"))
+    } else {
+        request
+            .header("Authorization", &format!("Bearer {key}"))
+            .header("content-type", "application/json")
+    };
+
+    let mut res = request.send_json(&body).map_err(|e| {
+        DomainError::new(
+            ErrorCode::Internal,
+            format!("chat completion request failed: {e}"),
+        )
+    })?;
+
+    let status = res.status().as_u16();
+    let text = res.body_mut().read_to_string().map_err(|e| {
+        DomainError::new(
+            ErrorCode::Internal,
+            format!("chat completion read body: {e}"),
+        )
+    })?;
+
+    if !(200..300).contains(&status) {
+        let snippet: String = text.chars().take(400).collect();
+        return Err(DomainError::new(
+            ErrorCode::Internal,
+            format!("chat completion HTTP {status}: {snippet}"),
+        ));
+    }
+
+    parse_chat_content(&text)
+}
+
+fn parse_chat_content(body: &str) -> DomainResult<String> {
+    let v: Value = serde_json::from_str(body).map_err(|e| {
+        DomainError::new(
+            ErrorCode::Internal,
+            format!("chat completion json: {e}"),
+        )
+    })?;
+
+    // OpenAI: choices[0].message.content
+    if let Some(content) = v
+        .pointer("/choices/0/message/content")
+        .and_then(|c| c.as_str())
+    {
+        let s = content.trim();
+        if !s.is_empty() {
+            return Ok(s.to_string());
+        }
+    }
+
+    // Some gateways: choices[0].text
+    if let Some(content) = v.pointer("/choices/0/text").and_then(|c| c.as_str()) {
+        let s = content.trim();
+        if !s.is_empty() {
+            return Ok(s.to_string());
+        }
+    }
+
+    // content as array of parts
+    if let Some(arr) = v
+        .pointer("/choices/0/message/content")
+        .and_then(|c| c.as_array())
+    {
+        let mut out = String::new();
+        for part in arr {
+            if let Some(t) = part.get("text").and_then(|x| x.as_str()) {
+                out.push_str(t);
+            } else if let Some(t) = part.as_str() {
+                out.push_str(t);
+            }
+        }
+        let s = out.trim();
+        if !s.is_empty() {
+            return Ok(s.to_string());
+        }
+    }
+
+    Err(DomainError::new(
+        ErrorCode::Internal,
+        "chat completion returned empty content",
+    ))
+}
+
+#[cfg(test)]
+mod chat_tests {
+    use super::parse_chat_content;
+
+    #[test]
+    fn parse_openai_chat_shape() {
+        let body = r#"{"choices":[{"message":{"role":"assistant","content":"  hello  "}}]}"#;
+        assert_eq!(parse_chat_content(body).unwrap(), "hello");
+    }
+}

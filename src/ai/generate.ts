@@ -1,17 +1,19 @@
 /**
- * AI generation via Vercel AI SDK (OpenAI-compatible).
+ * AI generation for callai.
  *
  * Prompt composition (order matters):
  *   system → runtime → capabilities → task → style? → output_contract → user
  *
- * Static layers live in `src-tauri/prompts/*.prompt` (include_str! / get_prompt).
- * Runtime is dynamic (OS, locale, timezone, prefs) — never secrets.
+ * HTTP: always prefer Tauri/Rust ureq (`ai_chat_completion`) so the WebView never
+ * hits the provider origin (CORS / User-Agent / localhost Origin issues).
+ * Browser mock falls back to Vercel AI SDK only when not in Tauri.
  */
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { z } from "zod";
 import type { AiSettings, AlarmDraft, PluginDraft } from "../domain/types";
 import { client } from "../infra/client";
+import { isTauri } from "../infra/tauriApi";
 import { loadRuntimeContextBlock } from "./runtimeContext";
 
 const AlarmDraftSchema = z.object({
@@ -96,15 +98,63 @@ function extractJson(text: string): unknown {
   return JSON.parse(raw.slice(start, end + 1));
 }
 
-function modelFromSettings(ai: AiSettings) {
+function requireAiConfig(ai: AiSettings) {
   if (!ai.base_url.trim() || !ai.api_key.trim()) {
     throw new Error("AI_NOT_CONFIGURED");
   }
+}
+
+/** Strip browser-forbidden headers (dev-only SDK path). */
+function browserSafeFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const headers = new Headers(init?.headers ?? undefined);
+  for (const key of ["user-agent", "User-Agent"]) {
+    headers.delete(key);
+  }
+  return globalThis.fetch(input, { ...init, headers });
+}
+
+/**
+ * Complete a system+user turn. Prefer native Rust HTTP inside Tauri.
+ */
+export async function completeText(
+  ai: AiSettings,
+  system: string,
+  user: string,
+  temperature: number,
+): Promise<string> {
+  requireAiConfig(ai);
+  const model = ai.model.trim() || "gpt-5.6-terra";
+  const provider = ai.provider || "openai";
+
+  // Desktop path: no CORS, real error bodies from gateway.
+  if (isTauri() && typeof client.aiChatCompletion === "function") {
+    return client.aiChatCompletion({
+      provider,
+      base_url: ai.base_url.replace(/\/$/, ""),
+      api_key: ai.api_key,
+      model,
+      system,
+      user,
+      temperature,
+    });
+  }
+
+  // Browser mock / non-Tauri fallback (may still hit CORS on real gateways).
   const openai = createOpenAI({
     apiKey: ai.api_key,
     baseURL: ai.base_url.replace(/\/$/, ""),
+    fetch: browserSafeFetch,
   });
-  return openai(ai.model.trim() || "gpt-5.6-terra");
+  const { text } = await generateText({
+    model: openai.chat(model),
+    system,
+    prompt: user,
+    temperature,
+  });
+  return text;
 }
 
 export async function loadPromptBundle(): Promise<PromptBundle> {
@@ -166,7 +216,6 @@ export function composeSystemPrompt(
       bundle.outputContract,
     ]);
   }
-  // chat: contracts still help the model know what the app can do
   return joinPromptLayers([
     bundle.system,
     runtime,
@@ -183,12 +232,12 @@ export async function generateAlarmDraft(
     loadPromptBundle(),
     loadRuntimeContextBlock(),
   ]);
-  const { text } = await generateText({
-    model: modelFromSettings(ai),
-    system: composeSystemPrompt(bundle, runtime, "alarm"),
-    prompt: userMessage,
-    temperature: 0.3,
-  });
+  const text = await completeText(
+    ai,
+    composeSystemPrompt(bundle, runtime, "alarm"),
+    userMessage,
+    0.3,
+  );
   const parsed = AlarmDraftSchema.parse(extractJson(text));
   return parsed as AlarmDraft;
 }
@@ -201,12 +250,12 @@ export async function generatePluginDraft(
     loadPromptBundle(),
     loadRuntimeContextBlock(),
   ]);
-  const { text } = await generateText({
-    model: modelFromSettings(ai),
-    system: composeSystemPrompt(bundle, runtime, "plugin"),
-    prompt: userMessage,
-    temperature: 0.4,
-  });
+  const text = await completeText(
+    ai,
+    composeSystemPrompt(bundle, runtime, "plugin"),
+    userMessage,
+    0.4,
+  );
   const parsed = PluginDraftSchema.parse(extractJson(text));
   return parsed as PluginDraft;
 }
@@ -223,12 +272,12 @@ export async function chatReply(
   const transcript = history
     .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
     .join("\n");
-  const { text } = await generateText({
-    model: modelFromSettings(ai),
-    system: composeSystemPrompt(bundle, runtime, "chat"),
-    prompt: `${transcript}\nUser: ${userMessage}\nAssistant:`,
-    temperature: 0.5,
-  });
+  const text = await completeText(
+    ai,
+    composeSystemPrompt(bundle, runtime, "chat"),
+    `${transcript}\nUser: ${userMessage}\nAssistant:`,
+    0.5,
+  );
   return text.trim();
 }
 

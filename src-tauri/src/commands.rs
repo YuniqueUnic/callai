@@ -446,3 +446,26 @@ pub fn list_ai_models(
 ) -> Result<Vec<String>, String> {
     crate::infra::ai_models::list_models(&provider, &base_url, &api_key).map_err(map_err)
 }
+
+/// OpenAI-compatible chat completion via Rust HTTP (avoids WebView CORS).
+#[tauri::command]
+pub fn ai_chat_completion(
+    provider: String,
+    base_url: String,
+    api_key: String,
+    model: String,
+    system: String,
+    user: String,
+    temperature: Option<f32>,
+) -> Result<String, String> {
+    crate::infra::ai_models::chat_completion(
+        &provider,
+        &base_url,
+        &api_key,
+        &model,
+        &system,
+        &user,
+        temperature.unwrap_or(0.4),
+    )
+    .map_err(map_err)
+}

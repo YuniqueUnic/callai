@@ -256,6 +256,7 @@ pub fn run() {
             commands::list_prompts,
             commands::generate_secret_token,
             commands::list_ai_models,
+            commands::ai_chat_completion,
         ])
         .setup(|app| {
             let locale = app
