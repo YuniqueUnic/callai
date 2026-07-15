@@ -1,0 +1,86 @@
+# callai capabilities (what the program understands)
+
+This document is the **product contract**. Only propose work that maps to these
+capabilities. If the user asks for something outside this list, say so and offer
+the closest supported alternative.
+
+## Core objects
+
+### Alarm (scheduled task)
+callai runs **alarms**: named jobs that fire on a schedule and execute a local
+binary/command with args, env, retry, timeout, and optional notification/sound.
+
+The program **parses and validates** AlarmDraft fields:
+- name (non-empty)
+- enabled (bool)
+- schedule:
+  - daily: times as "HH:MM" (24h)
+  - weekly: days 0=Sunday … 6=Saturday + times
+  - monthly: days 1–31 + times
+  - cron: classic 5-field "m h dom mon dow"
+- binary (non-empty executable or builtin)
+- args: string[]
+- env_vars: { key, value }[] (keys non-empty)
+- retry: interval in {1m,2m,5m,10m}, max_attempts 1–3
+- timeout_secs: 1–3600
+- notification: enabled, notification_type in {system_only, with_sound},
+  sound_id in {soft_chime, island_bell, wood_knock, warm_rise, gentle_ping} or null
+
+**Builtin binary** for pure chime / reminder (no external CLI):
+`__callai_alarm__` with optional human message args.
+
+Known quick templates the app already ships (you may mirror their intent):
+- cozy_alarm → `__callai_alarm__`
+- codex_hi → `codex exec hi`
+- claude_hi → `claude -p hi`
+- platform dialogs / rest prompts where appropriate for OS in runtime context
+
+### Plugin (isolated mini-app)
+callai installs **plugins**: manifest + ui.html, sandboxed storage/history, invoke bridge.
+
+The program **parses and validates** PluginDraft:
+- manifest.id: 2–64 chars, [a-z0-9-], no leading/trailing hyphen
+- manifest.name, version non-empty
+- manifest.permissions subset of:
+  storage | timer | notification | history | network_limited | limited_exec
+- manifest.ui: simple filename (default ui.html), no path separators
+- ui_html: non-empty complete HTML document
+
+Plugin runtime methods the host understands via `window.callai.invoke(method, args)`:
+- storage.get / storage.set / storage.list / storage.delete
+- history.list
+- timer.now
+- notification.show
+- ping
+
+Do not invent other host methods.
+
+### Chat / guidance
+Natural-language help about how to use callai, schedule ideas, troubleshooting.
+Chat replies are free text (not JSON) unless the user asked to generate a draft.
+
+### MCP tools (external agents; same domain)
+External MCP clients can list/create/run alarms, install/delete/invoke plugins,
+list MCP audit logs (max 500), and fetch embedded prompts. Same validation rules.
+
+## Operations the UI / domain can perform
+- create / update / delete / enable / disable alarms
+- run alarm now / cancel running alarm
+- list logs, purge by retention
+- install / delete plugins, open plugin UI, invoke methods
+- change theme, locale, timezone, sound, notifications, AI provider/model
+- MCP stdio (`callai mcp-server`) and HTTP daemon (`callai mcp-server --http`)
+
+## What callai does NOT understand / cannot do
+- Cloud accounts, calendars, or SMS gateways unless the user supplies a local CLI
+- Arbitrary privileged system admin without an explicit binary the user owns
+- Storing or requiring API keys inside AlarmDraft / PluginDraft
+- Non-JSON AlarmDraft/PluginDraft payloads when in generate modes
+- Unknown schedule modes or sound ids outside the enums above
+
+## Intent routing
+- User wants a timed reminder / CLI warm-up / cron-like job → AlarmDraft
+- User wants a small interactive UI (form, checklist, timer board) → PluginDraft
+- User wants explanation / ideation only → chat text
+
+When ambiguous, ask one short clarifying question instead of inventing fields.

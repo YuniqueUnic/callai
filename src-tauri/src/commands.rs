@@ -230,6 +230,29 @@ pub fn get_app_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 
+#[tauri::command]
+pub fn get_ai_runtime_context(
+    state: State<'_, AppState>,
+) -> Result<crate::domain::AiRuntimeContext, String> {
+    let settings = state.service.get_settings().map_err(map_err)?;
+    let paths = crate::infra::AppPaths::resolve().map_err(map_err)?;
+    paths.ensure().map_err(map_err)?;
+    Ok(crate::domain::AiRuntimeContext::collect(
+        &settings,
+        paths.config_dir().display().to_string(),
+        paths.data_dir().display().to_string(),
+    ))
+}
+
+#[tauri::command]
+pub fn get_ai_runtime_context_prompt(
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let ctx = get_ai_runtime_context(state)?;
+    Ok(ctx.to_prompt_block())
+}
+
+
 /// Returns the backups directory path (for display / diagnostics).
 #[tauri::command]
 pub fn get_backups_dir() -> Result<String, String> {

@@ -1,12 +1,18 @@
 /**
- * AI2UI + structured generation via Vercel AI SDK (OpenAI-compatible).
- * Prompts are loaded from Rust-embedded `src-tauri/prompts/*.prompt`.
+ * AI generation via Vercel AI SDK (OpenAI-compatible).
+ *
+ * Prompt composition (order matters):
+ *   system → runtime → capabilities → task → style? → output_contract → user
+ *
+ * Static layers live in `src-tauri/prompts/*.prompt` (include_str! / get_prompt).
+ * Runtime is dynamic (OS, locale, timezone, prefs) — never secrets.
  */
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { z } from "zod";
 import type { AiSettings, AlarmDraft, PluginDraft } from "../domain/types";
 import { client } from "../infra/client";
+import { loadRuntimeContextBlock } from "./runtimeContext";
 
 const AlarmDraftSchema = z.object({
   name: z.string().min(1),
@@ -69,6 +75,16 @@ const PluginDraftSchema = z.object({
 
 export type AiIntent = "alarm" | "plugin" | "chat";
 
+export interface PromptBundle {
+  system: string;
+  capabilities: string;
+  outputContract: string;
+  alarm: string;
+  plugin: string;
+  ai2ui: string;
+  islandStyle: string;
+}
+
 function extractJson(text: string): unknown {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const raw = (fenced?.[1] ?? text).trim();
@@ -91,31 +107,85 @@ function modelFromSettings(ai: AiSettings) {
   return openai(ai.model.trim() || "gpt-5.6-terra");
 }
 
-export async function loadPromptBundle(): Promise<{
-  system: string;
-  alarm: string;
-  plugin: string;
-  ai2ui: string;
-  islandStyle: string;
-}> {
-  const [system, alarm, plugin, ai2ui, islandStyle] = await Promise.all([
-    client.getPrompt("system"),
-    client.getPrompt("alarm_generate"),
-    client.getPrompt("plugin_generate"),
-    client.getPrompt("ai2ui"),
-    client.getPrompt("animal_island_style"),
+export async function loadPromptBundle(): Promise<PromptBundle> {
+  const [system, capabilities, outputContract, alarm, plugin, ai2ui, islandStyle] =
+    await Promise.all([
+      client.getPrompt("system"),
+      client.getPrompt("capabilities"),
+      client.getPrompt("output_contract"),
+      client.getPrompt("alarm_generate"),
+      client.getPrompt("plugin_generate"),
+      client.getPrompt("ai2ui"),
+      client.getPrompt("animal_island_style"),
+    ]);
+  return {
+    system,
+    capabilities,
+    outputContract,
+    alarm,
+    plugin,
+    ai2ui,
+    islandStyle,
+  };
+}
+
+/** Join non-empty prompt layers with blank lines. */
+export function joinPromptLayers(layers: Array<string | null | undefined>): string {
+  return layers
+    .map((l) => (l ?? "").trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/**
+ * Full system message for an intent.
+ * Layer order: system → runtime → capabilities → task → style? → output_contract
+ */
+export function composeSystemPrompt(
+  bundle: PromptBundle,
+  runtime: string,
+  intent: AiIntent,
+): string {
+  if (intent === "alarm") {
+    return joinPromptLayers([
+      bundle.system,
+      runtime,
+      bundle.capabilities,
+      bundle.alarm,
+      bundle.outputContract,
+    ]);
+  }
+  if (intent === "plugin") {
+    return joinPromptLayers([
+      bundle.system,
+      runtime,
+      bundle.capabilities,
+      bundle.plugin,
+      bundle.islandStyle,
+      bundle.ai2ui,
+      bundle.outputContract,
+    ]);
+  }
+  // chat: contracts still help the model know what the app can do
+  return joinPromptLayers([
+    bundle.system,
+    runtime,
+    bundle.capabilities,
+    bundle.outputContract,
   ]);
-  return { system, alarm, plugin, ai2ui, islandStyle };
 }
 
 export async function generateAlarmDraft(
   ai: AiSettings,
   userMessage: string,
 ): Promise<AlarmDraft> {
-  const prompts = await loadPromptBundle();
+  const [bundle, runtime] = await Promise.all([
+    loadPromptBundle(),
+    loadRuntimeContextBlock(),
+  ]);
   const { text } = await generateText({
     model: modelFromSettings(ai),
-    system: `${prompts.system}\n\n${prompts.alarm}`,
+    system: composeSystemPrompt(bundle, runtime, "alarm"),
     prompt: userMessage,
     temperature: 0.3,
   });
@@ -127,11 +197,13 @@ export async function generatePluginDraft(
   ai: AiSettings,
   userMessage: string,
 ): Promise<PluginDraft> {
-  const prompts = await loadPromptBundle();
+  const [bundle, runtime] = await Promise.all([
+    loadPromptBundle(),
+    loadRuntimeContextBlock(),
+  ]);
   const { text } = await generateText({
     model: modelFromSettings(ai),
-    // animal-island-style is the visual source of truth for plugin UI HTML.
-    system: `${prompts.system}\n\n${prompts.plugin}\n\n${prompts.islandStyle}\n\n${prompts.ai2ui}`,
+    system: composeSystemPrompt(bundle, runtime, "plugin"),
     prompt: userMessage,
     temperature: 0.4,
   });
@@ -144,13 +216,16 @@ export async function chatReply(
   userMessage: string,
   history: { role: "user" | "assistant"; content: string }[],
 ): Promise<string> {
-  const prompts = await loadPromptBundle();
+  const [bundle, runtime] = await Promise.all([
+    loadPromptBundle(),
+    loadRuntimeContextBlock(),
+  ]);
   const transcript = history
     .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
     .join("\n");
   const { text } = await generateText({
     model: modelFromSettings(ai),
-    system: prompts.system,
+    system: composeSystemPrompt(bundle, runtime, "chat"),
     prompt: `${transcript}\nUser: ${userMessage}\nAssistant:`,
     temperature: 0.5,
   });

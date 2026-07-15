@@ -279,8 +279,21 @@ export const mockApi = {
   async clearMcpLogs() {
     return 0;
   },
+  async getAiRuntimeContext() {
+    const { buildBrowserRuntimeContext } = await import("../ai/runtimeContext");
+    return buildBrowserRuntimeContext();
+  },
   async getPrompt(id: string) {
-    return `mock prompt: ${id}`;
+    const map: Record<string, string> = {
+      system: "mock system",
+      capabilities: "mock capabilities AlarmDraft __callai_alarm__",
+      output_contract: "mock output contract JSON parse",
+      alarm_generate: "mock alarm",
+      plugin_generate: "mock plugin",
+      ai2ui: "mock ai2ui",
+      animal_island_style: "mock animal-island-ui " + "x".repeat(1001),
+    };
+    return map[id] ?? `mock prompt ${id}`;
   },
   async listPrompts() {
     return [

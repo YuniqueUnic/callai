@@ -233,6 +233,8 @@ pub fn run() {
             commands::next_trigger,
             commands::detect_timezone,
             commands::get_app_version,
+            commands::get_ai_runtime_context,
+            commands::get_ai_runtime_context_prompt,
             commands::get_autostart_enabled,
             commands::set_autostart_enabled,
             commands::get_backups_dir,

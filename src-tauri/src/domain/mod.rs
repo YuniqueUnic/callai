@@ -8,6 +8,7 @@ pub mod retry;
 pub mod schedule;
 pub mod settings;
 mod secret;
+mod runtime_context;
 pub mod templates;
 
 pub use alarm::*;
@@ -22,3 +23,4 @@ pub use settings::*;
 pub use templates::*;
 
 pub use secret::generate_secret_token;
+pub use runtime_context::AiRuntimeContext;

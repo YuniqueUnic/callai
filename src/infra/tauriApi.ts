@@ -86,6 +86,8 @@ export const api = {
     call<McpLogEntry[]>("list_mcp_logs", { limit }),
   clearMcpLogs: () => call<number>("clear_mcp_logs"),
   getPrompt: (id: string) => call<string>("get_prompt", { id }),
+  getAiRuntimeContext: () =>
+    call<import("../ai/runtimeContext").AiRuntimeContextDto>("get_ai_runtime_context"),
   listPrompts: () => call<string[]>("list_prompts"),
   generateSecretToken: () => call<string>("generate_secret_token"),
   listAiModels: (provider: string, base_url: string, api_key: string) =>

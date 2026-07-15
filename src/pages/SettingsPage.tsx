@@ -80,6 +80,9 @@ export function SettingsPage({ onOpenLogs }: Props) {
   const [detectedTz, setDetectedTz] = useState<string>(() => peekDetectedTimezone());
   const [appVersion, setAppVersion] = useState<string>(() => peekAppVersion() ?? "");
   const [autostartOn, setAutostartOn] = useState<boolean>(() => peekAutostart() ?? false);
+  const [logRetentionDraft, setLogRetentionDraft] = useState<string>(() =>
+    String(peekSettings()?.log_retention_days ?? 30),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +96,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
           ai: s.ai ?? { provider: "openai", base_url: "https://api.openai.com/v1", api_key: "", model: "gpt-5.6-terra" },
           mcp: s.mcp ?? { enabled: false, listen_host: "127.0.0.1", port: 3927, auth_token: "" },
         });
+        setLogRetentionDraft(String(s.log_retention_days ?? 30));
       } catch {
         if (!cancelled) setSettings(null);
         return;
@@ -291,9 +295,6 @@ export function SettingsPage({ onOpenLogs }: Props) {
 
           <SettingsAiMcpPanel
             settings={settings}
-            onLocal={(next) => {
-              setSettings(next);
-            }}
             onSave={async (next, opts) => {
               setSettings(next);
               await save(next, opts);
@@ -405,17 +406,20 @@ export function SettingsPage({ onOpenLogs }: Props) {
             />
           </div>
 
-          <div className="field">
+                    <div className="field">
             <label className="label">{t("settings:logRetention")}</label>
             <Input
               type="number"
-              value={String(settings.log_retention_days)}
+              value={logRetentionDraft}
               onChange={(e) => {
-                const n = Number(e.target.value) || 30;
-                setSettings({ ...settings, log_retention_days: n });
+                setLogRetentionDraft(e.target.value);
               }}
               onBlur={() => {
-                if (settings) void save(settings, { silent: true });
+                if (!settings) return;
+                const n = Math.max(1, Number(logRetentionDraft) || 30);
+                setLogRetentionDraft(String(n));
+                if (n === settings.log_retention_days) return;
+                void save({ ...settings, log_retention_days: n }, { silent: true });
               }}
               style={{ width: "100%", maxWidth: 160 }}
             />

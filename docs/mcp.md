@@ -62,7 +62,7 @@ Toggle **Enable HTTP MCP** records intent in settings; the long-running process 
 | `delete_plugin` | Delete plugin + data |
 | `plugin_invoke` | Unified plugin invoke |
 | `list_mcp_logs` | Audit log (max 500) |
-| `get_prompt` | Embedded prompt template (`system`, `alarm_generate`, `plugin_generate`, `ai2ui`, **`animal_island_style`**) |
+| `get_prompt` | Embedded prompt template (`system`, `capabilities`, `output_contract`, `alarm_generate`, `plugin_generate`, `ai2ui`, `animal_island_style`) (`system`, `alarm_generate`, `plugin_generate`, `ai2ui`, **`animal_island_style`**) |
 
 ## Shared data
 

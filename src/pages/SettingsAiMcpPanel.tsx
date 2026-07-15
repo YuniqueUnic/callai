@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input, Switch } from "animal-island-ui";
 import type { AiProvider, AiSettings, AppSettings, McpSettings } from "../domain/types";
@@ -19,95 +19,169 @@ import { ModelAutocomplete } from "../ui/ModelAutocomplete";
 
 interface Props {
   settings: AppSettings;
-  /** Immediate persist (switches / generate / provider). */
+  /** Persist (switches / generate / provider / debounced text). */
   onSave: (next: AppSettings, opts?: { silent?: boolean }) => Promise<void>;
-  /** Optimistic local settings update without DB write. */
-  onLocal: (next: AppSettings) => void;
 }
 
-export function SettingsAiMcpPanel({ settings, onSave, onLocal }: Props) {
+/**
+ * Text fields stay in local state while typing so SettingsPage does not
+ * re-render on every keystroke. Parent settings are updated only on
+ * debounce / blur / immediate actions.
+ */
+function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
   const { t } = useTranslation(["settings", "common"]);
-  const ai: AiSettings = settings.ai ?? DEFAULT_AI_SETTINGS;
-  const mcp: McpSettings = settings.mcp ?? DEFAULT_MCP_SETTINGS;
+  const savedAi: AiSettings = settings.ai ?? DEFAULT_AI_SETTINGS;
+  const savedMcp: McpSettings = settings.mcp ?? DEFAULT_MCP_SETTINGS;
+
   const [showAiKey, setShowAiKey] = useState(false);
   const [showMcpToken, setShowMcpToken] = useState(false);
   const [busyToken, setBusyToken] = useState(false);
 
-  // Always save the latest snapshot (parent may re-render mid-debounce).
+  // Local drafts for free-text fields (fast typing path).
+  const [baseUrl, setBaseUrl] = useState(savedAi.base_url);
+  const [apiKey, setApiKey] = useState(savedAi.api_key);
+  const [model, setModel] = useState(savedAi.model);
+  const [mcpHost, setMcpHost] = useState(savedMcp.listen_host);
+  const [mcpPort, setMcpPort] = useState(String(savedMcp.port ?? 3927));
+  const [mcpToken, setMcpToken] = useState(savedMcp.auth_token);
+
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  const pendingSaveRef = useRef<AppSettings | null>(null);
+  const draftRef = useRef({
+    baseUrl,
+    apiKey,
+    model,
+    mcpHost,
+    mcpPort,
+    mcpToken,
+  });
+  draftRef.current = { baseUrl, apiKey, model, mcpHost, mcpPort, mcpToken };
 
-  const { schedule: scheduleSave, flush: flushSave, cancel: cancelSave } =
-    useDebouncedCallback((next: AppSettings) => {
-      pendingSaveRef.current = null;
-      void onSave(next, { silent: true });
-    }, 550);
-
-  // Flush pending debounce on unmount so typed text is not lost.
+  // Sync local drafts when parent commits a new snapshot (provider switch, generate, external load).
+  // Skip while we still have a pending local edit that has not been saved yet.
+  const dirtyRef = useRef(false);
   useEffect(() => {
-    return () => {
-      const pending = pendingSaveRef.current;
-      cancelSave();
-      if (pending) {
-        void onSave(pending, { silent: true });
-      }
+    if (dirtyRef.current) return;
+    setBaseUrl(savedAi.base_url);
+    setApiKey(savedAi.api_key);
+    setModel(savedAi.model);
+    setMcpHost(savedMcp.listen_host);
+    setMcpPort(String(savedMcp.port ?? 3927));
+    setMcpToken(savedMcp.auth_token);
+  }, [
+    savedAi.base_url,
+    savedAi.api_key,
+    savedAi.model,
+    savedAi.provider,
+    savedMcp.listen_host,
+    savedMcp.port,
+    savedMcp.auth_token,
+    savedMcp.enabled,
+  ]);
+
+  const buildNext = useCallback((): AppSettings => {
+    const d = draftRef.current;
+    const cur = settingsRef.current;
+    const ai = cur.ai ?? DEFAULT_AI_SETTINGS;
+    const mcp = cur.mcp ?? DEFAULT_MCP_SETTINGS;
+    const portNum = Math.min(
+      65535,
+      Math.max(1, Number(d.mcpPort.replace(/\D/g, "")) || 3927),
+    );
+    return {
+      ...cur,
+      ai: {
+        ...ai,
+        base_url: d.baseUrl,
+        api_key: d.apiKey,
+        model: d.model,
+      },
+      mcp: {
+        ...mcp,
+        listen_host: d.mcpHost,
+        port: portNum,
+        auth_token: d.mcpToken,
+      },
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only flush
   }, []);
 
-  function applyLocal(next: AppSettings) {
-    pendingSaveRef.current = next;
-    onLocal(next);
-    scheduleSave(next);
-  }
+  const { schedule: scheduleSave, cancel: cancelSave } = useDebouncedCallback(
+    () => {
+      const next = buildNext();
+      dirtyRef.current = false;
+      void onSave(next, { silent: true });
+    },
+    600,
+  );
 
-  async function patchAiImmediate(partial: Partial<AiSettings>) {
-    cancelSave();
-    pendingSaveRef.current = null;
-    const next = { ...settingsRef.current, ai: { ...ai, ...partial } };
-    onLocal(next);
-    await onSave(next);
-  }
+  const markDirtyAndSchedule = useCallback(() => {
+    dirtyRef.current = true;
+    scheduleSave();
+  }, [scheduleSave]);
+
+  const flushNow = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      cancelSave();
+      const next = buildNext();
+      dirtyRef.current = false;
+      await onSave(next, opts);
+    },
+    [buildNext, cancelSave, onSave],
+  );
+
+  // Flush pending text on unmount.
+  useEffect(() => {
+    return () => {
+      if (!dirtyRef.current) {
+        cancelSave();
+        return;
+      }
+      cancelSave();
+      const next = buildNext();
+      dirtyRef.current = false;
+      void onSave(next, { silent: true });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only
+  }, []);
+
 
   async function patchMcpImmediate(partial: Partial<McpSettings>) {
     cancelSave();
-    pendingSaveRef.current = null;
-    const next = { ...settingsRef.current, mcp: { ...mcp, ...partial } };
-    onLocal(next);
-    await onSave(next);
-  }
-
-  function patchAiDebounced(partial: Partial<AiSettings>) {
-    const next = {
-      ...settingsRef.current,
-      ai: { ...(settingsRef.current.ai ?? DEFAULT_AI_SETTINGS), ...partial },
-    };
-    applyLocal(next);
-  }
-
-  function patchMcpDebounced(partial: Partial<McpSettings>) {
-    const next = {
-      ...settingsRef.current,
-      mcp: { ...(settingsRef.current.mcp ?? DEFAULT_MCP_SETTINGS), ...partial },
-    };
-    applyLocal(next);
+    dirtyRef.current = false;
+    const cur = settingsRef.current;
+    const mcp = { ...(cur.mcp ?? DEFAULT_MCP_SETTINGS), ...partial };
+    if (partial.listen_host != null) setMcpHost(partial.listen_host);
+    if (partial.port != null) setMcpPort(String(partial.port));
+    if (partial.auth_token != null) setMcpToken(partial.auth_token);
+    await onSave({ ...cur, mcp });
   }
 
   async function onProviderChange(provider: AiProvider) {
     const defaults = AI_PROVIDER_DEFAULTS[provider];
     playSound("soft");
-    await patchAiImmediate({
+    // Flush any pending text first so we don't lose api key mid-type.
+    if (dirtyRef.current) await flushNow({ silent: true });
+    const cur = settingsRef.current;
+    const aiPrev = cur.ai ?? DEFAULT_AI_SETTINGS;
+    const nextAi: AiSettings = {
+      ...aiPrev,
       provider,
-      base_url: defaults.base_url || ai.base_url,
+      base_url: defaults.base_url || draftRef.current.baseUrl || aiPrev.base_url,
       model: defaults.model,
-    });
+      api_key: draftRef.current.apiKey,
+    };
+    setBaseUrl(nextAi.base_url);
+    setModel(nextAi.model);
+    setApiKey(nextAi.api_key);
+    dirtyRef.current = false;
+    await onSave({ ...cur, ai: nextAi });
   }
 
   async function generateToken() {
     setBusyToken(true);
     try {
+      if (dirtyRef.current) await flushNow({ silent: true });
       const token = await client.generateSecretToken();
       await patchMcpImmediate({ auth_token: token });
       playSound("confirm");
@@ -132,7 +206,7 @@ export function SettingsAiMcpPanel({ settings, onSave, onLocal }: Props) {
     }
   }
 
-  const endpoint = `http://${mcp.listen_host || "127.0.0.1"}:${mcp.port || 3927}/mcp`;
+  const endpoint = `http://${mcpHost || "127.0.0.1"}:${Number(mcpPort) || 3927}/mcp`;
 
   return (
     <>
@@ -146,7 +220,7 @@ export function SettingsAiMcpPanel({ settings, onSave, onLocal }: Props) {
         <div className="field">
           <label className="label">{t("settings:aiProvider")}</label>
           <ProviderPicker
-            value={ai.provider ?? "openai"}
+            value={savedAi.provider ?? "openai"}
             onChange={(p) => {
               void onProviderChange(p);
             }}
@@ -156,24 +230,28 @@ export function SettingsAiMcpPanel({ settings, onSave, onLocal }: Props) {
         <div className="field">
           <label className="label">{t("settings:aiBaseUrl")}</label>
           <Input
-            value={ai.base_url}
+            value={baseUrl}
             placeholder="https://api.openai.com/v1"
             onChange={(e) => {
-              patchAiDebounced({ base_url: e.target.value });
+              setBaseUrl(e.target.value);
+              markDirtyAndSchedule();
             }}
-            onBlur={() => flushSave(settingsRef.current)}
+            onBlur={() => {
+              if (dirtyRef.current) void flushNow({ silent: true });
+            }}
           />
         </div>
 
         <div className="field">
           <ModelAutocomplete
-            provider={ai.provider ?? "openai"}
-            baseUrl={ai.base_url}
-            apiKey={ai.api_key}
-            value={ai.model}
-            placeholder={AI_PROVIDER_DEFAULTS[ai.provider ?? "openai"].model}
-            onChange={(model) => {
-              patchAiDebounced({ model });
+            provider={savedAi.provider ?? "openai"}
+            baseUrl={baseUrl}
+            apiKey={apiKey}
+            value={model}
+            placeholder={AI_PROVIDER_DEFAULTS[savedAi.provider ?? "openai"].model}
+            onChange={(nextModel) => {
+              setModel(nextModel);
+              markDirtyAndSchedule();
             }}
           />
         </div>
@@ -193,20 +271,24 @@ export function SettingsAiMcpPanel({ settings, onSave, onLocal }: Props) {
               <IconButton
                 label={t("settings:copy")}
                 icon={<IconCopy size={16} />}
-                disabled={!ai.api_key}
-                onClick={() => void copyText("API key", ai.api_key)}
+                disabled={!apiKey}
+                onClick={() => void copyText("API key", apiKey)}
               />
             </span>
           </div>
           <Input
             type={showAiKey ? "text" : "password"}
-            value={ai.api_key}
+            value={apiKey}
             placeholder="sk-…"
             autoComplete="off"
+            spellCheck={false}
             onChange={(e) => {
-              patchAiDebounced({ api_key: e.target.value });
+              setApiKey(e.target.value);
+              markDirtyAndSchedule();
             }}
-            onBlur={() => flushSave(settingsRef.current)}
+            onBlur={() => {
+              if (dirtyRef.current) void flushNow({ silent: true });
+            }}
           />
         </div>
       </div>
@@ -221,10 +303,13 @@ export function SettingsAiMcpPanel({ settings, onSave, onLocal }: Props) {
         <div className="settings-row">
           <span>{t("settings:mcpEnabled")}</span>
           <Switch
-            checked={!!mcp.enabled}
+            checked={!!savedMcp.enabled}
             onChange={(v) => {
               playSound("soft");
-              void patchMcpImmediate({ enabled: v });
+              void (async () => {
+                if (dirtyRef.current) await flushNow({ silent: true });
+                await patchMcpImmediate({ enabled: v });
+              })();
             }}
           />
         </div>
@@ -232,26 +317,30 @@ export function SettingsAiMcpPanel({ settings, onSave, onLocal }: Props) {
         <div className="field">
           <label className="label">{t("settings:mcpHost")}</label>
           <Input
-            value={mcp.listen_host}
+            value={mcpHost}
             placeholder="127.0.0.1"
             onChange={(e) => {
-              patchMcpDebounced({ listen_host: e.target.value });
+              setMcpHost(e.target.value);
+              markDirtyAndSchedule();
             }}
-            onBlur={() => flushSave(settingsRef.current)}
+            onBlur={() => {
+              if (dirtyRef.current) void flushNow({ silent: true });
+            }}
           />
         </div>
 
         <div className="field">
           <label className="label">{t("settings:mcpPort")}</label>
           <Input
-            value={String(mcp.port ?? 3927)}
+            value={mcpPort}
+            inputMode="numeric"
             onChange={(e) => {
-              const n = Number(e.target.value.replace(/\D/g, "")) || 0;
-              patchMcpDebounced({
-                port: Math.min(65535, Math.max(1, n || 3927)),
-              });
+              setMcpPort(e.target.value.replace(/\D/g, "").slice(0, 5));
+              markDirtyAndSchedule();
             }}
-            onBlur={() => flushSave(settingsRef.current)}
+            onBlur={() => {
+              if (dirtyRef.current) void flushNow({ silent: true });
+            }}
           />
         </div>
 
@@ -278,20 +367,24 @@ export function SettingsAiMcpPanel({ settings, onSave, onLocal }: Props) {
               <IconButton
                 label={t("settings:copy")}
                 icon={<IconCopy size={16} />}
-                disabled={!mcp.auth_token}
-                onClick={() => void copyText("token", mcp.auth_token)}
+                disabled={!mcpToken}
+                onClick={() => void copyText("token", mcpToken)}
               />
             </span>
           </div>
           <Input
             type={showMcpToken ? "text" : "password"}
-            value={mcp.auth_token}
+            value={mcpToken}
             placeholder={t("settings:mcpTokenPlaceholder")}
             autoComplete="off"
+            spellCheck={false}
             onChange={(e) => {
-              patchMcpDebounced({ auth_token: e.target.value });
+              setMcpToken(e.target.value);
+              markDirtyAndSchedule();
             }}
-            onBlur={() => flushSave(settingsRef.current)}
+            onBlur={() => {
+              if (dirtyRef.current) void flushNow({ silent: true });
+            }}
           />
           <p className="meta" style={{ marginTop: 6 }}>
             {t("settings:mcpTokenAutoHint")}
@@ -321,3 +414,5 @@ export function SettingsAiMcpPanel({ settings, onSave, onLocal }: Props) {
     </>
   );
 }
+
+export const SettingsAiMcpPanel = memo(SettingsAiMcpPanelImpl);

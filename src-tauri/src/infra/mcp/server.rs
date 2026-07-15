@@ -117,7 +117,7 @@ fn default_log_limit() -> u32 {
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PromptParams {
-    /// system | alarm_generate | plugin_generate | ai2ui | animal_island_style
+    /// system | capabilities | output_contract | alarm_generate | plugin_generate | ai2ui | animal_island_style
     pub id: String,
 }
 
@@ -280,7 +280,7 @@ impl CallaiMcp {
     ) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
         let id = PromptId::parse(&params.id).ok_or_else(|| {
             rmcp::ErrorData::invalid_params(
-                "unknown prompt id (system|alarm_generate|plugin_generate|ai2ui|animal_island_style)",
+                "unknown prompt id (system|capabilities|output_contract|alarm_generate|plugin_generate|ai2ui|animal_island_style)",
                 None,
             )
         })?;
