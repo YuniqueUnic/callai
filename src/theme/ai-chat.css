@@ -1,27 +1,35 @@
 /* AI assistant page — layout, stream, composer, selection, drafts */
 
-/* --- overlay flex shell (scrollport) --- */
+/* --- Overlay header + content scrolls underneath ---
+   Header is a floating HUD (absolute). Stage fills the full page.
+   Scrollport uses padding-top so the first paint is readable, but
+   content can scroll up under the header (same idea as edit-main). */
 .edit-overlay > .ai-page,
 .edit-overlay > .ai-page.ai-page,
 .edit-overlay > .edit-page.ai-page {
-  display: flex !important;
-  flex-direction: column !important;
+  display: block !important;
+  position: relative !important;
   min-height: 0 !important;
   height: 100% !important;
   max-height: 100% !important;
   overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
 .edit-overlay > .ai-page > .ai-stage {
-  flex: 1 1 0 !important;
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
   min-height: 0 !important;
   overflow: hidden !important;
+  margin: 0 !important;
 }
 
 .edit-overlay > .ai-page .ai-scroll {
   flex: 1 1 0 !important;
   min-height: 0 !important;
-  overflow-y: scroll !important;
+  overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -37,16 +45,37 @@
 
 /* --- page chrome --- */
 .ai-page {
-  display: flex;
-  flex-direction: column;
+  --ai-page-gutter: clamp(12px, 2.8vw, 18px);
+  /* initial readable offset under floating hero */
+  --ai-hero-clearance: 112px;
+  --ai-select-toolbar-h: 52px;
+  position: relative;
   min-height: 0;
   height: 100%;
   max-height: 100%;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.ai-page .ai-hero {
-  flex-shrink: 0;
+.app-shell.has-titlebar .ai-page {
+  --ai-hero-clearance: calc(112px + var(--callai-titlebar-h, 42px) - 6px);
+}
+
+/* Overlay header HUD — content rolls underneath */
+.ai-page > .ai-hero.edit-hero,
+.ai-page .ai-hero.edit-hero {
+  position: absolute !important;
+  z-index: 300 !important;
+  flex: none !important;
+  /* let wheel/scroll pass through empty chrome; buttons stay clickable */
+  pointer-events: none !important;
+}
+
+.ai-page .ai-hero .edit-hero-tools,
+.ai-page .ai-hero .edit-hero-actions,
+.ai-page .ai-hero .header-actions,
+.ai-page .ai-hero .header-actions * {
+  pointer-events: auto !important;
 }
 
 .ai-page .ai-main,
@@ -54,44 +83,89 @@
   min-width: 0;
 }
 
-.ai-stage {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
-  gap: 0;
+/* multi-select bar also overlays; does not push stage down */
+.ai-page > .ai-select-toolbar {
+  position: absolute;
+  top: calc(var(--ai-hero-clearance) - 6px);
+  left: var(--ai-page-gutter);
+  right: var(--ai-page-gutter);
+  z-index: 260;
+  margin: 0;
+  box-sizing: border-box;
 }
 
+.ai-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  gap: 8px;
+  margin: 0;
+  padding: 0 var(--ai-page-gutter) 12px;
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+/* scrollport fills stage; top padding = readable start, content can pass under header */
 .ai-scroll {
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 8px;
+  padding-top: var(--ai-hero-clearance);
+  padding-bottom: 4px;
+  box-sizing: border-box;
+}
+
+/* extra top pad when multi-select toolbar is mounted */
+.ai-page:has(> .ai-select-toolbar) .ai-scroll {
+  padding-top: calc(var(--ai-hero-clearance) + var(--ai-select-toolbar-h));
 }
 
 .ai-scroll > .form-panel,
 .ai-scroll > [class*="animal-card"],
 .ai-scroll > .ai-config-hint {
   margin-bottom: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-.app-shell.has-titlebar .ai-page .ai-stage {
-  padding-top: 0;
-}
 .app-shell.has-titlebar .ai-page .ai-composer-hud {
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-.app-shell.has-titlebar .ai-page .ai-scroll {
-  /* keep stream clear of titlebar / hero */
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0));
 }
 
-/* --- stream card --- */
-.ai-stream-card {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+/* --- stream card: no plate; scroll still owned by .ai-scroll --- */
+.ai-stream-card,
+.ai-scroll > .ai-stream-card,
+.ai-scroll > [class*="animal-card"].ai-stream-card,
+.edit-overlay > .ai-page .ai-scroll .ai-stream-card,
+.edit-overlay > .ai-page .ai-scroll [class*="animal-card"].ai-stream-card {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  /* keep layout; do not create a second scrollport */
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.ai-stream-card .panel-head {
+  /* drop heavy card chrome; light section title only */
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 0 8px !important;
+  padding: 0 2px !important;
 }
 
 .ai-stream-card .ai-chat-stream {
@@ -101,6 +175,7 @@
   min-height: 0;
   height: auto;
   max-height: none;
+  overflow: visible;
 }
 
 .ai-welcome {
@@ -138,9 +213,12 @@
 .ai-generating-meta {
   writing-mode: horizontal-tb !important;
   text-orientation: mixed !important;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  direction: ltr !important;
+  unicode-bidi: normal !important;
+  white-space: pre-wrap !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  line-break: auto !important;
   color: var(--callai-ink);
   line-height: 1.45;
   font-weight: 650;
@@ -166,9 +244,17 @@
   width: 100%;
 }
 
+.ai-bubble.is-generating,
+.ai-bubble.is-generating * {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+}
+
 .ai-bubble.is-generating {
-  width: 100%;
-  max-width: 100%;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   border-style: dashed !important;
 }
 
@@ -179,37 +265,100 @@
   margin-top: 8px;
 }
 
-.ai-generating-row {
+/* Generating: no full-bleed Loading (island Loading paints black 100% height). */
+.ai-generating-block {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
   width: 100%;
+  min-width: 0;
   writing-mode: horizontal-tb !important;
 }
 
-.ai-generating-copy {
+.ai-generating-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
-  flex: 1;
+}
+
+.ai-busy-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  height: 12px;
+}
+
+.ai-busy-dots i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--callai-primary, #0f9f92) 80%, #fff);
+  animation: ai-busy-bounce 1.05s ease-in-out infinite;
+}
+
+.ai-busy-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+  background: color-mix(in srgb, var(--callai-focus, #d4a017) 75%, #fff);
+}
+
+.ai-busy-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+  background: color-mix(in srgb, #6fba2c 70%, #fff);
+}
+
+@keyframes ai-busy-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 
 .ai-generating-status {
   font-weight: 800;
+  flex: 1 1 auto;
+  min-width: 0;
+  writing-mode: horizontal-tb !important;
+  white-space: normal !important;
+  word-break: normal !important;
 }
 
 .ai-generating-meta {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
+  white-space: normal !important;
+}
+
+.ai-generating-hint {
+  margin: 6px 0 0 !important;
 }
 
 .ai-stream-preview,
 .ai-raw-preview {
+  display: block !important;
   margin: 10px 0 0;
-  max-height: 180px;
+  max-height: 220px;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
   overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre-wrap !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.82rem;
   font-weight: 650;
-  line-height: 1.4;
+  line-height: 1.45;
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px dashed color-mix(in srgb, var(--callai-border) 70%, transparent);
@@ -352,26 +501,44 @@
   color: var(--callai-success) !important;
 }
 
-/* --- composer HUD --- */
+/* --- composer HUD: outer plates transparent; only controls keep fill --- */
 .ai-composer-hud {
   flex-shrink: 0;
   position: relative;
-  z-index: 5;
-  padding-top: 6px;
-  background: linear-gradient(
-    to top,
-    var(--callai-page-bg, transparent) 70%,
-    transparent
-  );
+  z-index: 220;
+  padding-top: 4px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .ai-composer-hud > .form-panel,
-.ai-composer-hud > [class*="animal-card"] {
-  margin-bottom: 0;
+.ai-composer-hud > [class*="animal-card"],
+.ai-page .ai-composer-card,
+.ai-page .ai-composer-card.form-panel,
+.ai-composer-hud .ai-composer-card,
+.ai-composer-hud .form-panel.ai-composer-card {
+  margin-bottom: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  /* keep compact padding from earlier rule; no opaque plate */
 }
 
-.ai-page .ai-composer-card {
-  margin-bottom: 0;
+/* animal-island Card pattern paints may sit on data attrs / nested shells */
+.ai-composer-hud [class*="animal-card"],
+.ai-composer-hud [class*="animal-pattern"] {
+  background: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .ai-composer-row {
@@ -502,14 +669,354 @@
 }
 
 @media (max-width: 520px) {
+  .ai-page {
+    --ai-hero-clearance: 100px;
+    --ai-page-gutter: 12px;
+    --ai-select-toolbar-h: 56px;
+  }
+  .app-shell.has-titlebar .ai-page {
+    --ai-hero-clearance: calc(100px + var(--callai-titlebar-h, 42px) - 6px);
+  }
   .ai-stage {
-    gap: 0;
+    gap: 6px;
+    padding-bottom: 10px;
   }
   .ai-composer-hud {
-    padding-top: 4px;
+    padding-top: 2px;
   }
   .ai-bubble.is-user,
   .ai-bubble.is-bot {
     max-width: 100%;
   }
+}
+
+/* ── Compact composer HUD ───────────────────────────── */
+.ai-composer-card.form-panel {
+  padding: 10px 12px 8px !important;
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ai-composer-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  min-width: 0;
+}
+
+.ai-composer-intent-seg.segmented {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  width: auto;
+  max-width: 55%;
+}
+
+.ai-composer-intent-seg.segmented button {
+  padding: 4px 10px !important;
+  font-size: 0.82rem !important;
+  min-height: 32px !important;
+  white-space: nowrap;
+}
+
+.ai-composer-model-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 48%;
+  margin-left: auto;
+}
+
+.ai-composer-model-slot .model-ac,
+.ai-composer-model-slot .model-ac.is-compact {
+  width: 100%;
+  min-width: 0;
+}
+
+.ai-composer-model-slot .model-ac-compact-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 4px !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.ai-composer-model-slot .model-ac-input-wrap {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.ai-composer-model-slot .model-ac-input-wrap input,
+.ai-composer-model-slot .model-ac-input-wrap [class*="animal-input"],
+.ai-composer-model-slot .model-ac-input-wrap [class*="animal-wrapper"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 32px !important;
+  height: 32px !important;
+  font-size: 0.82rem !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.ai-composer-row {
+  margin-top: 0;
+}
+
+.ai-composer-textarea {
+  min-height: 36px !important;
+  max-height: 120px !important;
+  padding: 8px 10px !important;
+  font-size: 0.9rem !important;
+}
+
+.ai-composer-key-hint {
+  margin: 4px 0 0 !important;
+  font-size: 0.72rem !important;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* detail drawer (error / payload inspection) */
+.ai-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+  padding: 4px 2px 12px;
+  box-sizing: border-box;
+}
+
+.ai-detail-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ai-detail-summary {
+  margin: 0;
+  font-weight: 750;
+  line-height: 1.4;
+  color: var(--callai-ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ai-detail-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--callai-border) 75%, transparent);
+  background: color-mix(in srgb, var(--callai-surface) 92%, transparent);
+  color: var(--callai-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  writing-mode: horizontal-tb !important;
+}
+
+@media (max-width: 560px) {
+  .ai-composer-toolbar {
+    flex-wrap: wrap;
+  }
+  .ai-composer-intent-seg.segmented {
+    max-width: 100%;
+    width: 100%;
+  }
+  .ai-composer-model-slot {
+    max-width: 100%;
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+/* Never let animal-island Loading fill the chat bubble (black full-height bar). */
+.ai-bubble .animal-wrapper-HLEzB,
+.ai-bubble [class*="animal-wrapper"][class*="HLEz"],
+.ai-bubble [class*="animal-container"] {
+  width: 0 !important;
+  height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  display: none !important;
+  background: transparent !important;
+}
+
+
+/* Message chrome: top info bar + bottom actions */
+.ai-msg-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 6px;
+  padding: 0 0 4px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--callai-border) 55%, transparent);
+}
+
+.ai-msg-role {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: color-mix(in srgb, var(--callai-ink) 72%, transparent);
+  flex: 0 0 auto;
+}
+
+.ai-msg-time {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--callai-ink) 55%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.ai-msg-info-spacer {
+  flex: 1 1 auto;
+  min-width: 4px;
+}
+
+.ai-msg-info .icon-btn-wrap button,
+.ai-msg-actions .icon-btn-wrap button {
+  min-width: 28px !important;
+  min-height: 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+}
+
+.ai-chevron {
+  transition: transform 0.15s ease;
+}
+.ai-chevron.is-collapsed {
+  transform: rotate(-90deg);
+}
+
+.ai-msg-main {
+  min-width: 0;
+}
+
+.ai-msg-collapsed-hint {
+  margin: 2px 0 4px !important;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.ai-msg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed color-mix(in srgb, var(--callai-border) 50%, transparent);
+}
+
+.ai-msg-action {
+  display: inline-flex;
+}
+
+/* legacy error actions (if any remain) */
+.ai-error-actions {
+  display: none;
+}
+
+.ai-bubble.is-collapsed {
+  opacity: 0.92;
+}
+
+/* Thinking vs final answer (o1/Claude-style collapsible thought) */
+.ai-think {
+  margin: 8px 0 10px;
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--callai-border) 70%, transparent);
+  background: color-mix(in srgb, var(--callai-ink) 4%, var(--callai-surface));
+  overflow: hidden;
+}
+
+.ai-think-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--callai-ink) 70%, transparent);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ai-think-toggle:hover {
+  color: var(--callai-ink);
+  background: color-mix(in srgb, var(--callai-primary, #0f9f92) 8%, transparent);
+}
+
+.ai-think-label {
+  letter-spacing: 0.02em;
+}
+
+.ai-think-preview {
+  margin: 0 10px 8px !important;
+  opacity: 0.72;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-think-body {
+  margin: 0;
+  padding: 0 12px 10px;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--callai-ink) 78%, transparent);
+  white-space: pre-wrap;
+  word-break: break-word;
+  writing-mode: horizontal-tb !important;
+}
+
+.ai-answer-block {
+  margin-top: 4px;
+  min-width: 0;
+}
+
+.ai-answer-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--callai-primary, #0f9f92) 85%, var(--callai-ink));
+  margin: 0 0 4px;
+}
+
+.ai-answer-block > .ai-bubble-body {
+  margin: 0;
+}
+
+.ai-answer-block > .ai-stream-preview {
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .ai-think {
+  background: color-mix(in srgb, #000 22%, var(--callai-surface));
 }

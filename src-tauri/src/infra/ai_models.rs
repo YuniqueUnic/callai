@@ -545,6 +545,23 @@ fn parse_responses_content(body: &str) -> DomainResult<String> {
     if let Some(arr) = v.get("output").and_then(|o| o.as_array()) {
         for item in arr {
             let ty = item.get("type").and_then(|t| t.as_str()).unwrap_or("");
+            // Prefer surfacing reasoning summary as prefixed prose so the UI can split it.
+            if ty == "reasoning" {
+                if let Some(summary) = item.get("summary").and_then(|s| s.as_array()) {
+                    for part in summary {
+                        if let Some(txt) = part
+                            .get("text")
+                            .and_then(|x| x.as_str())
+                            .or_else(|| part.as_str())
+                        {
+                            let s = txt.trim();
+                            if !s.is_empty() {
+                                texts.push(format!("<think>{s}</think>"));
+                            }
+                        }
+                    }
+                }
+            }
             if ty == "message" || item.get("role").and_then(|r| r.as_str()) == Some("assistant") {
                 if let Some(content) = item.get("content").and_then(|c| c.as_array()) {
                     for part in content {

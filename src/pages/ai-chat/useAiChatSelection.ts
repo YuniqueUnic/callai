@@ -106,6 +106,9 @@ export function useAiChatSelection(opts: {
   async function deleteSelected() {
     const ids = [...selected];
     if (ids.length === 0) return;
+    if (!window.confirm(t("ai:deleteSelectedConfirm", { count: ids.length }))) {
+      return;
+    }
     try {
       await client.deleteAiChatMessages(ids);
       opts.setMessages((m) => m.filter((msg) => !selected.has(msg.id)));

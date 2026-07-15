@@ -442,12 +442,18 @@ pub fn generate_secret_token() -> String {
 }
 
 #[tauri::command]
-pub fn list_ai_models(
+pub async fn list_ai_models(
     provider: String,
     base_url: String,
     api_key: String,
 ) -> Result<Vec<String>, String> {
-    crate::infra::ai_models::list_models(&provider, &base_url, &api_key).map_err(map_err)
+    // HTTP list must not block the UI thread (refresh was freezing the app).
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::infra::ai_models::list_models(&provider, &base_url, &api_key)
+    })
+    .await
+    .map_err(|e| format!("join error: {e}"))?
+    .map_err(map_err)
 }
 
 /// Stream event for AI generation (progress + text deltas).

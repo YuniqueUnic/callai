@@ -100,8 +100,8 @@ html.tauri .window-resize-grip {
    Fix: clip mask to same round rect as shell; round panel OUTER corners;
    neutralize any leftover push styles on #root when logs open.
 */
-html.tauri body.callai-logs-open [class*="animal-mask"],
-html.tauri body.callai-logs-open [data-animal-drawer-portal] [class*="animal-mask"] {
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) [class*="animal-mask"],
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) [data-animal-drawer-portal] [class*="animal-mask"] {
   /* do not fill the transparent corner pixels outside the island shell */
   border-radius: var(--callai-window-radius, 16px) !important;
   clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
@@ -110,9 +110,10 @@ html.tauri body.callai-logs-open [data-animal-drawer-portal] [class*="animal-mas
 }
 
 /* Right drawer: outer (window) corners must match shell radius */
-html.tauri body.callai-logs-open [class*="animal-panelRight"],
-html.tauri body.callai-logs-open [class*="animal-panel"][class*="Right"],
-html.tauri body.callai-logs-open .logs-drawer[class*="animal-panel"] {
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) [class*="animal-panelRight"],
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) [class*="animal-panel"][class*="Right"],
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) .logs-drawer[class*="animal-panel"],
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) .ai-detail-drawer[class*="animal-panel"] {
   top: 0 !important;
   bottom: 0 !important;
   height: 100% !important;
@@ -127,9 +128,9 @@ html.tauri body.callai-logs-open .logs-drawer[class*="animal-panel"] {
 }
 
 /* If a future pushBackground sneaks back, kill scale/blur on host tree */
-html.tauri body.callai-logs-open > #root,
-html.tauri body.callai-logs-open > #root.cursor-root,
-html.tauri body.callai-logs-open > .cursor-root {
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) > #root,
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) > #root.cursor-root,
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) > .cursor-root {
   transform: none !important;
   filter: none !important;
   border-radius: 0 !important;
@@ -139,31 +140,31 @@ html.tauri body.callai-logs-open > .cursor-root {
 }
 
 /* Shell must stay clipped while drawer is open */
-html.tauri body.callai-logs-open .app-shell.has-titlebar {
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) .app-shell.has-titlebar {
   border-radius: var(--callai-window-radius, 16px) !important;
   clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
   -webkit-clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
   overflow: hidden !important;
 }
 
-html.tauri body.callai-logs-open .app-shell.has-titlebar.is-maximized,
-html.tauri body.callai-logs-open .app-shell.has-titlebar.is-fullscreen {
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) .app-shell.has-titlebar.is-maximized,
+html.tauri body:is(.callai-logs-open, .callai-drawer-open) .app-shell.has-titlebar.is-fullscreen {
   border-radius: 0 !important;
   clip-path: none !important;
   -webkit-clip-path: none !important;
 }
 
 /* Maximized: mask/panel rectangular — see :has rules below */
-html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-maximized) [class*="animal-mask"],
-html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-fullscreen) [class*="animal-mask"] {
+html.tauri body:is(.callai-logs-open, .callai-drawer-open):has(.app-shell.has-titlebar.is-maximized) [class*="animal-mask"],
+html.tauri body:is(.callai-logs-open, .callai-drawer-open):has(.app-shell.has-titlebar.is-fullscreen) [class*="animal-mask"] {
   border-radius: 0 !important;
   clip-path: none !important;
   -webkit-clip-path: none !important;
 }
-html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-maximized) [class*="animal-panelRight"],
-html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-fullscreen) [class*="animal-panelRight"],
-html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-maximized) [class*="animal-panel"][class*="Right"],
-html.tauri body.callai-logs-open:has(.app-shell.has-titlebar.is-fullscreen) [class*="animal-panel"][class*="Right"] {
+html.tauri body:is(.callai-logs-open, .callai-drawer-open):has(.app-shell.has-titlebar.is-maximized) [class*="animal-panelRight"],
+html.tauri body:is(.callai-logs-open, .callai-drawer-open):has(.app-shell.has-titlebar.is-fullscreen) [class*="animal-panelRight"],
+html.tauri body:is(.callai-logs-open, .callai-drawer-open):has(.app-shell.has-titlebar.is-maximized) [class*="animal-panel"][class*="Right"],
+html.tauri body:is(.callai-logs-open, .callai-drawer-open):has(.app-shell.has-titlebar.is-fullscreen) [class*="animal-panel"][class*="Right"] {
   border-radius: 0 !important;
 }
 
@@ -251,7 +252,7 @@ html.tauri .titlebar-tagline {
   transform: translateY(-2px) scale(1.04);
 }
 
-body.callai-logs-open .fab-cluster {
+body:is(.callai-logs-open, .callai-drawer-open) .fab-cluster {
   opacity: 0.35;
   pointer-events: none;
 }

@@ -405,14 +405,16 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
             />
           </div>
           <Input value={endpoint} readOnly />
-          <p className="meta" style={{ marginTop: 8 }}>
-            {t("settings:mcpStdioHint")}
-          </p>
-          <code className="settings-code">callai mcp-server</code>
-          <p className="meta" style={{ marginTop: 8 }}>
-            {t("settings:mcpHttpDaemonHint")}
-          </p>
-          <code className="settings-code">callai mcp-server --http</code>
+          <div className="settings-cli-stack">
+            <p className="meta settings-cli-label">
+              {t("settings:mcpStdioHint")}
+            </p>
+            <code className="settings-code">callai mcp-server</code>
+            <p className="meta settings-cli-label">
+              {t("settings:mcpHttpDaemonHint")}
+            </p>
+            <code className="settings-code">callai mcp-server --http</code>
+          </div>
         </div>
       </div>
     </>

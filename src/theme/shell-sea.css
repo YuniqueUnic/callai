@@ -52,7 +52,9 @@
   border-radius: 999px !important;
   border-bottom: 2px solid color-mix(in srgb, var(--callai-border) 55%, transparent) !important;
   width: fit-content !important;
+  min-width: fit-content !important;
   max-width: calc(100% - 24px) !important;
+  justify-content: flex-start !important;
   box-shadow: 0 6px 18px rgba(40, 30, 20, 0.12) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);

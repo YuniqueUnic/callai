@@ -1,15 +1,19 @@
+import type { KeyboardEvent, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { Card } from "animal-island-ui";
 import type { AiIntent } from "../../ai/generate";
 import type { SendKeyMode } from "../../ai/sendKeyMode";
+import type { AiSettings } from "../../domain/types";
 import { IconButton } from "../../ui/IconButton";
 import { IconChevronDown, IconSend } from "../../ui/icons";
+import { ModelAutocomplete } from "../../ui/ModelAutocomplete";
 import { playSound } from "../../ui/sounds";
-import type { KeyboardEvent, RefObject } from "react";
 
 interface Props {
   intent: AiIntent;
   setIntent: (v: AiIntent) => void;
+  ai: AiSettings;
+  onModelChange: (model: string) => void;
   input: string;
   setInput: (v: string) => void;
   busy: boolean;
@@ -28,6 +32,8 @@ interface Props {
 export function AiChatComposer({
   intent,
   setIntent,
+  ai,
+  onModelChange,
   input,
   setInput,
   busy,
@@ -42,14 +48,14 @@ export function AiChatComposer({
   onKeyDown,
   pickSendMode,
 }: Props) {
-  const { t } = useTranslation(["ai"]);
+  const { t } = useTranslation(["ai", "settings"]);
 
   return (
     <div className="ai-composer-hud" role="region" aria-label={t("ai:send")}>
       <Card color="default" className="form-panel ai-composer-card">
-        <div className="field">
-          <label className="label">{t("ai:intentLabel")}</label>
-          <div className="segmented">
+        {/* Row 1: intent left · model right (single compact band) */}
+        <div className="ai-composer-toolbar" role="group" aria-label={t("ai:intentLabel")}>
+          <div className="segmented ai-composer-intent-seg">
             {(
               [
                 ["alarm", "intentAlarm"],
@@ -71,8 +77,22 @@ export function AiChatComposer({
               </button>
             ))}
           </div>
+
+          <div className="ai-composer-model-slot">
+            <ModelAutocomplete
+              compact
+              disabled={busy || selectMode}
+              provider={ai.provider}
+              baseUrl={ai.base_url}
+              apiKey={ai.api_key}
+              value={ai.model}
+              placeholder={t("settings:aiModel")}
+              onChange={onModelChange}
+            />
+          </div>
         </div>
 
+        {/* Row 2: textarea + send */}
         <div className="ai-composer-row">
           <textarea
             ref={taRef}
@@ -135,6 +155,7 @@ export function AiChatComposer({
           {sendKeyMode === "enter"
             ? t("ai:sendKeyEnterHint")
             : t("ai:sendKeyModEnterHint", { mod: modLabel })}
+          {ai.model?.trim() ? ` · ${ai.model.trim()}` : ""}
         </p>
       </Card>
     </div>

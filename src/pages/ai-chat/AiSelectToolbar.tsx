@@ -7,7 +7,6 @@ interface Props {
   onSelectAll: () => void;
   onCopy: () => void;
   onDelete: () => void;
-  onClearAll: () => void;
   onCancel: () => void;
 }
 
@@ -16,7 +15,6 @@ export function AiSelectToolbar({
   onSelectAll,
   onCopy,
   onDelete,
-  onClearAll,
   onCancel,
 }: Props) {
   const { t } = useTranslation(["ai"]);
@@ -45,12 +43,6 @@ export function AiSelectToolbar({
           disabled={selectedCount === 0}
           sfx="cancel"
           onClick={onDelete}
-        />
-        <IconButton
-          label={t("ai:clearHistory")}
-          icon={<IconTrash size={16} />}
-          sfx="cancel"
-          onClick={onClearAll}
         />
         <IconButton
           label={t("ai:selectCancel")}

@@ -1,14 +1,22 @@
 /* chrome-finish.css: tab anti-squeeze + idle tab/FAB opacity + immersive FAB hide */
 
-/* Tab anti-squeeze: never stack CJK glyphs vertically */
+/* Tab pill: hug content (no forced min-width that stretches gaps) */
 .main-tabs [class*="animal-tabList"] {
+  display: inline-flex !important;
+  flex-direction: row !important;
   flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 2px !important;
+  width: fit-content !important;
+  min-width: fit-content !important;
+  max-width: calc(100% - 24px) !important;
   white-space: nowrap !important;
-  max-width: min(100% - 24px, 420px) !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  box-sizing: border-box !important;
 }
 
 .main-tabs [class*="animal-tabList"]::-webkit-scrollbar {
@@ -26,15 +34,23 @@
 }
 
 .main-tabs [class*="animal-tabItem"] {
+  display: inline-flex !important;
   flex: 0 0 auto !important;
+  flex-grow: 0 !important;
   flex-shrink: 0 !important;
-  min-width: max-content !important;
+  flex-basis: auto !important;
   width: auto !important;
+  min-width: 0 !important;
   max-width: none !important;
-  padding: 6px 16px !important;
-  font-size: 0.92rem !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 12px !important;
+  font-size: 0.9rem !important;
   font-weight: 800 !important;
-  letter-spacing: 0.02em !important;
+  letter-spacing: 0.01em !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* Immersive pages (edit / AI): hide body-portaled FAB cluster */
@@ -48,31 +64,7 @@ body.callai-immersive > .fab {
 }
 
 
-/* Tab labels: force horizontal CJK (override any library/layout shrink) */
-.main-tabs [class*="animal-tabList"] {
-  display: inline-flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: max-content !important;
-  min-width: min(320px, calc(100vw - 48px)) !important;
-  max-width: calc(100% - 24px) !important;
-  box-sizing: border-box !important;
-}
-
-.main-tabs [class*="animal-tabItem"] {
-  display: inline-flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex: 0 0 auto !important;
-  height: 36px !important;
-  min-height: 36px !important;
-  min-width: 4.5em !important;
-  padding: 0 18px !important;
-  box-sizing: border-box !important;
-}
-
+/* Tab labels: horizontal CJK, no forced stretch */
 .main-tabs [class*="animal-tabLabel"],
 .main-tabs [class*="animal-tabItem"] span {
   display: inline !important;
@@ -82,13 +74,15 @@ body.callai-immersive > .fab {
   text-overflow: clip !important;
   writing-mode: horizontal-tb !important;
   max-width: none !important;
+  min-width: 0 !important;
   width: auto !important;
 }
 
 .main-tabs [class*="animal-tabItem"].animal-active-AoX4Y,
 .main-tabs [class*="animal-tabItem"][class*="active"] {
   border-radius: 999px !important;
-  min-width: 4.5em !important;
+  min-width: 0 !important;
+  width: auto !important;
 }
 
 

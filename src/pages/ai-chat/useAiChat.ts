@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AiSettings } from "../../domain/types";
 import { DEFAULT_AI_SETTINGS } from "../../domain/types";
-import { getSettingsCached } from "../../infra/settingsCache";
+import { client } from "../../infra/client";
+import {
+  getSettingsCached,
+  setSettingsCache,
+} from "../../infra/settingsCache";
 import type { AiIntent } from "../../ai/generate";
 import {
   isModEnter,
@@ -24,7 +28,6 @@ export function useAiChat(opts: {
   const [input, setInput] = useState("");
   const [intent, setIntent] = useState<AiIntent>("alarm");
   const [busy, setBusy] = useState(false);
-  const [rawOpen, setRawOpen] = useState<Record<string, boolean>>({});
   const [sendKeyMode, setSendKeyMode] = useState<SendKeyMode>(() =>
     loadSendKeyMode(),
   );
@@ -114,8 +117,25 @@ export function useAiChat(opts: {
     playSound("soft");
   }
 
+
+  function setModel(model: string) {
+    setAi((prev) => ({ ...prev, model }));
+    void (async () => {
+      try {
+        const cur = await getSettingsCached();
+        const aiNext = { ...(cur.ai ?? DEFAULT_AI_SETTINGS), model };
+        const saved = await client.saveSettings({ ...cur, ai: aiNext });
+        setSettingsCache(saved);
+        if (saved.ai) setAi(saved.ai);
+      } catch {
+        /* keep local model */
+      }
+    })();
+  }
+
   return {
     ai,
+    setModel,
     input,
     setInput,
     intent,
@@ -128,8 +148,6 @@ export function useAiChat(opts: {
     selectMode: selection.selectMode,
     selected: selection.selected,
     selectedCount: selection.selectedCount,
-    rawOpen,
-    setRawOpen,
     sendKeyMode,
     sendMenuOpen,
     setSendMenuOpen,

@@ -10,6 +10,7 @@ import {
   guessIntent,
   type AiIntent,
 } from "../../ai/generate";
+import { splitStreamingOutput } from "../../ai/splitModelOutput";
 import {
   nowIso,
   toStored,
@@ -18,6 +19,23 @@ import {
 } from "../../ai/chatHistory";
 import { toast } from "../../ui/toast";
 import { playSound } from "../../ui/sounds";
+
+/** Rotate cozy island-style status lines while tokens stream in. */
+function pickStreamingMood(
+  t: (key: string) => string,
+  elapsedMs: number,
+): string {
+  const keys = [
+    "ai:moodThinking",
+    "ai:moodBusy",
+    "ai:moodWorking",
+    "ai:moodPondering",
+    "ai:moodSketching",
+    "ai:moodBrewing",
+  ] as const;
+  const i = Math.floor(elapsedMs / 2800) % keys.length;
+  return t(keys[i]);
+}
 
 function nid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -105,7 +123,7 @@ export function useAiChatSend(opts: {
           id: genId,
           role: "assistant",
           kind: "generating",
-          content: t("ai:generating"),
+          content: t("ai:phaseConnecting"),
           createdAt: nowIso(),
         },
       ]);
@@ -117,7 +135,7 @@ export function useAiChatSend(opts: {
           id: genId,
           role: "assistant",
           kind: "generating",
-          content: t("ai:generating"),
+          content: t("ai:phaseConnecting"),
           createdAt: nowIso(),
         },
       ]);
@@ -134,7 +152,7 @@ export function useAiChatSend(opts: {
             : phase === "waiting"
               ? t("ai:phaseWaiting")
               : phase === "streaming"
-                ? t("ai:phaseStreaming")
+                ? pickStreamingMood(t, info.elapsedMs)
                 : t("ai:phaseDone");
         opts.setMessages((m) =>
           m.map((msg) =>
@@ -155,12 +173,17 @@ export function useAiChatSend(opts: {
         );
       },
       onDelta: (_delta: string, full: string) => {
+        const split = splitStreamingOutput(full);
         opts.setMessages((m) =>
           m.map((msg) =>
             msg.id === genId &&
             msg.role === "assistant" &&
             msg.kind === "generating"
-              ? { ...msg, streamText: full }
+              ? {
+                  ...msg,
+                  streamText: full,
+                  thinking: split.thinking || undefined,
+                }
               : msg,
           ),
         );
@@ -170,7 +193,11 @@ export function useAiChatSend(opts: {
     try {
       let finalMsg: ChatMsg;
       if (resolvedIntent === "alarm") {
-        const draft = await generateAlarmDraft(opts.ai, text, streamHandlers);
+        const { draft, thinking } = await generateAlarmDraft(
+          opts.ai,
+          text,
+          streamHandlers,
+        );
         finalMsg = {
           id: genId,
           role: "assistant",
@@ -178,9 +205,14 @@ export function useAiChatSend(opts: {
           content: t("ai:alarmReady", { name: draft.name }),
           createdAt: nowIso(),
           draft,
+          thinking: thinking || undefined,
         };
       } else if (resolvedIntent === "plugin") {
-        const draft = await generatePluginDraft(opts.ai, text, streamHandlers);
+        const { draft, thinking } = await generatePluginDraft(
+          opts.ai,
+          text,
+          streamHandlers,
+        );
         finalMsg = {
           id: genId,
           role: "assistant",
@@ -188,6 +220,7 @@ export function useAiChatSend(opts: {
           content: t("ai:pluginReady", { name: draft.manifest.name }),
           createdAt: nowIso(),
           draft,
+          thinking: thinking || undefined,
         };
       } else {
         const hist = historySnapshot
@@ -200,13 +233,19 @@ export function useAiChatSend(opts: {
             role: m.role as "user" | "assistant",
             content: m.content,
           }));
-        const reply = await chatReply(opts.ai, text, hist, streamHandlers);
+        const { reply, thinking } = await chatReply(
+          opts.ai,
+          text,
+          hist,
+          streamHandlers,
+        );
         finalMsg = {
           id: genId,
           role: "assistant",
           kind: "text",
           content: reply,
           createdAt: nowIso(),
+          thinking: thinking || undefined,
         };
       }
       opts.setMessages((m) =>
@@ -217,6 +256,9 @@ export function useAiChatSend(opts: {
     } catch (e) {
       const errText = formatError(e);
       const raw = e instanceof AiParseError ? e.raw : "";
+      const thinking = raw
+        ? splitStreamingOutput(raw).thinking || undefined
+        : undefined;
       const errMsg: ChatMsg = {
         id: genId,
         role: "assistant",
@@ -226,6 +268,7 @@ export function useAiChatSend(opts: {
         retryText: text,
         retryIntent: resolvedIntent,
         raw,
+        thinking,
       };
       opts.setMessages((m) => m.map((msg) => (msg.id === genId ? errMsg : msg)));
       void persistMsg(errMsg);

@@ -1,7 +1,12 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Drawer } from "animal-island-ui";
+import type { ChatMsg } from "../../ai/chatHistory";
 import { ElementImage } from "../../ui/ElementImage";
 import { IconButton } from "../../ui/IconButton";
-import { IconBack, IconClear } from "../../ui/icons";
+import { IconBack, IconClear, IconCopy } from "../../ui/icons";
+import { toast } from "../../ui/toast";
+import { playSound } from "../../ui/sounds";
 import { AiChatComposer } from "./AiChatComposer";
 import { AiChatStream } from "./AiChatStream";
 import { AiSelectToolbar } from "./AiSelectToolbar";
@@ -13,9 +18,68 @@ interface Props {
   onPluginCreated: () => void;
 }
 
+interface DetailState {
+  title: string;
+  summary: string;
+  body: string;
+}
+
+function detailFromMsg(m: ChatMsg, fallbackTitle: string): DetailState {
+  if (m.role === "assistant" && m.kind === "error") {
+    const body = [m.content, m.raw ? `--- raw ---\n${m.raw}` : ""]
+      .filter(Boolean)
+      .join("\n\n");
+    return {
+      title: fallbackTitle,
+      summary: m.content,
+      body: body || m.content,
+    };
+  }
+  if (m.role === "assistant" && m.kind === "alarm_draft") {
+    return {
+      title: fallbackTitle,
+      summary: m.content,
+      body: JSON.stringify(m.draft, null, 2),
+    };
+  }
+  if (m.role === "assistant" && m.kind === "plugin_draft") {
+    return {
+      title: fallbackTitle,
+      summary: m.content,
+      body: JSON.stringify(m.draft, null, 2),
+    };
+  }
+  const text =
+    m.role === "user"
+      ? m.content
+      : m.kind === "generating"
+        ? m.streamText || m.content
+        : m.content;
+  return { title: fallbackTitle, summary: text, body: text };
+}
+
 export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
   const { t } = useTranslation(["ai", "common"]);
   const chat = useAiChat({ onAlarmCreated, onPluginCreated });
+  const [detail, setDetail] = useState<DetailState | null>(null);
+
+  // Preserve rounded tauri chrome (same fix path as logs drawer).
+  useEffect(() => {
+    const open = detail != null;
+    document.body.classList.toggle("callai-drawer-open", open);
+    return () => document.body.classList.remove("callai-drawer-open");
+  }, [detail]);
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success({ message: t("ai:copied") });
+      playSound("confirm");
+    } catch {
+      toast.error({ message: "clipboard failed" });
+      playSound("warn");
+    }
+  }
 
   return (
     <div className="edit-page ai-page">
@@ -63,7 +127,6 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
           onSelectAll={chat.selectAllLoaded}
           onCopy={() => void chat.copySelected()}
           onDelete={() => void chat.deleteSelected()}
-          onClearAll={() => void chat.clearAllHistory()}
           onCancel={chat.exitSelect}
         />
       ) : null}
@@ -78,13 +141,17 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
           busy={chat.busy}
           selectMode={chat.selectMode}
           selected={chat.selected}
-          rawOpen={chat.rawOpen}
           streamRef={chat.streamRef}
           onScrollStream={chat.onScrollStream}
           onLoadOlder={() => void chat.loadOlder()}
-          onToggleRaw={(id) =>
-            chat.setRawOpen((r) => ({ ...r, [id]: !r[id] }))
-          }
+          onDetail={(msg) => {
+            setDetail(detailFromMsg(msg, t("ai:detailTitle")));
+            playSound("soft");
+          }}
+          onCopy={(msg) => {
+            const d = detailFromMsg(msg, t("ai:detailTitle"));
+            void copyText(d.body);
+          }}
           onRetry={(text, intent) => void chat.send(text, intent)}
           onAcceptAlarm={(id, draft) => void chat.acceptAlarm(id, draft)}
           onAcceptPlugin={(id, draft) => void chat.acceptPlugin(id, draft)}
@@ -97,6 +164,8 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
         <AiChatComposer
           intent={chat.intent}
           setIntent={chat.setIntent}
+          ai={chat.ai}
+          onModelChange={chat.setModel}
           input={chat.input}
           setInput={chat.setInput}
           busy={chat.busy}
@@ -112,6 +181,33 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
           pickSendMode={chat.pickSendMode}
         />
       </div>
+
+      <Drawer
+        open={detail != null}
+        title={detail?.title ?? t("ai:detailTitle")}
+        placement="right"
+        width="min(440px, 94vw)"
+        pushBackground={false}
+        onClose={() => setDetail(null)}
+        className="ai-detail-drawer"
+      >
+        {detail ? (
+          <div className="ai-detail-panel">
+            <div className="ai-detail-toolbar">
+              <IconButton
+                label={t("ai:copyError")}
+                icon={<IconCopy size={16} />}
+                sfx="confirm"
+                onClick={() => void copyText(detail.body)}
+              />
+            </div>
+            {detail.summary && detail.summary !== detail.body ? (
+              <p className="ai-detail-summary">{detail.summary}</p>
+            ) : null}
+            <pre className="ai-detail-body">{detail.body}</pre>
+          </div>
+        ) : null}
+      </Drawer>
     </div>
   );
 }

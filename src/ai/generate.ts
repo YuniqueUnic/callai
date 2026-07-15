@@ -12,6 +12,7 @@ import { generateText } from "ai";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { z } from "zod";
 import type { AiSettings, AlarmDraft, PluginDraft } from "../domain/types";
+import { splitModelOutput } from "./splitModelOutput";
 import { client } from "../infra/client";
 import { isTauri } from "../infra/tauriApi";
 import { loadRuntimeContextBlock } from "./runtimeContext";
@@ -351,11 +352,29 @@ export function composeSystemPrompt(
   ]);
 }
 
+export type AlarmGenerateResult = {
+  draft: AlarmDraft;
+  thinking: string;
+  raw: string;
+};
+
+export type PluginGenerateResult = {
+  draft: PluginDraft;
+  thinking: string;
+  raw: string;
+};
+
+export type ChatGenerateResult = {
+  reply: string;
+  thinking: string;
+  raw: string;
+};
+
 export async function generateAlarmDraft(
   ai: AiSettings,
   userMessage: string,
   handlers?: CompleteTextHandlers,
-): Promise<AlarmDraft> {
+): Promise<AlarmGenerateResult> {
   const [bundle, runtime] = await Promise.all([
     loadPromptBundle(),
     loadRuntimeContextBlock(),
@@ -367,14 +386,20 @@ export async function generateAlarmDraft(
     0.3,
     handlers,
   );
-  return parseOrThrow(AlarmDraftSchema, text, "AlarmDraft") as AlarmDraft;
+  const split = splitModelOutput(text);
+  const draft = parseOrThrow(
+    AlarmDraftSchema,
+    split.body || text,
+    "AlarmDraft",
+  ) as AlarmDraft;
+  return { draft, thinking: split.thinking, raw: text };
 }
 
 export async function generatePluginDraft(
   ai: AiSettings,
   userMessage: string,
   handlers?: CompleteTextHandlers,
-): Promise<PluginDraft> {
+): Promise<PluginGenerateResult> {
   const [bundle, runtime] = await Promise.all([
     loadPromptBundle(),
     loadRuntimeContextBlock(),
@@ -386,7 +411,13 @@ export async function generatePluginDraft(
     0.4,
     handlers,
   );
-  return parseOrThrow(PluginDraftSchema, text, "PluginDraft") as PluginDraft;
+  const split = splitModelOutput(text);
+  const draft = parseOrThrow(
+    PluginDraftSchema,
+    split.body || text,
+    "PluginDraft",
+  ) as PluginDraft;
+  return { draft, thinking: split.thinking, raw: text };
 }
 
 export async function chatReply(
@@ -394,7 +425,7 @@ export async function chatReply(
   userMessage: string,
   history: { role: "user" | "assistant"; content: string }[],
   handlers?: CompleteTextHandlers,
-): Promise<string> {
+): Promise<ChatGenerateResult> {
   const [bundle, runtime] = await Promise.all([
     loadPromptBundle(),
     loadRuntimeContextBlock(),
@@ -409,7 +440,12 @@ export async function chatReply(
     0.5,
     handlers,
   );
-  return text.trim();
+  const split = splitModelOutput(text);
+  return {
+    reply: (split.body || text).trim(),
+    thinking: split.thinking,
+    raw: text,
+  };
 }
 
 export function guessIntent(message: string): AiIntent {

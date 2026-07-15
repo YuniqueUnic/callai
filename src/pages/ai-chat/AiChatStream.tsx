@@ -16,11 +16,11 @@ interface Props {
   busy: boolean;
   selectMode: boolean;
   selected: Set<string>;
-  rawOpen: Record<string, boolean>;
   streamRef: RefObject<HTMLDivElement | null>;
   onScrollStream: () => void;
   onLoadOlder: () => void;
-  onToggleRaw: (id: string) => void;
+  onDetail: (msg: ChatMsg) => void;
+  onCopy: (msg: ChatMsg) => void;
   onRetry: (text: string, intent: AiIntent) => void;
   onAcceptAlarm: (id: string, draft: AlarmDraft) => void;
   onAcceptPlugin: (id: string, draft: PluginDraft) => void;
@@ -39,11 +39,11 @@ export function AiChatStream({
   busy,
   selectMode,
   selected,
-  rawOpen,
   streamRef,
   onScrollStream,
   onLoadOlder,
-  onToggleRaw,
+  onDetail,
+  onCopy,
   onRetry,
   onAcceptAlarm,
   onAcceptPlugin,
@@ -115,8 +115,8 @@ export function AiChatStream({
                 busy={busy}
                 selectMode={selectMode}
                 selected={selected.has(m.id)}
-                rawOpen={Boolean(rawOpen[m.id])}
-                onToggleRaw={() => onToggleRaw(m.id)}
+                onDetail={() => onDetail(m)}
+                onCopy={() => onCopy(m)}
                 onRetry={onRetry}
                 onAcceptAlarm={onAcceptAlarm}
                 onAcceptPlugin={onAcceptPlugin}
