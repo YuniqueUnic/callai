@@ -1,0 +1,113 @@
+/* titlebar-layout.css: content clearance under titlebar HUD */
+
+/* ── Overlay titlebar clearance: content scrolls under HUD ── */
+:root {
+  --callai-titlebar-h: 42px;
+}
+
+/* Shell children after titlebar fill full height (titlebar is absolute) */
+.app-shell.has-titlebar > .app-body,
+.app-shell.has-titlebar > .edit-page,
+.app-shell.has-titlebar.immersive-edit > .edit-page {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Tab content / home: start under titlebar + keep existing tab pill clearance */
+.app-shell.has-titlebar .main-tabs [class*="animal-tabList"] {
+  top: calc(10px + var(--callai-titlebar-h)) !important;
+}
+
+.app-shell.has-titlebar .main-tabs [class*="animal-tabContentInner"] > .home-page > .home-hero {
+  /* was 52px for tab pill only; add titlebar HUD */
+  margin-top: calc(52px + var(--callai-titlebar-h) - 8px) !important;
+  padding-top: 52px; /* keep sticky hero offset under tab pill */
+}
+
+.app-shell.has-titlebar .settings-page .settings-hero {
+  margin-top: calc(52px + var(--callai-titlebar-h) - 8px) !important;
+}
+
+.app-shell.has-titlebar .plugins-page .plugins-hero,
+.app-shell.has-titlebar .tab-pane .plugins-hero {
+  margin-top: calc(52px + var(--callai-titlebar-h) - 8px) !important;
+}
+
+.app-shell.has-titlebar .settings-hero-deco {
+  top: calc(56px + var(--callai-titlebar-h)) !important;
+}
+
+/* Edit page floating header sits under titlebar HUD */
+.app-shell.has-titlebar.immersive-edit .edit-hero,
+.app-shell.has-titlebar .edit-page > header.edit-hero {
+  top: calc(8px + var(--callai-titlebar-h)) !important;
+}
+.app-shell.has-titlebar .edit-page .edit-main,
+.app-shell.has-titlebar .edit-page .app-main.form-stack.edit-main {
+  padding-top: calc(118px + var(--callai-titlebar-h) - 40px) !important;
+}
+
+/* Titlebar control clusters: no container border/plate — only the buttons themselves */
+.titlebar-extras,
+.titlebar.controls-right .titlebar-controls,
+.titlebar.controls-left .titlebar-controls {
+  padding: 2px;
+  gap: 6px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0;
+}
+[data-theme="dark"] .titlebar-extras,
+[data-theme="dark"] .titlebar.controls-right .titlebar-controls,
+[data-theme="dark"] .titlebar.controls-left .titlebar-controls {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Brand text gets subtle readable shadow instead of solid bar */
+.titlebar-title,
+.titlebar-tagline {
+  text-shadow:
+    0 1px 0 color-mix(in srgb, var(--callai-bg) 70%, transparent),
+    0 0 10px color-mix(in srgb, var(--callai-bg) 55%, transparent);
+}
+[data-theme="dark"] .titlebar-title,
+[data-theme="dark"] .titlebar-tagline {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 12px rgba(0, 0, 0, 0.35);
+}
+
+/* macOS traffic cluster: no container border/plate — only the three dots */
+.titlebar.controls-left .titlebar-controls {
+  padding: 4px 2px;
+  gap: 8px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0;
+}
+[data-theme="dark"] .titlebar.controls-left .titlebar-controls {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+
+/* Final: never paint a bordered tray around titlebar control groups */
+.titlebar-controls,
+.titlebar-extras {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

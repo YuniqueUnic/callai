@@ -1,0 +1,260 @@
+/* tabs-keepalive.css: keep-alive panes + about links + edit overlay mount */
+
+
+/* Settings about: version + links */
+.settings-about-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.settings-about-meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-about-row {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.settings-about-row dt {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--callai-ink-soft);
+}
+.settings-about-row dd {
+  margin: 0;
+  min-width: 0;
+}
+.settings-link-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 800;
+  color: var(--callai-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  text-align: left;
+  word-break: break-all;
+}
+.settings-link-btn:hover {
+  color: var(--callai-ink);
+}
+[data-theme="dark"] .settings-link-btn {
+  color: #5ee0d2;
+}
+[data-theme="dark"] .settings-link-btn:hover {
+  color: #fff6e8;
+}
+[data-theme="dark"] .settings-about-row dt {
+  color: var(--callai-ink-soft);
+}
+
+
+/* Keep-alive tab panes (Settings stays warm; no remount stall) */
+.app-body {
+  position: relative;
+}
+.tab-panes {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.tab-pane {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  display: none;
+}
+.tab-pane.is-active {
+  display: block;
+}
+/* Hide empty animal tab content shell when we host panes ourselves */
+.main-tabs [class*="animal-tabContent"] {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+/* Floating tab list still above panes */
+.main-tabs [class*="animal-tabList"] {
+  z-index: 300 !important;
+}
+
+
+/* Edit overlays main shell (Home/Settings stay mounted, no remount stall) */
+.app-body[hidden],
+.app-footer-band[hidden] {
+  display: none !important;
+}
+.edit-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  background: var(--callai-bg);
+}
+.edit-overlay > .edit-page,
+[data-theme="dark"] button.time-picker-trigger,
+[data-theme="dark"] button.timezone-picker-trigger {
+  background: #15201c !important;
+  border: 2px solid #a8c0b4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+[data-theme="dark"] .time-picker-trigger .time-picker-value,
+[data-theme="dark"] .time-picker-trigger .time-picker-caret,
+[data-theme="dark"] .timezone-picker-trigger .timezone-picker-value,
+[data-theme="dark"] .timezone-picker-value {
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  opacity: 1 !important;
+}
+
+/* Popup shell: near-black green + cream ink (WCAG-ish large text) */
+[data-theme="dark"] .time-picker-popup,
+[data-theme="dark"] .time-picker-popup-portal,
+[data-theme="dark"] .timezone-picker-popup,
+[data-theme="dark"] .duration-picker-popup,
+[data-theme="dark"] body > .time-picker-popup-portal {
+  background: #101814 !important;
+  background-color: #101814 !important;
+  border: 2px solid #b7d0c4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Every text node inside popup defaults to cream (then refine controls) */
+[data-theme="dark"] .time-picker-popup,
+[data-theme="dark"] .time-picker-popup-portal,
+[data-theme="dark"] .timezone-picker-popup,
+[data-theme="dark"] .duration-picker-popup,
+[data-theme="dark"] body > .time-picker-popup-portal {
+  color: #fffaf0 !important;
+}
+
+[data-theme="dark"] .time-picker-popup .time-wheel-item,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-item,
+[data-theme="dark"] .timezone-picker-popup .time-wheel-item,
+[data-theme="dark"] .timezone-picker-popup .timezone-wheel-item,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-item,
+[data-theme="dark"] body > .time-picker-popup-portal .timezone-wheel-item {
+  color: #d9c9a8 !important;
+  -webkit-text-fill-color: #d9c9a8 !important;
+  background: transparent !important;
+  border: none !important;
+  opacity: 1 !important;
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-item.active,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-item.active,
+[data-theme="dark"] .timezone-picker-popup .time-wheel-item.active,
+[data-theme="dark"] .timezone-picker-popup .timezone-wheel-item.active,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-item.active,
+[data-theme="dark"] body > .time-picker-popup-portal .timezone-wheel-item.active {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-colon,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-colon,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-colon {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-highlight,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-highlight,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-highlight {
+  border: 2px solid #6aead8 !important;
+  background: rgba(94, 224, 210, 0.22) !important;
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-fade-top,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-fade-top,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-fade-top {
+  background: linear-gradient(to bottom, #101814 15%, transparent) !important;
+}
+[data-theme="dark"] .time-picker-popup .time-wheel-fade-bottom,
+[data-theme="dark"] .time-picker-popup-portal .time-wheel-fade-bottom,
+[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-fade-bottom {
+  background: linear-gradient(to top, #101814 15%, transparent) !important;
+}
+[data-theme="dark"] .timezone-picker-caption,
+[data-theme="dark"] .duration-picker-labels,
+[data-theme="dark"] .time-picker-popup-portal .timezone-picker-caption,
+[data-theme="dark"] .time-picker-popup-portal .duration-picker-labels {
+  color: #f0e0c8 !important;
+  -webkit-text-fill-color: #f0e0c8 !important;
+  font-weight: 800 !important;
+}
+
+/* Footer actions: high-contrast solid chips (override global dark button ink) */
+[data-theme="dark"] .time-picker-actions button,
+[data-theme="dark"] .time-picker-popup-portal .time-picker-actions button,
+[data-theme="dark"] .timezone-picker-popup .time-picker-actions button,
+[data-theme="dark"] body > .time-picker-popup-portal .time-picker-actions button,
+[data-theme="dark"] body > .time-picker-popup-portal button[class*="animal-btn"] {
+  background: #fff6e8 !important;
+  border: 2px solid #e0c9a0 !important;
+  color: #1a1008 !important;
+  -webkit-text-fill-color: #1a1008 !important;
+  opacity: 1 !important;
+}
+[data-theme="dark"] .time-picker-actions button[class*="primary"],
+[data-theme="dark"] .time-picker-popup-portal .time-picker-actions button[class*="primary"],
+[data-theme="dark"] .timezone-picker-popup .time-picker-actions button[class*="primary"],
+[data-theme="dark"] body > .time-picker-popup-portal button[class*="animal-btn-primary"],
+[data-theme="dark"] body > .time-picker-popup-portal button.animal-btn-primary-9tMG9 {
+  background: #5ee0d2 !important;
+  border-color: #8af0e4 !important;
+  color: #042f2b !important;
+  -webkit-text-fill-color: #042f2b !important;
+  font-weight: 800 !important;
+}
+
+/* Duration presets inside popup */
+[data-theme="dark"] .duration-presets button,
+[data-theme="dark"] .time-picker-popup-portal .duration-presets button,
+[data-theme="dark"] body > .time-picker-popup-portal .duration-presets button {
+  background: #1a2621 !important;
+  border: 2px solid #9bb5a8 !important;
+  color: #fff6e8 !important;
+  -webkit-text-fill-color: #fff6e8 !important;
+}
+[data-theme="dark"] .duration-presets button.active,
+[data-theme="dark"] .time-picker-popup-portal .duration-presets button.active,
+[data-theme="dark"] body > .time-picker-popup-portal .duration-presets button.active {
+  background: #5ee0d2 !important;
+  border-color: #8af0e4 !important;
+  color: #042f2b !important;
+  -webkit-text-fill-color: #042f2b !important;
+  font-weight: 900 !important;
+}
+
+/* Schedule time chips (outside popup) */
+[data-theme="dark"] .time-chip {
+  background: #15201c !important;
+  border: 2px solid #a8c0b4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+[data-theme="dark"] .time-chip.active {
+  background: #5ee0d2 !important;
+  border-color: #8af0e4 !important;
+  color: #042f2b !important;
+  -webkit-text-fill-color: #042f2b !important;
+}

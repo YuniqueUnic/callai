@@ -1,0 +1,263 @@
+/* plugins.css: Plugins management page (from global.css L4814-5076) */
+
+/* Plugins */
+.plugins-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 24px;
+}
+
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plugin-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.plugin-desc {
+  margin: 8px 0;
+  opacity: 0.85;
+}
+
+.plugin-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.plugin-frame {
+  width: 100%;
+  min-height: 320px;
+  border: 2px solid rgba(61, 52, 40, 0.12);
+  border-radius: 12px;
+  background: #fffdf6;
+  margin: 10px 0;
+}
+
+.plugin-runtime {
+  margin-top: 8px;
+}
+
+/* Settings AI / MCP */
+.settings-section-title {
+  margin-top: 18px;
+  margin-bottom: 4px;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.settings-section-hint {
+  margin-bottom: 10px;
+}
+
+.secret-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, auto);
+  gap: 6px;
+  align-items: center;
+}
+
+.settings-code {
+  display: block;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  /* tab pill ~36px + gap; titlebar offset applied under .has-titlebar */
+  margin: 52px 12px 8px;
+  padding-top: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+
+/* Plugins under keep-alive tab panes (not animal-tabContentInner) */
+.tab-pane .plugins-page > .plugins-hero.soft-header,
+.plugins-page > header.plugins-hero {
+  margin-top: 52px;
+  margin-left: 12px;
+  margin-right: 12px;
+  margin-bottom: 8px;
+  padding-top: 8px !important;
+}
+.plugins-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.plugins-hero h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--callai-ink);
+}
+
+.plugins-page .empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 28px 16px;
+}
+
+.plugins-page .plugin-card {
+  border-radius: 16px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* ── Plugins management layout ─────────────────────── */
+.plugins-page {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.plugins-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 96px;
+}
+
+.plugins-tabs {
+  width: 100%;
+  max-width: 100%;
+}
+
+.plugins-hero {
+  min-width: 0;
+}
+
+.plugins-hero-brand {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.plugins-hero .soft-header-copy,
+.plugins-hero-brand > div {
+  min-width: 0;
+}
+
+.plugins-hero h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.plugins-hero-actions {
+  flex: 0 0 auto;
+}
+
+.plugin-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.plugin-card-meta {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.plugin-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  font-weight: 800;
+  color: var(--callai-ink);
+}
+
+.plugin-id-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.plugin-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(100%, 220px);
+}
+
+.plugin-card-actions {
+  flex: 0 0 auto;
+}
+
+.plugin-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 6px;
+}
+
+.plugin-runtime-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-frame {
+  width: 100%;
+  max-width: 100%;
+  min-height: min(48vh, 360px);
+  height: min(52vh, 420px);
+  border: 2px solid rgba(61, 52, 40, 0.12);
+  border-radius: 12px;
+  background: #fffdf6;
+  margin: 10px 0;
+}
+
+.plugin-history-wrap,
+.mcp-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 8px;
+}
+
+.plugin-history-wrap table,
+.mcp-table-wrap table {
+  min-width: 420px;
+}
+
+.mcp-log-panel {
+  min-width: 0;
+}

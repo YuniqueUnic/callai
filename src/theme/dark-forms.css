@@ -1,0 +1,241 @@
+/* dark-forms.css: dark contrast for edit/env/select/segmented/home cards */
+
+
+[data-theme="dark"] .edit-page .form-panel,
+[data-theme="dark"] .edit-page .form-stack > [class*="animal-card"],
+[data-theme="dark"] .edit-page .form-stack > .animal-card {
+  color: var(--callai-ink) !important;
+  background: var(--callai-surface) !important;
+  border-color: var(--callai-border) !important;
+}
+
+[data-theme="dark"] .edit-page .field label,
+[data-theme="dark"] .edit-page .field .label,
+[data-theme="dark"] .edit-page .panel-head h3,
+[data-theme="dark"] .edit-page .hint,
+[data-theme="dark"] .edit-page .meta,
+[data-theme="dark"] .edit-page .preview-box {
+  color: var(--callai-ink) !important;
+}
+
+[data-theme="dark"] .edit-page .hint,
+[data-theme="dark"] .edit-page .meta {
+  color: var(--callai-ink-soft) !important;
+}
+
+/* Inputs stay dark-ink on parchment library surfaces, force fill for readability */
+[data-theme="dark"] .edit-page input,
+[data-theme="dark"] .edit-page textarea,
+[data-theme="dark"] .edit-page .raw,
+[data-theme="dark"] .edit-page [class*="animal-input"],
+[data-theme="dark"] .env-row input,
+[data-theme="dark"] .env-row [class*="animal-input"] {
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+  caret-color: #1f1408 !important;
+  background: #fff8ea !important;
+  border-color: #c4a574 !important;
+}
+
+[data-theme="dark"] .edit-page input::placeholder,
+[data-theme="dark"] .edit-page textarea::placeholder,
+[data-theme="dark"] .env-row input::placeholder {
+  color: #6b5640 !important;
+  -webkit-text-fill-color: #6b5640 !important;
+  opacity: 1;
+}
+
+/* Select trigger + popup list — dark surface tokens (refined in v2 block) */
+[data-theme="dark"] .edit-page [class*="animal-select"],
+[data-theme="dark"] .edit-page [class*="animal-Select"],
+[data-theme="dark"] .field-template [class*="animal-wrapper"],
+[data-theme="dark"] .field-template [class*="animal-trigger"],
+[data-theme="dark"] .field-template [class*="animal-value"] {
+  color: #fffaf0 !important;
+}
+
+[data-theme="dark"] [class*="animal-dropdown"],
+[data-theme="dark"] [class*="animal-dropdown"] *,
+[data-theme="dark"] [class*="animal-select-popup"],
+[data-theme="dark"] [class*="animal-option"] {
+  color: #f0e0c8 !important;
+}
+
+[data-theme="dark"] .edit-page .icon-btn,
+[data-theme="dark"] .env-row .icon-btn,
+[data-theme="dark"] .env-row .icon-btn svg,
+[data-theme="dark"] .edit-page .icon-actions .icon-btn,
+[data-theme="dark"] .edit-page .icon-actions .icon-btn svg {
+  color: #2a1c0e !important;
+}
+
+[data-theme="dark"] .env-row .icon-btn[class*="danger"],
+[data-theme="dark"] .env-row button.icon-btn[class*="danger"],
+[data-theme="dark"] .env-row button.icon-btn[class*="danger"] svg {
+  color: #5c1a12 !important;
+}
+
+/* ENV editor: desktop = KEY | value | trash (one row);
+   narrow = KEY full width, then value + trash (two rows) */
+.env-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.env-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.9fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.env-row .env-input,
+.env-row [class*="animal-input"] {
+  width: 100%;
+  min-width: 0;
+}
+.env-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+.env-add {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 2px;
+}
+@media (max-width: 520px) {
+  .env-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "key key"
+      "val act";
+  }
+  .env-row .env-key {
+    grid-area: key;
+  }
+  .env-row .env-value {
+    grid-area: val;
+  }
+  .env-row .env-actions {
+    grid-area: act;
+  }
+}
+
+/* Settings about / version badge */
+.settings-about {
+  margin-top: 4px;
+}
+.settings-version {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.settings-version-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-bg-soft);
+  color: var(--callai-ink);
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+.settings-version-cli {
+  font-size: 0.8rem;
+}
+[data-theme="dark"] .settings-version-badge {
+  background: #1a2621;
+  border-color: #8a9e93;
+  color: #fff6e8;
+}
+[data-theme="dark"] .settings-version-cli {
+  color: var(--callai-ink-soft) !important;
+}
+
+/* Collapse (ENV section): library uses warm FAQ tokens that wash out on dark cards.
+   Force high-contrast header text + readable open panel; keep inputs parchment. */
+[data-theme="dark"] .edit-page [class*="animal-faqCard"],
+[data-theme="dark"] .edit-page [class*="faqCard"] {
+  background: #1a2621 !important;
+  border-color: #6a7f74 !important;
+  color: var(--callai-ink) !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-questionHeader"],
+[data-theme="dark"] .edit-page [class*="questionHeader"] {
+  color: var(--callai-ink) !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-questionText"],
+[data-theme="dark"] .edit-page [class*="questionText"] {
+  color: #fff6e8 !important;
+  -webkit-text-fill-color: #fff6e8 !important;
+  font-weight: 800 !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-questionIcon"],
+[data-theme="dark"] .edit-page [class*="questionIcon"] {
+  background: #5ee0d2 !important;
+  color: #042f2b !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-leafDecoration"],
+[data-theme="dark"] .edit-page [class*="leafDecoration"] {
+  color: #5ee0d2 !important;
+  opacity: 0.85 !important;
+}
+[data-theme="dark"] .edit-page [class*="animal-answerContent"],
+[data-theme="dark"] .edit-page [class*="answerContent"],
+[data-theme="dark"] .edit-page [class*="animal-answerWrapper"],
+[data-theme="dark"] .edit-page [class*="answerWrapper"] {
+  color: var(--callai-ink-soft) !important;
+}
+/* ENV rows inside collapse stay high-contrast fields */
+[data-theme="dark"] .edit-page .env-editor,
+[data-theme="dark"] .edit-page .env-row {
+  color: var(--callai-ink) !important;
+}
+[data-theme="dark"] .edit-page .env-row .env-input,
+[data-theme="dark"] .edit-page .env-row input,
+[data-theme="dark"] .edit-page .env-row [class*="animal-input"] {
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+  background: #fff8ea !important;
+  border-color: #c4a574 !important;
+  caret-color: #1f1408 !important;
+}
+[data-theme="dark"] .edit-page .env-row input::placeholder {
+  color: #6b5640 !important;
+  -webkit-text-fill-color: #6b5640 !important;
+  opacity: 1 !important;
+}
+/* Delete / add icon buttons: light parchment plate + dark ink (not washed teal) */
+[data-theme="dark"] .edit-page .env-actions .icon-btn,
+[data-theme="dark"] .edit-page .env-add .icon-btn,
+[data-theme="dark"] .edit-page .env-row .icon-btn {
+  color: #2a1c0e !important;
+  background: #fff1d6 !important;
+  border-color: #d4b48a !important;
+}
+[data-theme="dark"] .edit-page .env-actions .icon-btn svg,
+[data-theme="dark"] .edit-page .env-add .icon-btn svg,
+[data-theme="dark"] .edit-page .env-row .icon-btn svg {
+  color: #2a1c0e !important;
+}
+[data-theme="dark"] .edit-page .env-actions .icon-btn[class*="danger"],
+[data-theme="dark"] .edit-page .env-row .icon-btn[class*="danger"] {
+  color: #5c1a12 !important;
+  background: #ffd4c8 !important;
+  border-color: #e08a72 !important;
+}
+[data-theme="dark"] .edit-page .env-actions .icon-btn[class*="danger"] svg,
+[data-theme="dark"] .edit-page .env-row .icon-btn[class*="danger"] svg {
+  color: #5c1a12 !important;
+}
+
+/* light mode: make sure ENV collapse title is brown on parchment (library default) */
+[data-theme="light"] .edit-page [class*="animal-questionText"],
+:root:not([data-theme="dark"]) .edit-page [class*="animal-questionText"] {
+  color: #5a3d1e;
+  font-weight: 700;
+}

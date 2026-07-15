@@ -281,3 +281,23 @@ export type LoadState<T> =
   | { status: "loading" }
   | { status: "success"; data: T }
   | { status: "error"; error: DomainError };
+
+/** Persisted AI assistant chat row (single shared thread). */
+export type AiChatRole = "user" | "assistant";
+export type AiChatKind = "text" | "error" | "alarm_draft" | "plugin_draft";
+
+export interface AiChatMessage {
+  id: string;
+  role: AiChatRole;
+  kind: AiChatKind;
+  content: string;
+  payload_json: string;
+  created_at: string;
+  applied: boolean;
+}
+
+export interface AiChatPage {
+  messages: AiChatMessage[];
+  has_more: boolean;
+}
+

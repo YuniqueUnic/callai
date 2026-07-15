@@ -61,6 +61,9 @@ function toAlarm(draft: AlarmDraft, id?: string): Alarm {
   };
 }
 
+
+const mockAiChat: import("../domain/types").AiChatMessage[] = [];
+
 export const mockApi = {
   async listAlarms() {
     return [...alarms];
@@ -280,6 +283,7 @@ export const mockApi = {
     return 0;
   },
   async aiChatCompletion(opts: {
+    request_id?: string;
     provider: string;
     base_url: string;
     api_key: string;
@@ -350,6 +354,43 @@ export const mockApi = {
       crypto.randomUUID().split("-").join("")
     );
   },
+
+  async listAiChatMessages(before?: string | null, limit?: number) {
+    const lim = Math.min(100, Math.max(1, limit ?? 30));
+    let rows = [...mockAiChat].sort((a, b) =>
+      a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0,
+    );
+    if (before) rows = rows.filter((m) => m.created_at < before);
+    const has_more = rows.length > lim;
+    const page = rows.slice(0, lim).reverse();
+    return { messages: page, has_more };
+  },
+  async upsertAiChatMessage(message: import("../domain/types").AiChatMessage) {
+    const i = mockAiChat.findIndex((m) => m.id === message.id);
+    if (i >= 0) mockAiChat[i] = message;
+    else mockAiChat.push(message);
+  },
+  async deleteAiChatMessages(ids: string[]) {
+    let n = 0;
+    for (const id of ids) {
+      const i = mockAiChat.findIndex((m) => m.id === id);
+      if (i >= 0) {
+        mockAiChat.splice(i, 1);
+        n++;
+      }
+    }
+    return n;
+  },
+  async clearAiChatMessages() {
+    const n = mockAiChat.length;
+    mockAiChat.length = 0;
+    return n;
+  },
+  async setAiChatApplied(id: string, applied: boolean) {
+    const m = mockAiChat.find((x) => x.id === id);
+    if (m) m.applied = applied;
+  },
+
   async listAiModels(_provider: string, _base_url: string, _api_key: string) {
     // Keep in sync with AI_MODEL_HINTS / current public frontier models (2026-07).
     return [

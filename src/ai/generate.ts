@@ -1,15 +1,15 @@
 /**
  * AI generation for callai.
  *
- * Prompt composition (order matters):
+ * Prompt composition:
  *   system → runtime → capabilities → task → style? → output_contract → user
  *
- * HTTP: always prefer Tauri/Rust ureq (`ai_chat_completion`) so the WebView never
- * hits the provider origin (CORS / User-Agent / localhost Origin issues).
- * Browser mock falls back to Vercel AI SDK only when not in Tauri.
+ * HTTP: Tauri Rust proxy with SSE streaming when available
+ * (chat/completions + responses). Emits progress for UI.
  */
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { z } from "zod";
 import type { AiSettings, AlarmDraft, PluginDraft } from "../domain/types";
 import { client } from "../infra/client";
@@ -87,15 +87,100 @@ export interface PromptBundle {
   islandStyle: string;
 }
 
-function extractJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const raw = (fenced?.[1] ?? text).trim();
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start < 0 || end <= start) {
-    throw new Error("AI response is not JSON");
+export type StreamPhase =
+  | "connecting"
+  | "waiting"
+  | "streaming"
+  | "done";
+
+export interface CompleteTextHandlers {
+  onPhase?: (phase: StreamPhase, info: { chars: number; elapsedMs: number }) => void;
+  onDelta?: (delta: string, full: string) => void;
+}
+
+/** Parse/schema failure that preserves the raw model output for the UI. */
+export class AiParseError extends Error {
+  readonly raw: string;
+  constructor(message: string, raw: string) {
+    super(message);
+    this.name = "AiParseError";
+    this.raw = raw;
   }
-  return JSON.parse(raw.slice(start, end + 1));
+}
+
+function tryParseJsonObject(slice: string): unknown {
+  try {
+    return JSON.parse(slice);
+  } catch {
+    // trailing commas common from models
+    const cleaned = slice
+      .replace(/,\s*([}\]])/g, "$1")
+      .replace(/\n/g, "\n");
+    return JSON.parse(cleaned);
+  }
+}
+
+/** Extract first top-level JSON object; throws AiParseError with full text on failure. */
+export function extractJson(text: string): unknown {
+  const source = text ?? "";
+  const fenced = source.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const raw = (fenced?.[1] ?? source).trim();
+  const start = raw.indexOf("{");
+  if (start < 0) {
+    throw new AiParseError("AI response is not JSON", source);
+  }
+  // brace-scan for balanced object (handles trailing prose after JSON)
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = start; i < raw.length; i++) {
+    const ch = raw[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === "\"") inStr = false;
+      continue;
+    }
+    if (ch === "\"") {
+      inStr = true;
+      continue;
+    }
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        const slice = raw.slice(start, i + 1);
+        try {
+          return tryParseJsonObject(slice);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          throw new AiParseError(msg, source);
+        }
+      }
+    }
+  }
+  // truncated stream — still keep raw for the user
+  try {
+    return tryParseJsonObject(raw.slice(start));
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new AiParseError(msg || "JSON truncated or incomplete", source);
+  }
+}
+
+function parseOrThrow<T>(
+  schema: z.ZodType<T>,
+  text: string,
+  label: string,
+): T {
+  try {
+    const data = extractJson(text);
+    return schema.parse(data);
+  } catch (e) {
+    if (e instanceof AiParseError) throw e;
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new AiParseError(`${label}: ${msg}`, text);
+  }
 }
 
 function requireAiConfig(ai: AiSettings) {
@@ -104,7 +189,6 @@ function requireAiConfig(ai: AiSettings) {
   }
 }
 
-/** Strip browser-forbidden headers (dev-only SDK path). */
 function browserSafeFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -116,44 +200,92 @@ function browserSafeFetch(
   return globalThis.fetch(input, { ...init, headers });
 }
 
+function newRequestId(): string {
+  return `ai-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 /**
- * Complete a system+user turn. Prefer native Rust HTTP inside Tauri.
+ * Complete a system+user turn with optional streaming callbacks.
+ * Prefer Tauri Rust path (SSE when gateway allows).
  */
 export async function completeText(
   ai: AiSettings,
   system: string,
   user: string,
   temperature: number,
+  handlers?: CompleteTextHandlers,
 ): Promise<string> {
   requireAiConfig(ai);
   const model = ai.model.trim() || "gpt-5.6-terra";
   const provider = ai.provider || "openai";
 
-  // Desktop path: no CORS, real error bodies from gateway.
   if (isTauri() && typeof client.aiChatCompletion === "function") {
-    return client.aiChatCompletion({
-      provider,
-      base_url: ai.base_url.replace(/\/$/, ""),
-      api_key: ai.api_key,
-      model,
-      system,
-      user,
-      temperature,
-    });
+    const requestId = newRequestId();
+    let full = "";
+    let unlisten: UnlistenFn | undefined;
+    try {
+      handlers?.onPhase?.("connecting", { chars: 0, elapsedMs: 0 });
+      unlisten = await listen<{
+        requestId: string;
+        phase: string;
+        delta: string;
+        chars: number;
+        elapsedMs: number;
+      }>("callai://ai-stream", (ev) => {
+        const p = ev.payload;
+        if (p.requestId !== requestId) return;
+        if (p.delta) {
+          full += p.delta;
+          handlers?.onDelta?.(p.delta, full);
+        }
+        const phase = (p.phase || "waiting") as StreamPhase;
+        handlers?.onPhase?.(phase, {
+          chars: p.chars ?? full.length,
+          elapsedMs: p.elapsedMs ?? 0,
+        });
+      });
+
+      const text = await client.aiChatCompletion({
+        request_id: requestId,
+        provider,
+        base_url: ai.base_url.replace(/\/$/, ""),
+        api_key: ai.api_key,
+        model,
+        system,
+        user,
+        temperature,
+      });
+      // If gateway ignored stream and returned one shot without deltas, push once.
+      if (text && !full) {
+        full = text;
+        handlers?.onDelta?.(text, text);
+      }
+      handlers?.onPhase?.("done", {
+        chars: full.length || text.length,
+        elapsedMs: 0,
+      });
+      return text || full;
+    } finally {
+      if (unlisten) unlisten();
+    }
   }
 
-  // Browser mock / non-Tauri fallback (may still hit CORS on real gateways).
+  // Browser mock / non-Tauri fallback
+  handlers?.onPhase?.("connecting", { chars: 0, elapsedMs: 0 });
   const openai = createOpenAI({
     apiKey: ai.api_key,
     baseURL: ai.base_url.replace(/\/$/, ""),
     fetch: browserSafeFetch,
   });
+  handlers?.onPhase?.("waiting", { chars: 0, elapsedMs: 0 });
   const { text } = await generateText({
     model: openai.chat(model),
     system,
     prompt: user,
     temperature,
   });
+  handlers?.onDelta?.(text, text);
+  handlers?.onPhase?.("done", { chars: text.length, elapsedMs: 0 });
   return text;
 }
 
@@ -179,7 +311,6 @@ export async function loadPromptBundle(): Promise<PromptBundle> {
   };
 }
 
-/** Join non-empty prompt layers with blank lines. */
 export function joinPromptLayers(layers: Array<string | null | undefined>): string {
   return layers
     .map((l) => (l ?? "").trim())
@@ -187,10 +318,6 @@ export function joinPromptLayers(layers: Array<string | null | undefined>): stri
     .join("\n\n");
 }
 
-/**
- * Full system message for an intent.
- * Layer order: system → runtime → capabilities → task → style? → output_contract
- */
 export function composeSystemPrompt(
   bundle: PromptBundle,
   runtime: string,
@@ -227,6 +354,7 @@ export function composeSystemPrompt(
 export async function generateAlarmDraft(
   ai: AiSettings,
   userMessage: string,
+  handlers?: CompleteTextHandlers,
 ): Promise<AlarmDraft> {
   const [bundle, runtime] = await Promise.all([
     loadPromptBundle(),
@@ -237,14 +365,15 @@ export async function generateAlarmDraft(
     composeSystemPrompt(bundle, runtime, "alarm"),
     userMessage,
     0.3,
+    handlers,
   );
-  const parsed = AlarmDraftSchema.parse(extractJson(text));
-  return parsed as AlarmDraft;
+  return parseOrThrow(AlarmDraftSchema, text, "AlarmDraft") as AlarmDraft;
 }
 
 export async function generatePluginDraft(
   ai: AiSettings,
   userMessage: string,
+  handlers?: CompleteTextHandlers,
 ): Promise<PluginDraft> {
   const [bundle, runtime] = await Promise.all([
     loadPromptBundle(),
@@ -255,15 +384,16 @@ export async function generatePluginDraft(
     composeSystemPrompt(bundle, runtime, "plugin"),
     userMessage,
     0.4,
+    handlers,
   );
-  const parsed = PluginDraftSchema.parse(extractJson(text));
-  return parsed as PluginDraft;
+  return parseOrThrow(PluginDraftSchema, text, "PluginDraft") as PluginDraft;
 }
 
 export async function chatReply(
   ai: AiSettings,
   userMessage: string,
   history: { role: "user" | "assistant"; content: string }[],
+  handlers?: CompleteTextHandlers,
 ): Promise<string> {
   const [bundle, runtime] = await Promise.all([
     loadPromptBundle(),
@@ -277,11 +407,11 @@ export async function chatReply(
     composeSystemPrompt(bundle, runtime, "chat"),
     `${transcript}\nUser: ${userMessage}\nAssistant:`,
     0.5,
+    handlers,
   );
   return text.trim();
 }
 
-/** Heuristic intent from free text (user can override in UI). */
 export function guessIntent(message: string): AiIntent {
   const m = message.toLowerCase();
   if (

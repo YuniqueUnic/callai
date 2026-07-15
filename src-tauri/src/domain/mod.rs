@@ -1,3 +1,4 @@
+pub mod ai_chat;
 pub mod alarm;
 pub mod argv;
 pub mod error;
@@ -11,6 +12,7 @@ mod secret;
 pub mod settings;
 pub mod templates;
 
+pub use ai_chat::*;
 pub use alarm::*;
 pub use argv::*;
 pub use error::*;

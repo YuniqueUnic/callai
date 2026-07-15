@@ -11,6 +11,8 @@ import type {
   PluginHistoryEntry,
   PluginSummary,
   TemplateDto,
+  AiChatMessage,
+  AiChatPage,
 } from "../domain/types";
 
 function coerceDomainError(raw: unknown): DomainError {
@@ -120,6 +122,7 @@ export const api = {
   listPrompts: () => call<string[]>("list_prompts"),
   generateSecretToken: () => call<string>("generate_secret_token"),
   aiChatCompletion: (opts: {
+    request_id?: string;
     provider: string;
     base_url: string;
     api_key: string;
@@ -129,6 +132,7 @@ export const api = {
     temperature?: number;
   }) =>
     call<string>("ai_chat_completion", {
+      requestId: opts.request_id ?? `ai-${Date.now()}`,
       provider: opts.provider,
       baseUrl: opts.base_url,
       apiKey: opts.api_key,
@@ -137,6 +141,21 @@ export const api = {
       user: opts.user,
       temperature: opts.temperature ?? null,
     }),
+
+
+  listAiChatMessages: (before?: string | null, limit?: number) =>
+    call<AiChatPage>("list_ai_chat_messages", {
+      before: before ?? null,
+      limit: limit ?? null,
+    }),
+  upsertAiChatMessage: (message: AiChatMessage) =>
+    call<void>("upsert_ai_chat_message", { message }),
+  deleteAiChatMessages: (ids: string[]) =>
+    call<number>("delete_ai_chat_messages", { ids }),
+  clearAiChatMessages: () => call<number>("clear_ai_chat_messages"),
+  setAiChatApplied: (id: string, applied: boolean) =>
+    call<void>("set_ai_chat_applied", { id, applied }),
+
   listAiModels: (provider: string, base_url: string, api_key: string) =>
     call<string[]>("list_ai_models", {
       provider,

@@ -1,0 +1,70 @@
+/* model-autocomplete.css: AI settings model autocomplete */
+
+/* ── Model autocomplete (AI settings) ───────────────── */
+.model-ac {
+  width: 100%;
+  min-width: 0;
+}
+
+.model-ac-head {
+  margin-bottom: 6px;
+}
+
+.model-ac-input-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.model-ac-hint,
+.model-ac-meta {
+  margin: 6px 0 0;
+  line-height: 1.35;
+}
+
+.model-ac-dropdown {
+  max-height: 220px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px;
+  border-radius: 14px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-surface);
+  box-shadow: var(--callai-card-shadow);
+}
+
+.model-ac-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--callai-ink);
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-ac-option:hover,
+.model-ac-option.active {
+  background: color-mix(in srgb, var(--callai-primary) 16%, transparent);
+  color: var(--callai-ink);
+}
+
+[data-theme="dark"] .model-ac-dropdown {
+  background: rgba(40, 36, 30, 0.96);
+  border-color: rgba(255, 249, 230, 0.14);
+}
+
+[data-theme="dark"] .model-ac-option {
+  color: #fff9e6;
+}
+
+[data-theme="dark"] .model-ac-option:hover,
+[data-theme="dark"] .model-ac-option.active {
+  background: rgba(25, 200, 185, 0.22);
+}

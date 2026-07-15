@@ -1,0 +1,217 @@
+/* select-popup-dark.css: Select/picker popup dark contrast */
+
+/* ── Picker/Select dark contrast v2 ──
+   Portaled pickers + animal-island Select dropdowns.
+   Override library yellow (#ffeea0) and parchment ink on dark pages.
+   Keep selectors scoped to picker/select — do not paint Input wrappers.
+*/
+html[data-theme="dark"] .time-picker-trigger,
+html[data-theme="dark"] .timezone-picker-trigger,
+html[data-theme="dark"] .duration-picker-trigger,
+html[data-theme="dark"] button.time-picker-trigger,
+html[data-theme="dark"] button.timezone-picker-trigger,
+html[data-theme="dark"] button.duration-picker-trigger {
+  background: #15201c !important;
+  background-color: #15201c !important;
+  border: 2px solid #a8c0b4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+html[data-theme="dark"] .time-picker-trigger .time-picker-value,
+html[data-theme="dark"] .time-picker-trigger .time-picker-caret,
+html[data-theme="dark"] .duration-picker-trigger .time-picker-value,
+html[data-theme="dark"] .duration-picker-trigger .time-picker-caret,
+html[data-theme="dark"] .timezone-picker-trigger .time-picker-value,
+html[data-theme="dark"] .timezone-picker-trigger .timezone-picker-value,
+html[data-theme="dark"] .timezone-picker-value {
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .time-picker-popup,
+html[data-theme="dark"] .time-picker-popup-portal,
+html[data-theme="dark"] .timezone-picker-popup,
+html[data-theme="dark"] .duration-picker-popup,
+html[data-theme="dark"] body > .time-picker-popup-portal,
+html[data-theme="dark"] body > .time-picker-popup.time-picker-popup-portal {
+  background: #101814 !important;
+  background-color: #101814 !important;
+  border: 2px solid #b7d0c4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
+}
+
+html[data-theme="dark"] .time-picker-popup-portal button.time-wheel-item,
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-item,
+html[data-theme="dark"] .time-picker-popup-portal .timezone-wheel-item,
+html[data-theme="dark"] body > .time-picker-popup-portal button.time-wheel-item,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-item,
+html[data-theme="dark"] body > .time-picker-popup-portal .timezone-wheel-item {
+  color: #d9c9a8 !important;
+  -webkit-text-fill-color: #d9c9a8 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  opacity: 1 !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal button.time-wheel-item.active,
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-item.active,
+html[data-theme="dark"] .time-picker-popup-portal .timezone-wheel-item.active,
+html[data-theme="dark"] body > .time-picker-popup-portal button.time-wheel-item.active,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-item.active,
+html[data-theme="dark"] body > .time-picker-popup-portal .timezone-wheel-item.active {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-colon,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-colon {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-highlight,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-highlight {
+  border: 2px solid #6aead8 !important;
+  background: rgba(94, 224, 210, 0.22) !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-fade-top,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-fade-top {
+  background: linear-gradient(to bottom, #101814 15%, transparent) !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-wheel-fade-bottom,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-wheel-fade-bottom {
+  background: linear-gradient(to top, #101814 15%, transparent) !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .timezone-picker-caption,
+html[data-theme="dark"] .time-picker-popup-portal .duration-picker-labels,
+html[data-theme="dark"] body > .time-picker-popup-portal .timezone-picker-caption,
+html[data-theme="dark"] body > .time-picker-popup-portal .duration-picker-labels {
+  color: #f0e0c8 !important;
+  -webkit-text-fill-color: #f0e0c8 !important;
+}
+
+/* Popup footer chips */
+html[data-theme="dark"] .time-picker-popup-portal .time-picker-actions button,
+html[data-theme="dark"] body > .time-picker-popup-portal .time-picker-actions button,
+html[data-theme="dark"] body > .time-picker-popup-portal button[class*="animal-btn"] {
+  background: #fff6e8 !important;
+  border: 2px solid #e0c9a0 !important;
+  color: #1a1008 !important;
+  -webkit-text-fill-color: #1a1008 !important;
+  opacity: 1 !important;
+}
+html[data-theme="dark"] .time-picker-popup-portal .time-picker-actions button[class*="primary"],
+html[data-theme="dark"] body > .time-picker-popup-portal button[class*="animal-btn-primary"],
+html[data-theme="dark"] body > .time-picker-popup-portal button.animal-btn-primary-9tMG9 {
+  background: #5ee0d2 !important;
+  border-color: #8af0e4 !important;
+  color: #042f2b !important;
+  -webkit-text-fill-color: #042f2b !important;
+  font-weight: 800 !important;
+}
+
+/* animal-island Select: all edit-page / form selects */
+html[data-theme="dark"] .edit-page [class*="animal-wrapper"],
+html[data-theme="dark"] .edit-page [class*="animal-trigger"],
+html[data-theme="dark"] .form-panel [class*="animal-wrapper"],
+html[data-theme="dark"] .form-panel [class*="animal-trigger"],
+html[data-theme="dark"] .field-select [class*="animal-wrapper"],
+html[data-theme="dark"] .field-select [class*="animal-trigger"],
+html[data-theme="dark"] .field-template [class*="animal-wrapper"],
+html[data-theme="dark"] .field-template [class*="animal-trigger"] {
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+html[data-theme="dark"] .edit-page [class*="animal-trigger"],
+html[data-theme="dark"] .form-panel [class*="animal-trigger"],
+html[data-theme="dark"] .field-select [class*="animal-trigger"],
+html[data-theme="dark"] .field-template [class*="animal-trigger"] {
+  background: #15201c !important;
+  background-color: #15201c !important;
+  border: 2px solid #a8c0b4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+html[data-theme="dark"] .edit-page [class*="animal-value"],
+html[data-theme="dark"] .form-panel [class*="animal-value"],
+html[data-theme="dark"] .field-select [class*="animal-value"],
+html[data-theme="dark"] .field-template [class*="animal-value"],
+html[data-theme="dark"] .edit-page [class*="animal-trigger"] *,
+html[data-theme="dark"] .field-select [class*="animal-trigger"] * {
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+html[data-theme="dark"] .edit-page [class*="animal-placeholder"],
+html[data-theme="dark"] .field-select [class*="animal-placeholder"],
+html[data-theme="dark"] .field-template [class*="animal-placeholder"] {
+  color: #c8b89a !important;
+  -webkit-text-fill-color: #c8b89a !important;
+}
+html[data-theme="dark"] .edit-page [class*="animal-arrow"],
+html[data-theme="dark"] .field-select [class*="animal-arrow"],
+html[data-theme="dark"] .field-template [class*="animal-arrow"] {
+  color: #c8b89a !important;
+  -webkit-text-fill-color: #c8b89a !important;
+}
+
+/* Sound row: preview IconButton stays dark-ink on light chip */
+html[data-theme="dark"] .sound-select-row .icon-btn,
+html[data-theme="dark"] .sound-select-row .icon-btn svg {
+  color: #2a1c0e !important;
+  -webkit-text-fill-color: #2a1c0e !important;
+}
+
+/* Ensure dropdown options never inherit #root brown fill on dark */
+html[data-theme="dark"] [class*="animal-dropdown"],
+html[data-theme="dark"] [class*="animal-dropdown"] *,
+html[data-theme="dark"] [class*="animal-select-popup"],
+html[data-theme="dark"] [class*="animal-select-popup"] * {
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"],
+html[data-theme="dark"] [class*="animal-select-popup"] [class*="animal-option"] {
+  color: #e8dcc0 !important;
+  -webkit-text-fill-color: #e8dcc0 !important;
+  background: transparent !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"][class*="animal-active"],
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"][class*="active"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 800 !important;
+  background: rgba(94, 224, 210, 0.18) !important;
+}
+
+
+/* Portaled / absolute Select dropdown list (class is unique: animal-dropdown-*) */
+html[data-theme="dark"] [class*="animal-dropdown"],
+html[data-theme="dark"] [class*="animal-select-popup"] {
+  background: #101814 !important;
+  background-color: #101814 !important;
+  border: 2px solid #b7d0c4 !important;
+  color: #fffaf0 !important;
+  -webkit-text-fill-color: #fffaf0 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"],
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option-"],
+html[data-theme="dark"] [class*="animal-option"] {
+  color: #e8dcc0 !important;
+  -webkit-text-fill-color: #e8dcc0 !important;
+  background: transparent !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"][class*="animal-active"],
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-option"][class*="active"],
+html[data-theme="dark"] [class*="animal-option"][class*="animal-active"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 800 !important;
+}
+html[data-theme="dark"] [class*="animal-dropdown"] [class*="animal-pillBar"] {
+  background: #5ee0d2 !important;
+  opacity: 0.35 !important;
+}

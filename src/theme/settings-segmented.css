@@ -1,0 +1,200 @@
+/* settings-segmented.css: Segmented controls + settings sections (from global.css L774-972) */
+
+/* ── Segmented / settings ───────────────────────────── */
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  background: var(--callai-bg-soft);
+  border: 2px solid var(--callai-border);
+  border-radius: 999px;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.segmented button {
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  font-weight: 800;
+  color: var(--callai-ink-soft);
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.segmented button.active {
+  background: var(--callai-primary);
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="dark"] .segmented button.active {
+  color: #042f2b;
+  text-shadow: none;
+  font-weight: 900;
+}
+
+.settings-card {
+  background: var(--callai-surface);
+  border: 2px solid var(--callai-border);
+  border-radius: var(--callai-radius);
+  padding: clamp(14px, 3vw, 20px);
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--callai-card-shadow);
+  color: var(--callai-ink);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.settings-row > span {
+  font-weight: 700;
+  color: var(--callai-ink);
+  flex: 1 1 160px;
+}
+
+.backup-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-top: 1px solid color-mix(in srgb, var(--callai-border) 60%, transparent);
+}
+
+.backup-item:first-of-type {
+  border-top: none;
+}
+
+.backup-item .meta {
+  flex: 1 1 140px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Elements / illus ───────────────────────────────── */
+
+.callai-element {
+  image-rendering: auto;
+  pointer-events: none;
+  flex: 0 0 auto;
+}
+
+.section-illus {
+  float: none;
+  margin: 0;
+  max-width: 72px;
+  width: 72px;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.header-brand .callai-element {
+  width: 44px;
+  height: auto;
+}
+
+.status-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-inline .callai-element {
+  width: 26px;
+  height: auto;
+}
+
+/* ── Narrow phone-like ──────────────────────────────── */
+
+@media (max-width: 420px) {
+  .app-header {
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .alarm-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fab {
+    width: 52px;
+    height: 52px;
+    font-size: 1.6rem;
+  }
+
+  .section-illus {
+    max-width: 56px;
+    width: 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab,
+  .log-card,
+  .alarm-card {
+    transition: none;
+  }
+}
+
+/* Schedule mode switch — avoid library Radio label overflow/overlap */
+.schedule-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.schedule-mode button {
+  border: 2px solid var(--callai-border);
+  background: var(--callai-bg-soft);
+  color: var(--callai-ink);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  min-height: 36px;
+  line-height: 1;
+}
+
+.schedule-mode button.active {
+  background: var(--callai-primary);
+  border-color: var(--callai-primary);
+  color: #fff;
+}
+
+[data-theme="dark"] .schedule-mode button.active {
+  color: #042f2b;
+}
+
+.panel-head h3 + .label,
+.form-panel .panel-head + .field > .label:first-child {
+  /* avoid duplicate title when panel-head already shows section name */
+}
+
+.form-panel .field-title-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -21,6 +21,7 @@ import { invalidateAlarmsCache, warmAlarmsCache } from "./infra/alarmsCache";
 export default function App() {
   const { t, i18n } = useTranslation(["common", "alarms", "logs"]);
   const [page, setPage] = useState<PageId>("home");
+  const [aiReturnPage, setAiReturnPage] = useState<"home" | "plugins">("home");
   const [editId, setEditId] = useState<string | null>(null);
   const [logAlarmId, setLogAlarmId] = useState<string | null>(null);
   const [logsOpen, setLogsOpen] = useState(false);
@@ -156,7 +157,10 @@ export default function App() {
                 onCreate={onCreate}
                 onEdit={onEdit}
                 onLogs={openLogs}
-                onAi={() => setPage("ai")}
+                onAi={() => {
+                  setAiReturnPage("home");
+                  setPage("ai");
+                }}
                 fabVisible={page === "home"}
               />
             </div>
@@ -165,7 +169,12 @@ export default function App() {
               hidden={tabKey !== "plugins"}
               aria-hidden={tabKey !== "plugins"}
             >
-              <PluginsPage onOpenAi={() => setPage("ai")} />
+              <PluginsPage
+                onOpenAi={() => {
+                  setAiReturnPage("plugins");
+                  setPage("ai");
+                }}
+              />
             </div>
             <div
               className={`tab-pane ${tabKey === "settings" ? "is-active" : ""}`}
@@ -199,13 +208,16 @@ export default function App() {
         {page === "ai" ? (
           <div className="edit-overlay">
             <AiChatPage
-              onBack={() => setPage("home")}
+              onBack={() => setPage(aiReturnPage)}
               onAlarmCreated={() => {
+                // Stay on AI chat so the draft card can show "added"; home list refreshes via cache.
                 invalidateAlarmsCache();
                 window.dispatchEvent(new Event("callai:alarms-changed"));
-                setPage("home");
               }}
-              onPluginCreated={() => setPage("plugins")}
+              onPluginCreated={() => {
+                setAiReturnPage("plugins");
+                // stay on AI; list refresh happens when user returns
+              }}
             />
           </div>
         ) : null}

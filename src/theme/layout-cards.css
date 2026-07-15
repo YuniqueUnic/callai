@@ -1,0 +1,94 @@
+/* layout-cards.css: Main content + card surfaces (from global.css L436-528) */
+
+/* ── Main ───────────────────────────────────────────── */
+
+.app-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: var(--callai-content-max);
+  margin: 0 auto;
+  padding: var(--callai-page-pad);
+  padding-bottom: 24px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-main.wide {
+  max-width: none;
+}
+
+/* ── Cards / grid ───────────────────────────────────── */
+
+.alarm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  align-items: stretch;
+  /* sea overlays last rows; keep a little breathing room */
+  padding-bottom: 64px;
+}
+
+/* Override noisy library card colors — keep parchment surface */
+/* single card surface — sits on flat page, never nested in another card */
+.alarm-card,
+.alarm-card[class*="animal-"] {
+  background: var(--callai-surface) !important;
+  color: var(--callai-ink) !important;
+  border: 2px solid var(--callai-border) !important;
+  border-radius: var(--callai-radius) !important;
+  box-shadow: var(--callai-card-shadow);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 168px;
+  min-width: 0;
+  /* reset library nested-card chrome if class still applied */
+  outline: none;
+}
+
+.alarm-card.paused {
+  opacity: 0.78;
+  filter: grayscale(0.12);
+}
+
+.alarm-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.alarm-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--callai-ink);
+  word-break: break-word;
+}
+
+.meta {
+  color: var(--callai-ink-soft);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.card-actions .animal-btn-QoKe1,
+.card-actions button,
+.card-actions .icon-btn-wrap {
+  flex: 0 0 auto;
+}

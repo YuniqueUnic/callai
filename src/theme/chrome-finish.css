@@ -1,0 +1,134 @@
+/* chrome-finish.css: tab anti-squeeze + idle tab/FAB opacity + immersive FAB hide */
+
+/* Tab anti-squeeze: never stack CJK glyphs vertically */
+.main-tabs [class*="animal-tabList"] {
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  max-width: min(100% - 24px, 420px) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.main-tabs [class*="animal-tabList"]::-webkit-scrollbar {
+  display: none;
+}
+
+.main-tabs [class*="animal-tabItem"],
+.main-tabs [class*="animal-tabItem"] * {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  line-height: 1.2 !important;
+}
+
+.main-tabs [class*="animal-tabItem"] {
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  min-width: max-content !important;
+  width: auto !important;
+  max-width: none !important;
+  padding: 6px 16px !important;
+  font-size: 0.92rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* Immersive pages (edit / AI): hide body-portaled FAB cluster */
+body.callai-immersive > .fab-cluster,
+body.callai-immersive .fab-cluster,
+body.callai-immersive > .fab {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+
+/* Tab labels: force horizontal CJK (override any library/layout shrink) */
+.main-tabs [class*="animal-tabList"] {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: max-content !important;
+  min-width: min(320px, calc(100vw - 48px)) !important;
+  max-width: calc(100% - 24px) !important;
+  box-sizing: border-box !important;
+}
+
+.main-tabs [class*="animal-tabItem"] {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  min-width: 4.5em !important;
+  padding: 0 18px !important;
+  box-sizing: border-box !important;
+}
+
+.main-tabs [class*="animal-tabLabel"],
+.main-tabs [class*="animal-tabItem"] span {
+  display: inline !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  writing-mode: horizontal-tb !important;
+  max-width: none !important;
+  width: auto !important;
+}
+
+.main-tabs [class*="animal-tabItem"].animal-active-AoX4Y,
+.main-tabs [class*="animal-tabItem"][class*="active"] {
+  border-radius: 999px !important;
+  min-width: 4.5em !important;
+}
+
+
+/* Idle chrome: tabs + FAB rest at 60% opacity; full on hover/focus */
+.main-tabs [class*="animal-tabList"] {
+  opacity: 0.6;
+  transition: opacity 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease !important;
+}
+
+.main-tabs [class*="animal-tabList"]:hover,
+.main-tabs [class*="animal-tabList"]:focus-within {
+  opacity: 1;
+}
+
+.fab-cluster {
+  opacity: 0.6;
+  transition: opacity 0.18s ease;
+}
+
+.fab-cluster:hover,
+.fab-cluster:focus-within {
+  opacity: 1;
+}
+
+/* logs drawer still dims FAB further */
+body.callai-logs-open .fab-cluster {
+  opacity: 0.35;
+}
+
+/* Touch / no-hover: keep full opacity so chrome stays discoverable */
+@media (hover: none), (pointer: coarse) {
+  .main-tabs [class*="animal-tabList"],
+  .fab-cluster {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-tabs [class*="animal-tabList"],
+  .fab-cluster {
+    transition: none !important;
+  }
+}

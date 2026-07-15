@@ -1,0 +1,172 @@
+/* tabs-icons.css: Bottom tabs + square icon buttons (from global.css L1118-1289) */
+
+/* ── Bottom tabs ─────────────────────────────────────── */
+/* overridden by soft footer layout below */
+
+.bottom-tabs {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  padding: 6px;
+  border: 2px solid color-mix(in srgb, var(--callai-border) 70%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--callai-surface) 96%, #fff 4%);
+  box-shadow: 0 4px 0 0 color-mix(in srgb, var(--callai-border) 55%, transparent),
+    0 10px 22px rgba(40, 30, 20, 0.1);
+  backdrop-filter: blur(12px);
+  z-index: 40;
+}
+
+[data-theme="dark"] .bottom-tabs {
+  background: color-mix(in srgb, var(--callai-surface) 92%, #000 8%);
+  box-shadow: 0 4px 0 0 #0c1411, 0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+.bottom-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 54px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--callai-ink-soft);
+  font-weight: 800;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+.bottom-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--callai-bg-soft) 80%, transparent);
+  color: inherit;
+}
+
+.bottom-tab.active {
+  color: var(--callai-primary-ink);
+  background: color-mix(in srgb, var(--callai-primary) 78%, #fff 22%);
+}
+
+.bottom-tab.active .bottom-tab-icon {
+  background: color-mix(in srgb, #fff 55%, transparent);
+  color: var(--callai-primary-ink);
+}
+
+.bottom-tab:active {
+  transform: translateY(1px);
+}
+
+.bottom-tab svg {
+  display: block;
+}
+
+[data-theme="dark"] .bottom-tab.active {
+  color: #042f2b;
+  background: color-mix(in srgb, var(--callai-primary) 85%, #fff 15%);
+}
+
+.settings-logs-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 2px dashed color-mix(in srgb, var(--callai-border) 70%, transparent);
+  background: color-mix(in srgb, var(--callai-bg-soft) 70%, transparent);
+}
+
+.settings-logs-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.settings-logs-entry .label {
+  font-weight: 800;
+  color: var(--callai-ink);
+  margin-bottom: 2px;
+}
+
+/* Time picker portal: above all cards, no stacking fight */
+.form-panel,
+.alarm-card,
+.settings-card {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+}
+
+.time-picker.is-open {
+  position: relative;
+  z-index: 50;
+}
+
+.time-picker-popup-portal {
+  position: fixed !important;
+  z-index: 10000 !important;
+  top: auto;
+  left: auto;
+  min-width: 260px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-surface);
+  box-shadow: 0 12px 32px rgba(40, 30, 20, 0.28);
+  color: var(--callai-ink);
+}
+
+/* Keep absolute popup rule from applying badly */
+.time-picker-popup:not(.time-picker-popup-portal) {
+  z-index: 100;
+}
+
+
+/* Icon buttons: force square island look */
+.icon-btn.animal-btn-QoKe1,
+button.icon-btn {
+  gap: 0 !important;
+}
+
+.icon-btn svg {
+  color: inherit;
+}
+
+[data-theme="dark"] .header-actions .icon-btn,
+[data-theme="dark"] .icon-actions .icon-btn,
+[data-theme="dark"] .card-actions .icon-btn {
+  color: #3a2714 !important;
+}
+
+[data-theme="dark"] .header-actions .animal-btn-primary-9tMG9,
+[data-theme="dark"] .icon-actions .animal-btn-primary-9tMG9,
+[data-theme="dark"] .card-actions .animal-btn-primary-9tMG9 {
+  color: #042f2b !important;
+  background: #5ee0d2 !important;
+  border-color: #5ee0d2 !important;
+}
+
+[data-theme="dark"] .icon-actions .animal-btn-danger-primary-9tMG9,
+[data-theme="dark"] button.icon-btn[class*="danger"] {
+  color: #3a120c !important;
+}
+
+/* fab icon white */
+.fab,
+.fab svg {
+  color: #fff !important;
+}

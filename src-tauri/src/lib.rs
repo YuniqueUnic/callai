@@ -189,7 +189,13 @@ pub fn run() {
         Arc::new(crate::infra::McpLogStore::open(paths.mcp_log_file()).expect("mcp log store"));
     let backup = Arc::new(TomlConfigBackup::new(paths));
     let sleeper = Arc::new(SystemSleeper);
-    let service = Arc::new(AlarmService::new(store, runner, clock, backup, sleeper));
+    let service = Arc::new(AlarmService::new(
+        Arc::clone(&store) as Arc<dyn crate::app::AlarmStore>,
+        runner,
+        clock,
+        backup,
+        sleeper,
+    ));
     let _ = service.bootstrap();
 
     let scheduler = Arc::new(AlarmScheduler::new(Arc::clone(&service)));
@@ -200,6 +206,7 @@ pub fn run() {
         scheduler: Arc::clone(&scheduler),
         plugins,
         mcp_logs,
+        store,
     };
 
     tauri::Builder::default()
@@ -257,6 +264,11 @@ pub fn run() {
             commands::generate_secret_token,
             commands::list_ai_models,
             commands::ai_chat_completion,
+            commands::list_ai_chat_messages,
+            commands::upsert_ai_chat_message,
+            commands::delete_ai_chat_messages,
+            commands::clear_ai_chat_messages,
+            commands::set_ai_chat_applied,
         ])
         .setup(|app| {
             let locale = app

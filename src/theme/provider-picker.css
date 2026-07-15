@@ -1,0 +1,56 @@
+/* provider-picker.css: settings provider wheel picker */
+
+/* ── AI page: relative stage + bottom-fixed composer HUD ─ */
+.provider-picker-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.provider-wheels {
+  width: 100%;
+}
+
+.provider-wheel-col {
+  width: 100%;
+  max-width: 100%;
+}
+
+.provider-wheel-item {
+  font-variant-numeric: normal;
+  letter-spacing: 0.01em;
+  padding: 0 10px;
+  font-size: 0.95rem;
+}
+
+.provider-picker-caption {
+  text-align: center;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: var(--callai-ink);
+}
+
+.provider-picker-popup {
+  z-index: 20050;
+}
+
+[data-theme="dark"] .provider-picker-trigger {
+  background: rgba(40, 36, 30, 0.92);
+  color: #fff9e6;
+  border-color: rgba(255, 249, 230, 0.18);
+}
+
+[data-theme="dark"] .provider-picker-value {
+  color: #fff9e6;
+}
+
+[data-theme="dark"] .provider-picker-popup .provider-wheel-item {
+  color: rgba(255, 249, 230, 0.72);
+}
+
+[data-theme="dark"] .provider-picker-popup .provider-wheel-item.active {
+  color: #fff9e6;
+}

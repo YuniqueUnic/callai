@@ -1,0 +1,292 @@
+/* shell-sea.css: App shell fill + floating tabs + sea footer (from global.css L1478-1768) */
+
+/* ── Shell: body fills, footer flush bottom ──────────── */
+.app-shell {
+  position: relative;
+}
+
+.app-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Floating tabs overlay (same idea as sea footer) */
+.app-body {
+  position: relative;
+  padding: 0 !important;
+}
+
+.main-tabs,
+.main-tabs[class*="animal-tabs"] {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  position: relative !important;
+}
+
+/* Pill floats over page content — must stay above heroes & receive clicks */
+.main-tabs [class*="animal-tabList"] {
+  position: absolute !important;
+  top: 10px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 300 !important;
+  flex: 0 0 auto !important;
+  gap: 4px !important;
+  padding: 5px !important;
+  margin: 0 !important;
+  background: color-mix(in srgb, var(--callai-surface) 92%, transparent) !important;
+  border: 2px solid color-mix(in srgb, var(--callai-border) 55%, transparent) !important;
+  border-radius: 999px !important;
+  border-bottom: 2px solid color-mix(in srgb, var(--callai-border) 55%, transparent) !important;
+  width: fit-content !important;
+  max-width: calc(100% - 24px) !important;
+  box-shadow: 0 6px 18px rgba(40, 30, 20, 0.12) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto !important;
+}
+
+.main-tabs [class*="animal-tabItem"] {
+  min-height: 34px;
+  padding: 6px 14px !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 301 !important;
+}
+
+/* Content fills body; scroll under floating tabs */
+.main-tabs [class*="animal-tabContent"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  animation: none !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.main-tabs [class*="animal-tabContentInner"] {
+  min-height: 0 !important;
+  height: auto !important;
+  color: inherit !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Content starts under floating pill */
+.home-main,
+.settings-main {
+  max-width: none;
+  margin: 0;
+  padding: 56px 12px 28px !important;
+  background: transparent;
+  min-height: 0;
+}
+
+.alarm-grid {
+  padding-bottom: 72px;
+}
+
+/* Sea footer: pin to shell bottom + continuous horizontal scroll */
+/* app-footer-band rules live with sea-marquee below */
+
+
+/* Sea overlays alarm list at shell bottom.
+   IMPORTANT: use absolute (not fixed) so waves clip to rounded window corners.
+   fixed is viewport-relative and paints rectangular "ears" under transparent corners. */
+.app-footer-band {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: auto !important;
+  height: 80px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0;
+  overflow: hidden !important; /* clip wave tiles to shell radius */
+  pointer-events: none !important;
+  z-index: 30 !important;
+  flex: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+/* Shell must be positioning context for absolute sea */
+.app-shell,
+.app-shell.has-titlebar {
+  position: relative !important;
+}
+
+.sea-marquee {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  overflow: hidden !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  /* soft top fade so cards underneath remain readable */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 28%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 28%,
+    #000 100%
+  );
+}
+
+.sea-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  pointer-events: none;
+  line-height: 0;
+}
+
+/* Far: same seamless strip model as near (full width, no X-stretch).
+   Only height/opacity/filter differ for depth. */
+.sea-layer-far {
+  z-index: 1;
+  bottom: 22px;
+  height: 56px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  opacity: 0.45;
+  overflow: hidden;
+  filter: saturate(0.9) brightness(1.12) contrast(0.94);
+}
+
+/* Near: official-scale art with boats, clean colors */
+.sea-layer-near {
+  z-index: 2;
+  bottom: 0;
+  height: 72px;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  filter: saturate(1.05) brightness(1.03);
+}
+
+.sea-marquee-rail {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-end !important;
+  justify-content: flex-start !important;
+  height: 100%;
+  width: max-content !important;
+  min-width: 100%;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  animation: none !important;
+  gap: 0 !important;
+  column-gap: 0 !important;
+  row-gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font-size: 0 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+}
+
+.sea-marquee-img {
+  display: block !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  outline: none !important;
+  max-width: none !important;
+  /* keep aspect; never non-uniform stretch (breaks tile seam) */
+  object-fit: fill !important;
+  object-position: left bottom !important;
+  pointer-events: none;
+  user-select: none;
+  vertical-align: bottom;
+  /* kill inline-gap ghosts between replaced elements */
+  float: none;
+}
+
+/* Element motion: soft island creatures (organic ease) */
+.callai-element.callai-motion {
+  transform-origin: 50% 90%;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.callai-motion-sway {
+  animation: bird-sway 1.65s cubic-bezier(0.45, 0.05, 0.25, 1) infinite;
+}
+
+.callai-motion-hop {
+  animation: bird-hop 1.05s cubic-bezier(0.34, 1.45, 0.45, 1) infinite;
+}
+
+.callai-motion-breathe {
+  animation: bird-breathe 3.1s cubic-bezier(0.4, 0.05, 0.2, 1) infinite;
+}
+
+.callai-motion-wiggle {
+  animation: bird-wiggle 1.25s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+}
+
+@keyframes bird-sway {
+  0%   { transform: rotate(-6deg) translate3d(0, 0, 0); }
+  20%  { transform: rotate(-2deg) translate3d(0.5px, -1px, 0); }
+  45%  { transform: rotate(7deg) translate3d(0, -3px, 0); }
+  70%  { transform: rotate(1deg) translate3d(-0.5px, -1px, 0); }
+  100% { transform: rotate(-6deg) translate3d(0, 0, 0); }
+}
+
+@keyframes bird-hop {
+  0%   { transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg); }
+  12%  { transform: translate3d(0, 1px, 0) scale(1.06, 0.92) rotate(-2deg); }
+  32%  { transform: translate3d(0, -7px, 0) scale(0.96, 1.06) rotate(3deg); }
+  48%  { transform: translate3d(0, -2px, 0) scale(1.02, 0.98) rotate(-1deg); }
+  62%  { transform: translate3d(0, -5px, 0) scale(0.98, 1.03) rotate(2deg); }
+  78%  { transform: translate3d(0, 0, 0) scale(1.04, 0.96) rotate(0deg); }
+  100% { transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg); }
+}
+
+@keyframes bird-breathe {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  40% { transform: translate3d(0, -2px, 0) scale(1.035); }
+  55% { transform: translate3d(0, -1.2px, 0) scale(1.02); }
+}
+
+@keyframes bird-wiggle {
+  0%, 100% { transform: rotate(0deg) translate3d(0, 0, 0); }
+  15% { transform: rotate(-5deg) translate3d(-0.5px, 0, 0); }
+  35% { transform: rotate(6deg) translate3d(0.5px, -1px, 0); }
+  55% { transform: rotate(-3deg); }
+  75% { transform: rotate(4deg); }
+}

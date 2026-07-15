@@ -1,0 +1,146 @@
+/* pickers-time.css: Time picker wheels (from global.css L973-1117) */
+
+/* ── Time picker (scroll wheels) ─────────────────────── */
+.time-picker {
+  position: relative;
+  width: 100%;
+}
+
+.time-picker-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.time-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 132px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-bg-soft);
+  color: var(--callai-ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.time-picker-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.time-picker-caret {
+  opacity: 0.7;
+  font-size: 0.85rem;
+}
+
+.time-picker-popup {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: min(100%, 280px);
+  padding: 12px;
+  border-radius: 18px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-surface);
+  box-shadow: var(--callai-card-shadow);
+}
+
+.time-wheels {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+  height: 180px;
+}
+
+.time-wheel-col {
+  position: relative;
+  width: 72px;
+  height: 180px;
+  overflow: hidden;
+}
+
+.time-wheel-scroller {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.time-wheel-pad {
+  height: 72px;
+}
+
+.time-wheel-item {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--callai-ink-soft);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+  cursor: pointer;
+  scroll-snap-align: center;
+}
+
+.time-wheel-item.active {
+  color: var(--callai-ink);
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+
+.time-wheel-colon {
+  font-weight: 900;
+  font-size: 1.25rem;
+  color: var(--callai-ink);
+  padding-bottom: 2px;
+}
+
+.time-wheel-highlight {
+  pointer-events: none;
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 36px;
+  margin-top: -18px;
+  border-radius: 12px;
+  border: 2px solid color-mix(in srgb, var(--callai-primary) 55%, var(--callai-border));
+  background: color-mix(in srgb, var(--callai-primary) 12%, transparent);
+}
+
+.time-wheel-fade {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  z-index: 2;
+}
+
+.time-wheel-fade-top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--callai-surface), transparent);
+}
+
+.time-wheel-fade-bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--callai-surface), transparent);
+}
+
+.time-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}

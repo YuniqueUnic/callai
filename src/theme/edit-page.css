@@ -1,0 +1,325 @@
+/* edit-page.css: Edit overlay stack + scroll layout (from global.css L2215-2539) */
+
+/* Edit page: floating header overlays form (same idea as animal-tabList pill) */
+.edit-page {
+  position: relative;
+  /* height/scroll controlled by immersive-edit rules below */
+}
+
+.edit-hero {
+  position: absolute !important;
+  top: 10px !important;
+  left: 12px !important;
+  right: 12px !important;
+  width: auto !important;
+  z-index: 300 !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  /* no solid panel — floats over form like chrome chrome-less HUD */
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: auto !important;
+  flex: none !important;
+}
+
+.edit-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.edit-hero-deco {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  flex: 0 0 auto;
+  width: 88px !important;
+  height: auto !important;
+  margin: 0 !important;
+  pointer-events: none;
+  opacity: 1;
+  filter: drop-shadow(0 8px 14px rgba(61, 52, 40, 0.12));
+  z-index: 2;
+}
+
+.edit-hero-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding-top: 2px;
+}
+
+.edit-hero-copy h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 4.5vw, 1.75rem);
+  font-weight: 900;
+  color: var(--callai-ink);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+.edit-hero-copy p {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--callai-ink-soft);
+  line-height: 1.25;
+}
+
+.edit-hero-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 0;
+  z-index: 4;
+}
+
+.edit-hero-actions {
+  display: inline-flex !important;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+  z-index: 5;
+}
+
+.edit-page .edit-main {
+  max-width: none;
+}
+
+.edit-page .form-stack {
+  gap: 12px;
+}
+
+.edit-page .form-panel,
+.edit-page .form-stack > .animal-card,
+.edit-page .form-stack > [class*="animal-card"] {
+  position: relative;
+  z-index: 1;
+}
+
+.edit-page .section-illus {
+  width: 40px !important;
+  max-width: 40px;
+  opacity: 0.92;
+}
+
+.edit-page .field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.edit-page .field-row > label {
+  margin-bottom: 0 !important;
+}
+
+.edit-page .field {
+  margin-bottom: 12px;
+}
+
+.edit-page .field:last-child {
+  margin-bottom: 0;
+}
+
+
+@media (max-width: 420px) {
+  .edit-hero {
+    top: 8px !important;
+    left: 8px !important;
+    right: 8px !important;
+    grid-template-columns: 1fr;
+    padding: 8px 10px !important;
+    row-gap: 8px;
+  }
+  .edit-hero-brand {
+    gap: 8px;
+  }
+  .edit-hero-deco {
+    width: 72px !important;
+  }
+  .edit-hero-tools {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+  }
+  .edit-hero-copy h1 {
+    font-size: 1.3rem;
+  }
+  .edit-page .edit-main,
+  .edit-page .app-main.form-stack.edit-main {
+    padding-top: 118px !important;
+  }
+}
+
+
+/* ========== Edit page overlay stack (single source of truth) ========== */
+.edit-page {
+  position: relative;
+}
+
+.edit-hero {
+  z-index: 300 !important;
+}
+
+.edit-page .edit-main {
+  position: relative;
+  z-index: 1 !important;
+}
+
+.edit-page .form-stack {
+  overflow: visible !important;
+  isolation: auto;
+  gap: 12px;
+}
+
+.edit-page .form-panel,
+.edit-page .form-stack > [class*="animal-card"],
+.edit-page .form-stack > .animal-card {
+  position: relative;
+  z-index: 1;
+  overflow: visible !important;
+}
+
+/* Open Select: lift owning card above later siblings */
+.edit-page .form-panel:has([aria-expanded="true"]),
+.edit-page .form-stack > [class*="animal-card"]:has([aria-expanded="true"]),
+.form-panel:has([aria-expanded="true"]) {
+  z-index: 90 !important;
+}
+
+/* Library Select yellow popup */
+[class*="animal-dropdown"] {
+  z-index: 120 !important;
+}
+
+/* Portaled callai tooltips (body) */
+.callai-tooltip {
+  position: fixed;
+  z-index: 20000 !important;
+  max-width: 220px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: #f7f3df;
+  border: 2px solid #c4b89e;
+  color: #725d42;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  box-shadow: 0 6px 18px rgba(61, 52, 40, 0.16);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* TimePicker already portaled */
+.time-picker-popup-portal {
+  z-index: 20010 !important;
+}
+
+/* Home hero tooltips also clear list cards */
+.home-hero {
+  z-index: 20 !important;
+}
+.home-page .home-main {
+  z-index: 1 !important;
+}
+.home-page {
+  overflow: visible !important;
+}
+
+
+/* ========== Edit page scroll layout (must fill shell) ========== */
+.app-shell.immersive-edit {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.app-shell.immersive-edit > .edit-page {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  display: block !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.edit-page {
+  position: relative !important;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden !important;
+}
+
+/* Form fills page and scrolls UNDER floating header (like tab content under pill) */
+.edit-page .edit-main,
+.edit-page .app-main.form-stack.edit-main,
+.app-main.form-stack.edit-main {
+  position: absolute !important;
+  inset: 0 !important;
+  flex: none !important;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain;
+  /* clear floating header so first fields are readable */
+  padding: 96px 12px 32px !important;
+  margin: 0 !important;
+  z-index: 1 !important;
+}
+
+/* form-stack inside scroll area should not create second broken scroll */
+.edit-page .edit-main.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+/* animal-island Notification root must beat floating tabs/footer/drawer */
+[class*="animal-notificationRoot"],
+[data-animal-notification-root] {
+  z-index: 30000 !important;
+  pointer-events: none !important;
+}
+
+[class*="animal-notificationRoot"] [class*="animal-notification"],
+[data-animal-notification-root] [class*="animal-notification"] {
+  pointer-events: auto !important;
+}
+
+
+/* Tab content stays under floating pill for hit-testing */
+.main-tabs [class*="animal-tabContent"],
+.main-tabs [class*="animal-tabContentInner"] {
+  position: relative !important;
+  z-index: 0 !important;
+}
+
+.main-tabs [class*="animal-tabList"] {
+  z-index: 300 !important;
+  pointer-events: auto !important;
+}

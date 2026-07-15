@@ -1,0 +1,154 @@
+/* home.css: Home hero + alarm list rhythm (from global.css L2061-2214) */
+
+/* Home hero: brand row (bird + title) | tools column (time + actions) */
+.home-page {
+  position: relative;
+  min-height: 100%;
+  overflow-x: hidden;
+  z-index: 0;
+}
+
+.home-hero {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 10px;
+  /* margin clears floating tabs hit-box; avoid padding-top eating clicks */
+  margin: 52px 0 0;
+  padding: 8px 14px 10px;
+  /* no divider line / shadow between hero and list body */
+  background: transparent;
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.home-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.home-hero-deco {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  flex: 0 0 auto;
+  width: 88px !important;
+  height: auto !important;
+  margin: 0 !important;
+  pointer-events: none;
+  opacity: 1;
+  filter: drop-shadow(0 8px 14px rgba(61, 52, 40, 0.12));
+  z-index: 2;
+}
+
+.home-hero-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding-top: 2px;
+}
+
+.home-hero-copy h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 4.5vw, 1.75rem);
+  font-weight: 900;
+  color: var(--callai-ink);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+.home-hero-copy p {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--callai-ink-soft);
+  line-height: 1.25;
+}
+
+.home-hero-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 0;
+  z-index: 4;
+}
+
+.home-hero-tools .island-clock {
+  /* denser clock so it sits as a HUD chip, not a block */
+  padding: 5px 10px !important;
+  gap: 8px !important;
+  border-radius: 12px !important;
+  flex-shrink: 0;
+}
+
+.home-hero-tools .island-clock-weekday {
+  font-size: 9px !important;
+}
+
+.home-hero-tools .island-clock-monthday {
+  font-size: 12px !important;
+}
+
+.home-hero-tools .island-clock-time,
+.home-hero-tools .island-clock-colon {
+  font-size: 20px !important;
+}
+
+.home-hero-actions {
+  display: inline-flex !important;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.home-page .home-main {
+  position: relative;
+  z-index: 3;
+  padding-top: 2px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* under floating tabs, hero already clears the pill */
+.main-tabs [class*="animal-tabContentInner"] > .home-page > .home-hero {
+  padding-top: 52px;
+}
+
+@media (max-width: 420px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+    padding: 52px 12px 8px;
+    row-gap: 8px;
+  }
+
+  .home-hero-brand {
+    gap: 8px;
+  }
+
+  .home-hero-deco {
+    width: 76px !important;
+  }
+
+  .home-hero-tools {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .home-hero-copy h1 {
+    font-size: 1.35rem;
+  }
+}
