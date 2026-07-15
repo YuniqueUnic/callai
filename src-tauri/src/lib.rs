@@ -93,8 +93,6 @@ pub fn build_tray_menu_public<R: Runtime>(
     )
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-
 fn build_app_state() -> AppState {
     let paths = AppPaths::resolve().expect("resolve paths");
     paths.ensure().expect("ensure dirs");
@@ -141,6 +139,7 @@ fn build_app_state() -> AppState {
     }
 }
 
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))

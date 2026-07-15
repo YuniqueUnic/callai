@@ -78,6 +78,7 @@ impl AlarmService {
     }
 
     /// Run binary with retries; returns (attempt, last_output, success, canceled, timed_out).
+    #[allow(clippy::too_many_arguments)]
     fn run_attempts(
         &self,
         alarm: &mut Alarm,
