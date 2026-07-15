@@ -102,3 +102,9 @@ console.error("[todo] persist failed", err);
 - **Plugin UI**: all business settings, user data forms, CRUD, and param controls.
 - Do **not** expect the alarm editor to collect plugin business params.
 - Persist settings with `callai.storage.set("settings", …)` inside the plugin.
+
+## Fix / debug contract (for external agents)
+- Host may capture `console.*` into a ring buffer for Fix-with-AI / MCP `plugin_console`.
+- Prefer throwing clear errors rather than silent failures.
+- After storage writes, re-read on load so refresh does not wipe state.
+- Do not call Tauri plugins directly (`@tauri-apps/*`); only `window.callai`.

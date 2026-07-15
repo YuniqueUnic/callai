@@ -123,7 +123,7 @@ MCP 要能 daemon 常驻；CLI 设计要想清楚
 | --- | --- | --- |
 | 输入卡顿 | 每键 `setSettings` 重渲染整页 + 可能触发 models 拉取 | **本地 draft** + debounce/blur 再 persist |
 | Token 空 | 默认 `""` | bootstrap 生成 hex token |
-| 「常驻」误解 | stdio 本就不该常驻 | CLI：`--http` 前台 daemon；stdio 仍是 spawn 模型 |
+| 「常驻」误解 | stdio 本就不该常驻 | HTTP：CLI `--http` **或** App supervisor；stdio 仍 spawn |
 
 ### 2.4 Prompt 要带「程序能懂的东西」
 
@@ -261,15 +261,17 @@ src/ui/
   ModelAutocomplete.tsx
 ```
 
-### 4.1 MCP 产品语义（刻意选择）
+### 4.1 MCP 产品语义（演进定案）
 
-| 设置项 | 含义（本轮定案） |
-| --- | --- |
-| HTTP MCP 开关 | **记录意图 + 展示端点**，**不**在 App 内 bind 端口 |
-| stdio | 始终可用：`callai mcp-server`（Agent spawn） |
-| HTTP 常驻 | 用户终端：`callai mcp-server --http` |
+| 设置项 | 早期定案（已纠偏） | **现行定案**（见 record 16） |
+| --- | --- | --- |
+| HTTP MCP 开关 | 只记意图、不 bind | **App 内 supervisor 真 bind** `listen_host:port` |
+| stdio | `callai mcp-server` spawn | 不变 |
+| HTTP CLI | `--http` 前台 daemon | 与 App **二选一端口**（默认 **33927**） |
+| Host 校验 | 白名单 localhost | **`disable_allowed_hosts`**，鉴权靠 Bearer |
 
-**为什么不 App 内 supervisor：** 避免与 CLI daemon 双开抢端口、生命周期与 tray/close-to-tray 纠缠；先把语义写清，supervisor 可作为后续 issue。
+**为什么曾不做 App bind：** 怕与 CLI 抢端口、和 close-to-tray 纠缠。  
+**为什么最终做了：** 用户明确要求「CLI 有的能力 App 也要有」；supervisor + status UI 可表达失败（EADDRINUSE）。
 
 ---
 
@@ -401,8 +403,12 @@ ureq 3：`Agent::config_builder()` + `header` + `status().as_u16()` + rustls fea
 
 用户说「要能 daemon」。  
 stdio **不应** daemon（MCP 客户端管理生命周期）。  
-daemon = **HTTP 前台进程**（或未来 launchd）。  
-设置开关 ≠ 进程已启动——必须在 UI 文案写死。
+daemon = **HTTP 长连接**：
+
+1. CLI：`callai mcp-server --http`（前台 Ctrl+C）  
+2. App：`settings.mcp.enabled` → `McpHttpSupervisor` 线程  
+
+设置开关 **=** 意图 **且** 触发 bind；UI 必须显示 running / error（见 16）。
 
 ---
 
@@ -414,7 +420,7 @@ daemon = **HTTP 前台进程**（或未来 launchd）。
 | debounce 仍卡 | 本地 draft，父级不每键 setState |
 | `openai(model)` 上兼容站 | 改 `openai.chat` |
 | 仍 CORS（Origin localhost:1420） | **Rust `ai_chat_completion` 代理**，前端禁止直连 |
-| MCP enabled 暗示「已在听」 | 文案改为「意图 + CLI 启动」 |
+| MCP enabled 暗示「已在听」 | 先文案诚实；后 **真 supervisor + 状态行**（16） |
 | prompt 全挤 system | 拆 capabilities / output_contract / runtime |
 
 **验收（功能）：**
@@ -428,7 +434,7 @@ daemon = **HTTP 前台进程**（或未来 launchd）。
 - [x] stdio + `--http`  
 - [x] LLM 出站走 Rust 代理（无 WebView CORS）  
 - [ ] 真 key 全链路 E2E（依赖用户网关；不进 CI）  
-- [ ] App 内 HTTP MCP supervisor（明确未做）
+- [x] App 内 HTTP MCP supervisor（`8fb8b57` + record 16）
 
 ---
 
@@ -456,7 +462,7 @@ daemon = **HTTP 前台进程**（或未来 launchd）。
 callai 的 AI 生成必须：compose(system, runtime, capabilities, task, style?, output_contract) + user；
 LLM HTTP 必须 Tauri/Rust 代理（ai_chat_completion），禁止 WebView 直连网关（CORS）；
 兼容协议用 Chat Completions；Settings 文本本地 draft + debounce；
-MCP HTTP 由 CLI daemon，设置开关不 bind；
+MCP HTTP：App supervisor 或 CLI `--http`（勿抢端口，默认 33927）；
 UI 视觉以 animal-island-style.prompt 为准。
 ```
 
@@ -490,3 +496,130 @@ UI 视觉以 animal-island-style.prompt 为准。
 
 > 本阶段把 callai 从「会跑命令的岛风闹钟」推进到「**契约化生成 + 可 MCP 操作**」；  
 > 最大教训不是选哪个模型，而是：**输出合同、运行时上下文、WebView 网络现实（必须 Rust 代理）** 三者缺一不可。
+
+---
+
+## 11. 追加：Prompt 美化原则 + 后续 commits 拆解（插件 / 流式 / Fix / MCP tools）
+
+> 本节接 `ba78020` 之后：`5b270af` `0e5480b` `7b9a443` `6e00da2` `8fb8b57` 等。  
+> 目标：说明 **prompt 为什么这样写**、需求如何拆给 agent、以及真实偏差如何回灌 prompt。
+
+### 11.1 为什么「美化 prompt」不是文案修辞
+
+美化 = **降低模型失败熵**：
+
+| 失败 | Prompt 对策 | 文件 |
+| --- | --- | --- |
+| 截断后重开全文 | continue 只补 suffix | `continue_system` / `continue_user` |
+| HTML 进 JSON 转义炸 | dual-part 硬格式 | `plugin_generate` + `output_contract` |
+| invent Tauri API | 只认 `window.callai` | `plugin_sdk` |
+| 灰蓝 SaaS UI | 视觉真源 + classic Babel | `animal-island-style` |
+| 不知 OS/时区 | runtime 块 | `runtime_context` 动态层 |
+| 外挂 Agent 漏层 | `compose_prompt` / aliases | MCP tools + `PromptId` |
+
+**原则：** 一个文件盯一种失败；成功标准可机器判定。
+
+### 11.2 各 prompt 拆解：好在哪 / 需求从哪来
+
+#### system.prompt
+- **需求：** 模型要知道「后面还有很多层，别只听用户一句」。  
+- **好：** 层序表 + contracts win + 品牌短约束。  
+- **Agent 提示：** 「先读 system 层序再写 task」。
+
+#### capabilities.prompt
+- **需求：** 防 scope 膨胀（用户说「像 n8n」时拉回闹钟/插件）。  
+- **好：** 对象字段白名单 + plugin 定时语义 + MCP 同域。  
+- **Agent 提示：** 「超出 capabilities 要拒绝并给最近替代」。
+
+#### output_contract.prompt
+- **需求：** 客户端 `JSON.parse` / dual-part split 必须成功。  
+- **好：** 按 mode 写 **Success = …** 公式；补 `plugin_fix` 同构。  
+- **真实偏差：** 早期 HTML-in-JSON → 解析失败气泡；回灌 dual-part。
+
+#### alarm_generate.prompt
+- **需求：** 「每天下午 4.50 提醒写 TODO」→ 可入库 AlarmDraft。  
+- **好：** 四 schedule 互斥；纯提醒默认 `__callai_alarm__`；相对时间靠 runtime。  
+- **交互扩展：** AI 草稿卡 → 用户确认入库（不是静默写库）。
+
+#### plugin_generate.prompt + plugin_sdk.prompt + animal-island-style.prompt
+- **需求：** 插件是独立小应用，要像岛风、要能存数据、要能被闹钟触发。  
+- **好：**  
+  - generate：dual-part + 修旧插件保 id  
+  - sdk：storage 返回值归一、禁止直调 Tauri  
+  - style：CDN React18 + **classic** Babel（automatic runtime 会炸 srcdoc）  
+- **真实偏差：**  
+  - `import { jsx }` SyntaxError → 强制 `react-classic`  
+  - 刷新丢数据 → storage.get 解包 + SDK 写明  
+  - 业务参数塞进闹钟编辑页 → **撤回**，参数回插件内  
+
+#### continue_*  
+- **需求：** 32000 字仍截断。  
+- **好：** mini-jinja `incomplete_tail` / `round`；禁止重开。  
+- **限制：** 仍建议「小而完整」页面，而不是无限继续堆装饰。
+
+### 11.3 功能划分：生成 / 执行 / 调试 / 外挂
+
+```text
+生成面（AI Chat）
+  compose layers → stream → split dual-part → draft card → accept
+
+执行面（Scheduler）
+  Alarm binary | __callai_plugin__ runtime → notify / open window
+
+调试面（Plugin window + Logs drawer）
+  console ring ≤300 · history · Fix seed（errors≤10, ≤10k tokens 比例截断）
+
+外挂面（MCP）
+  同一 domain · compose_prompt · set_plugin_source · audit source=mcp
+```
+
+### 11.4 交互扩展（用户能感知的）
+
+| 交互 | 解决什么 | 关键实现 |
+| --- | --- | --- |
+| FAB hover pencil → AI | 从任意 Tab 进入生成 | App FAB cluster |
+| 生成类型 闹钟/插件/聊天 | 换 task 层 | AiChatComposer |
+| 草稿卡 + 同意入库 | 人在回路 | AiAlarmDraftCard / AiPluginDraftCard |
+| 插件独立 WebviewWindow | 非 iframe 主路径 | PluginWindowApp + capabilities |
+| 插件 Logs / AI 修复 | hard path | pluginFixContext + compose fix |
+| Settings MCP 开关+状态 | 真 bind + 可观察 | McpHttpSupervisor |
+| MCP 日志 drawer | 审计与插件日志分离 | McpLogsPanel |
+
+### 11.5 清晰描述需求 → 快速推进的模板（本阶段总用）
+
+```text
+【目标】一句话结果（用户可感知）
+【硬约束】domain / 文件位置 / 禁止事项（3–6 条）
+【交互】入口在哪、确认在哪、失败长什么样
+【验收】可勾选 4–8 条（含 typecheck/test）
+【不做】明确砍掉的范围
+【偏差预留】已知坑（CORS、Babel classic、端口互斥…）
+```
+
+**为什么有效：** Agent 不会在「要不要兼容旧 HTML-in-JSON」上自我纠结——你写了禁止。
+
+### 11.6 关键 commits 过程（偏差 → 回灌）
+
+| Commit | 做了什么 | 回灌到 prompt/docs |
+| --- | --- | --- |
+| `5c663ea` | runtime + capabilities + contract 分层 | system 层序表 |
+| `ba78020` | Rust 代理 LLM | record 15 §6.4；generate.ts Tauri 优先 |
+| `5b270af`/`0e5480b` | 流式 + thinking UI | continue 层 + 消息 chrome |
+| `7b9a443` | 独立插件窗 + Fix seed + dual-part 测 | plugin_sdk / plugin_generate fix 段 |
+| `6e00da2` | MCP tools 扩 + 日志分离 | record 16；compose_prompt |
+| `8fb8b57` | App HTTP supervisor | 纠偏 15「不 bind」；默认端口 33927 |
+
+### 11.7 手测补遗（插件 / MCP）
+
+1. 「每天下午 4.50 提醒写 TODO」→ 草稿 16:50 + `__callai_alarm__`  
+2. 「TODO 插件要有昨今明 + CRUD」→ dual-part 安装 → 独立窗 → storage 刷新仍在  
+3. 故意 `console.error` → 插件日志 drawer → AI 修复 seed 含 errors  
+4. Settings 开 MCP → health 200 → MCP 日志仅 tool 调用  
+5. `get_prompt style` / `compose_prompt fix` 经 stdio  
+
+### 11.8 与 record 16 的分工
+
+- **15：** 生成契约、WebView 网络、Settings 输入、Prompt 分层思想  
+- **16：** MCP 工具面、审计边界、App HTTP supervisor、Host/端口运维  
+
+读完 15 必须读 16，否则会带着「开关不 bind」的过时结论出门。

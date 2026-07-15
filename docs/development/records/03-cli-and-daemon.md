@@ -137,3 +137,37 @@ cargo build --manifest-path src-tauri/Cargo.toml
 ## 8. 关键路径
 
 `src-tauri/src/cli.rs` · `main.rs` · `Cargo.toml` · `justfile` cli-*
+
+---
+
+## 附录 · MCP HTTP keep-alive 与 App supervisor（链到 15/16）
+
+### 思想
+
+`callai daemon` 与 `callai mcp-server --http` 同属 **前台 keep-alive** 家族：进程在，服务就在；Ctrl+C 结束。  
+stdio MCP **不是** daemon——由 Claude/Codex **spawn**，生命周期跟 client。
+
+### 三种入口（现行）
+
+| 入口 | 命令 / 开关 | 默认端口 | 记录 |
+| --- | --- | --- | --- |
+| stdio | `callai mcp-server` | n/a | 15, 16 |
+| HTTP CLI | `callai mcp-server --http` | **33927** | 16 |
+| HTTP App | Settings → 开启 HTTP MCP | **33927** | 16 · `McpHttpSupervisor` |
+
+**互斥：** 不要 CLI 与 App 同绑一端口。  
+**鉴权：** Bearer token（bootstrap 自动生成）；Host **不**白名单（用户可 bind `0.0.0.0`）。
+
+### 给 AI 的短提示
+
+```text
+实现/修改 MCP HTTP 时：
+- stdio 保持 spawn 模型
+- HTTP 可 CLI 或 App supervisor，共享 SQLite
+- audit log 仅 source=mcp
+- 开关必须反映真实 running/error，禁止「假开启」
+```
+
+### 偏差
+
+早期文档写「开关不 bind」→ 用户否决 → 见 record 16 §1.3 / 15 §4.1 纠偏。

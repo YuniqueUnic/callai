@@ -38,6 +38,14 @@ Known quick templates the app already ships (you may mirror their intent):
 ### Plugin (isolated mini-app)
 callai installs **plugins**: `manifest` + `ui.html` file, sandboxed storage/history, invoke bridge.
 
+### Plugin as scheduled task
+Alarms may use builtin binary `__callai_plugin__` with `plugin` config:
+- `plugin_id`, `popup`, `suppress_when_fullscreen`
+- Business parameters stay **inside the plugin UI** (storage), not in the main alarm editor
+
+### External agents (MCP)
+External tools (Codex/Claude) may create/update alarms/plugins, read prompts, read plugin source/history, and apply `set_plugin_source` fixes. They share the same domain validation rules as the in-app AI.
+
 **Model output format (dual-part)** — the client does **not** require HTML inside JSON:
 1. JSON: `{ "manifest": { id, name, version, description, permissions, ui } }`
 2. Separate HTML document (fenced ```html or after `ui.html` marker)

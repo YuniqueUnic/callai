@@ -33,6 +33,14 @@ callai's client **strictly parses** model output. Follow these contracts exactly
 - Output: plain text (light markdown ok). No forced JSON.
 - You may outline a draft in prose, then invite switching intent to generate.
 
+## Mode: plugin_fix
+- Same dual-part PluginDraft as plugin_generate.
+- Keep **the same** `manifest.id` unless the user explicitly renames.
+- Prefer minimal surgical HTML changes driven by console errors / failed invokes.
+- Still: no HTML inside JSON; still animal_island_style + plugin_sdk.
+
+**Success** = same as plugin_generate + id continuity for overwrite install.
+
 ## Desired results (quality bar)
 - Schedules interpret relative time using runtime `now.local` + `timezone.resolved`
 - Binaries/scripts match runtime `os_family` / `shell`

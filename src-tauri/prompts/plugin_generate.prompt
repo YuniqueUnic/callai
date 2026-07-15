@@ -63,3 +63,13 @@ You may also use a plain line marker `ui.html` before the fence. Do not put the 
 After install, callai can schedule this plugin via alarm binary `__callai_plugin__`.
 Host only opens/notifies on schedule (popup / suppress-when-fullscreen).
 **All business parameters and settings UI live inside this plugin** (use `callai.storage`).
+
+## When fixing an existing plugin
+- Keep the same `manifest.id` (and display name unless asked).
+- Prefer fixing console/runtime errors over a full redesign.
+- Business params stay **inside** ui.html (storage-backed UI); host alarm only schedules fire time / popup.
+- Use high-level `window.callai.storage` / `timer` / `notification` per plugin_sdk.
+
+## Size & reliability
+- Prefer a complete one-screen page over a huge truncated page.
+- Dual-part (manifest JSON + html fence) is required so long HTML does not break JSON escaping.
