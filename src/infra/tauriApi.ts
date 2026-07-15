@@ -7,6 +7,7 @@ import type {
   ExecutionLog,
   LogFilter,
   McpLogEntry,
+  McpHttpStatus,
   PluginDraft,
   PluginHistoryEntry,
   PluginSummary,
@@ -130,6 +131,7 @@ export const api = {
   listMcpLogs: (limit?: number) =>
     call<McpLogEntry[]>("list_mcp_logs", { limit }),
   clearMcpLogs: () => call<number>("clear_mcp_logs"),
+  mcpHttpStatus: () => call<McpHttpStatus>("mcp_http_status"),
   getPrompt: (id: string) => call<string>("get_prompt", { id }),
   renderPrompt: (id: string, vars?: Record<string, string>) =>
     call<string>("render_prompt", { id, vars: vars ?? null }),

@@ -121,7 +121,7 @@ pub(crate) fn migrate_schema(conn: &rusqlite::Connection) -> DomainResult<()> {
     );
     try_add_column(
         conn,
-        "ALTER TABLE app_settings ADD COLUMN mcp_port INTEGER NOT NULL DEFAULT 3927",
+        "ALTER TABLE app_settings ADD COLUMN mcp_port INTEGER NOT NULL DEFAULT 33927",
     );
     try_add_column(
         conn,
@@ -131,6 +131,11 @@ pub(crate) fn migrate_schema(conn: &rusqlite::Connection) -> DomainResult<()> {
     // One-shot bump of retired OpenAI defaults (idempotent; ignores missing column).
     let _ = conn.execute(
         "UPDATE app_settings SET ai_model = 'gpt-5.6-terra' WHERE ai_model IN ('gpt-4o-mini','gpt-4o','gpt-4.1-mini')",
+        [],
+    );
+    // Bump retired MCP default port (idempotent).
+    let _ = conn.execute(
+        "UPDATE app_settings SET mcp_port = 33927 WHERE mcp_port = 3927",
         [],
     );
 

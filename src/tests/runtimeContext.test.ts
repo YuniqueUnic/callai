@@ -24,7 +24,7 @@ const sample: AiRuntimeContextDto = {
   ai_model: "gpt-5.6-terra",
   ai_base_host: "api.openai.com",
   mcp_enabled: false,
-  mcp_listen: "127.0.0.1:3927",
+  mcp_listen: "127.0.0.1:33927",
   now_local: "2026-07-15T12:00:00+08:00",
   now_utc: "2026-07-15T04:00:00Z",
   shell_hint: "zsh",

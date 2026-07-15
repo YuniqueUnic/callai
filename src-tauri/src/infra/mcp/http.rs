@@ -1,4 +1,4 @@
-//! Long-running Streamable HTTP MCP daemon.
+//! Streamable HTTP MCP (CLI daemon + in-app supervisor).
 use std::sync::Arc;
 
 use axum::{
@@ -15,11 +15,11 @@ use rmcp::transport::streamable_http_server::{
 use tokio_util::sync::CancellationToken;
 
 use crate::app::AlarmService;
-use crate::infra::plugin::{McpLogStore, PluginManager};
+use crate::infra::plugin::{McpLogStore, PluginConsoleStore, PluginManager};
 
 use super::server::CallaiMcp;
 
-/// Keep-alive HTTP MCP until Ctrl+C. Requires non-empty bearer token.
+/// CLI: block until Ctrl+C. Requires non-empty bearer token.
 pub fn run_mcp_http_server(
     service: Arc<AlarmService>,
     plugins: Arc<PluginManager>,
@@ -28,11 +28,36 @@ pub fn run_mcp_http_server(
     port: u16,
     auth_token: &str,
 ) -> Result<(), String> {
+    run_mcp_http_server_with_console(
+        service,
+        plugins,
+        logs,
+        Arc::new(PluginConsoleStore::new()),
+        host,
+        port,
+        auth_token,
+        None,
+    )
+}
+
+/// Shared entry: optional external cancel token (App supervisor). When `cancel` is
+/// None, installs Ctrl+C handler (CLI).
+#[allow(clippy::too_many_arguments)]
+pub fn run_mcp_http_server_with_console(
+    service: Arc<AlarmService>,
+    plugins: Arc<PluginManager>,
+    logs: Arc<McpLogStore>,
+    console: Arc<PluginConsoleStore>,
+    host: &str,
+    port: u16,
+    auth_token: &str,
+    cancel: Option<CancellationToken>,
+) -> Result<(), String> {
     let host = host.trim().to_string();
     let token = auth_token.trim().to_string();
     if token.is_empty() {
         return Err(
-            "MCP auth token is empty; open the app once or run any command to bootstrap a token"
+            "MCP auth token is empty; open the app once or generate a token in Settings"
                 .into(),
         );
     }
@@ -47,77 +72,101 @@ pub fn run_mcp_http_server(
         .map_err(|e| format!("tokio runtime: {e}"))?;
 
     rt.block_on(async move {
-        let expected = Arc::new(token);
-        let cancel = CancellationToken::new();
-
-        {
-            let cancel = cancel.clone();
+        let cancel = cancel.unwrap_or_else(|| {
+            let c = CancellationToken::new();
+            let cancel = c.clone();
             tokio::spawn(async move {
                 let _ = tokio::signal::ctrl_c().await;
                 eprintln!("\n^C shutting down MCP HTTP…");
                 cancel.cancel();
             });
-        }
+            c
+        });
 
-        let allowed_hosts = vec![
-            "localhost".into(),
-            "127.0.0.1".into(),
-            "::1".into(),
-            host.clone(),
-            format!("{host}:{port}"),
-        ];
-
-        let mcp: StreamableHttpService<CallaiMcp, LocalSessionManager> = StreamableHttpService::new(
-            {
-                let service = service.clone();
-                let plugins = plugins.clone();
-                let logs = logs.clone();
-                move || {
-                    Ok(CallaiMcp::new(
-                        service.clone(),
-                        plugins.clone(),
-                        logs.clone(),
-                    ))
-                }
-            },
-            Default::default(),
-            StreamableHttpServerConfig::default()
-                .with_cancellation_token(cancel.child_token())
-                .with_allowed_hosts(allowed_hosts),
-        );
-
-        let expected_auth = expected.clone();
-        let mcp_router = Router::new()
-            .fallback_service(mcp)
-            .layer(middleware::from_fn(move |req: Request, next: Next| {
-                let exp = expected_auth.clone();
-                async move { require_bearer(exp, req, next).await }
-            }));
-
-        let app = Router::new()
-            .route("/health", get(|| async { "ok" }))
-            .nest("/mcp", mcp_router);
-
-        let listener = tokio::net::TcpListener::bind(&bind)
-            .await
-            .map_err(|e| format!("bind {bind}: {e}"))?;
-        let addr = listener
-            .local_addr()
-            .map_err(|e| format!("local_addr: {e}"))?;
-
-        eprintln!("callai MCP HTTP daemon listening on http://{addr}/mcp");
-        eprintln!("  health: http://{addr}/health  (no auth)");
-        eprintln!("  auth:   Authorization: Bearer <mcp.auth_token>");
-        eprintln!("  stop:   Ctrl+C");
-
-        axum::serve(listener, app)
-            .with_graceful_shutdown(async move {
-                cancel.cancelled_owned().await;
-            })
-            .await
-            .map_err(|e| format!("mcp http serve: {e}"))?;
-        Ok(())
+        serve_mcp_http(
+            service,
+            plugins,
+            logs,
+            console,
+            &host,
+            port,
+            &token,
+            &bind,
+            cancel,
+        )
+        .await
     })
+}
+
+/// Async HTTP MCP serve until `cancel` is triggered.
+#[allow(clippy::too_many_arguments)]
+pub async fn serve_mcp_http(
+    service: Arc<AlarmService>,
+    plugins: Arc<PluginManager>,
+    logs: Arc<McpLogStore>,
+    console: Arc<PluginConsoleStore>,
+    host: &str,
+    port: u16,
+    token: &str,
+    bind: &str,
+    cancel: CancellationToken,
+) -> Result<(), String> {
+    let expected = Arc::new(token.to_string());
+
+    // No Host allowlist: bind address is user-controlled (0.0.0.0 / LAN IP / custom).
+    // Auth is Bearer token only. (rmcp: empty allowed_hosts = accept any Host.)
+    let mcp: StreamableHttpService<CallaiMcp, LocalSessionManager> = StreamableHttpService::new(
+        {
+            let service = service.clone();
+            let plugins = plugins.clone();
+            let logs = logs.clone();
+            let console = console.clone();
+            move || {
+                Ok(CallaiMcp::with_console(
+                    service.clone(),
+                    plugins.clone(),
+                    logs.clone(),
+                    console.clone(),
+                ))
+            }
+        },
+        Default::default(),
+        StreamableHttpServerConfig::default()
+            .with_cancellation_token(cancel.child_token())
+            .disable_allowed_hosts(),
+    );
+
+    let expected_auth = expected.clone();
+    let mcp_router = Router::new()
+        .fallback_service(mcp)
+        .layer(middleware::from_fn(move |req: Request, next: Next| {
+            let exp = expected_auth.clone();
+            async move { require_bearer(exp, req, next).await }
+        }));
+
+    let app = Router::new()
+        .route("/health", get(|| async { "ok" }))
+        .nest("/mcp", mcp_router);
+
+    let listener = tokio::net::TcpListener::bind(bind)
+        .await
+        .map_err(|e| format!("bind {bind}: {e}"))?;
+    let addr = listener
+        .local_addr()
+        .map_err(|e| format!("local_addr: {e}"))?;
+
+    tracing::info!(%addr, %host, %port, "callai MCP HTTP listening");
+    eprintln!("callai MCP HTTP listening on http://{addr}/mcp");
+    eprintln!("  health: http://{addr}/health  (no auth)");
+    eprintln!("  auth:   Authorization: Bearer <mcp.auth_token>");
+
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async move {
+            cancel.cancelled_owned().await;
+        })
+        .await
+        .map_err(|e| format!("mcp http serve: {e}"))?;
+    Ok(())
 }
 
 async fn require_bearer(

@@ -65,8 +65,8 @@
   "aiModel": "Model",
   "aiApiKey": "API key",
   "mcpSection": "MCP",
-  "mcpHint": "stdio always works via `callai mcp-server` (spawned by Claude/Codex). HTTP is not auto-started by the app — run `callai mcp-server --http` in a terminal. This toggle only records intent and shows the endpoint.",
-  "mcpEnabled": "Prefer HTTP MCP",
+  "mcpHint": "stdio: spawn `callai mcp-server` from Claude/Codex. HTTP: toggle below binds a port inside the app; CLI `callai mcp-server --http` is optional.",
+  "mcpEnabled": "Run HTTP MCP in app",
   "mcpHost": "Listen host",
   "mcpPort": "Port",
   "mcpToken": "Authorization token",
@@ -88,8 +88,8 @@
   "aiModelsFail": "Could not list models: {{msg}}",
   "aiModelsSeeded": "Suggested models (offline): {{count}}",
   "mcpTokenAutoHint": "Generated automatically on first launch; rotate with the refresh button.",
-  "mcpHttpDaemonHint": "Start the HTTP daemon in a terminal (foreground until Ctrl+C):",
-  "mcpEnabledNote": "Enabling does not bind a port inside the app; start the CLI daemon yourself.",
+  "mcpHttpDaemonHint": "Optional terminal daemon (don't share the same port as the app):",
+  "mcpEnabledNote": "On: bind listen_host:port immediately. Off: stop. Status is shown below.",
   "aiBaseUrlHint": "e.g. https://api.openai.com/v1 or https://proxy.example.com/v1/responses",
   "mcpLogs": "MCP logs",
   "mcpLogsCap": "MCP tool calls only · max 500",
@@ -97,5 +97,10 @@
   "mcpLogsEmptyHint": "Entries appear only when an external agent calls callai mcp-server tools.",
   "mcpLogsCleared": "MCP logs cleared",
   "refreshMcpLogs": "Refresh",
-  "clearMcpLogs": "Clear"
+  "clearMcpLogs": "Clear",
+  "mcpStatusRunning": "Running",
+  "mcpStatusStopped": "Stopped",
+  "mcpStatusError": "Failed",
+  "mcpStatusLoading": "Status…",
+  "mcpRestart": "Re-apply"
 }

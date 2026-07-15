@@ -322,7 +322,7 @@ impl AlarmStore for SqliteStore {
                     COALESCE(ai_base_url, ''), COALESCE(ai_api_key, ''), COALESCE(ai_model, 'gpt-5.6-terra'),
                     COALESCE(ai_provider, 'openai'),
                     COALESCE(mcp_enabled, 0), COALESCE(mcp_listen_host, '127.0.0.1'),
-                    COALESCE(mcp_port, 3927), COALESCE(mcp_auth_token, '')
+                    COALESCE(mcp_port, 33927), COALESCE(mcp_auth_token, '')
              FROM app_settings WHERE id = 1",
             [],
             |row| {

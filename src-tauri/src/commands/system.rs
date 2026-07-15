@@ -40,7 +40,16 @@ pub fn save_settings(
 ) -> Result<AppSettings, String> {
     let saved = state.service.save_settings(settings).map_err(map_err)?;
     let _ = rebuild_tray_menu(&app, saved.locale());
+    // Start/stop/restart in-app MCP HTTP with settings.
+    state.mcp_http.apply(&saved.mcp);
     Ok(saved)
+}
+
+#[tauri::command]
+pub fn mcp_http_status(
+    state: State<'_, AppState>,
+) -> Result<crate::infra::mcp::McpHttpStatus, String> {
+    Ok(state.mcp_http.status())
 }
 
 #[tauri::command]

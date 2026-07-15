@@ -65,8 +65,8 @@
   "aiModel": "模型",
   "aiApiKey": "API Key",
   "mcpSection": "MCP",
-  "mcpHint": "stdio 始终可用：callai mcp-server（由 Claude/Codex 拉起）。HTTP 常驻不会随 App 自动启动，需本机执行 callai mcp-server --http。开关仅记录意图并展示端点。",
-  "mcpEnabled": "标记使用 HTTP MCP",
+  "mcpHint": "stdio：Claude/Codex 拉起 `callai mcp-server`。HTTP：开启下方开关后，App 内会绑定端口并常驻；也可用 CLI `callai mcp-server --http`。",
+  "mcpEnabled": "在 App 内启动 HTTP MCP",
   "mcpHost": "监听地址",
   "mcpPort": "端口",
   "mcpToken": "授权 Token",
@@ -88,8 +88,8 @@
   "aiModelsFail": "拉取模型失败：{{msg}}",
   "aiModelsSeeded": "建议模型（离线）: {{count}}",
   "mcpTokenAutoHint": "首次启动会自动生成；点刷新可轮换。",
-  "mcpHttpDaemonHint": "在终端启动 HTTP daemon（前台常驻，Ctrl+C 结束）：",
-  "mcpEnabledNote": "开启不会在 App 内绑定端口；请用 CLI 启动 HTTP daemon。",
+  "mcpHttpDaemonHint": "可选：终端独立 daemon（与 App 二选一，勿抢同一端口）：",
+  "mcpEnabledNote": "开启后立即在 listen_host:port 绑定；关闭即停止。状态见下方指示。",
   "aiBaseUrlHint": "例如 https://api.openai.com/v1 或 https://proxy.example.com/v1/responses",
   "mcpLogs": "MCP 日志",
   "mcpLogsCap": "仅 MCP 工具调用 · 最多 500 条",
@@ -97,5 +97,10 @@
   "mcpLogsEmptyHint": "只有外部 Agent 调用 callai mcp-server 工具时才会写入。",
   "mcpLogsCleared": "MCP 日志已清空",
   "refreshMcpLogs": "刷新",
-  "clearMcpLogs": "清空"
+  "clearMcpLogs": "清空",
+  "mcpStatusRunning": "运行中",
+  "mcpStatusStopped": "已停止",
+  "mcpStatusError": "启动失败",
+  "mcpStatusLoading": "状态…",
+  "mcpRestart": "重新应用"
 }

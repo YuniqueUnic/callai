@@ -31,7 +31,7 @@ let settings: AppSettings = {
   mcp: {
     enabled: false,
     listen_host: "127.0.0.1",
-    port: 3927,
+    port: 33927,
     auth_token: "",
   },
 };
@@ -304,6 +304,17 @@ export const mockApi = {
   },
   async listMcpLogs(_limit?: number) {
     return [];
+  },
+  async mcpHttpStatus() {
+    return {
+      enabled: false,
+      running: false,
+      host: "127.0.0.1",
+      port: 33927,
+      endpoint: "http://127.0.0.1:33927/mcp",
+      health_url: "http://127.0.0.1:33927/health",
+      error: null,
+    };
   },
   async clearMcpLogs() {
     return 0;

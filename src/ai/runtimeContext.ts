@@ -98,7 +98,7 @@ export async function buildBrowserRuntimeContext(): Promise<AiRuntimeContextDto>
         mcp: {
           enabled: false,
           listen_host: "127.0.0.1",
-          port: 3927,
+          port: 33927,
           auth_token: "",
         },
       }) as AppSettings,
@@ -136,7 +136,7 @@ export async function buildBrowserRuntimeContext(): Promise<AiRuntimeContextDto>
     ai_model: settings.ai?.model ?? "",
     ai_base_host: host,
     mcp_enabled: !!settings.mcp?.enabled,
-    mcp_listen: `${settings.mcp?.listen_host ?? "127.0.0.1"}:${settings.mcp?.port ?? 3927}`,
+    mcp_listen: `${settings.mcp?.listen_host ?? "127.0.0.1"}:${settings.mcp?.port ?? 33927}`,
     now_local: now.toString(),
     now_utc: now.toISOString(),
     shell_hint:

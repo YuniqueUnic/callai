@@ -184,6 +184,16 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   model: AI_PROVIDER_DEFAULTS.openai.model,
 };
 
+export interface McpHttpStatus {
+  enabled: boolean;
+  running: boolean;
+  host: string;
+  port: number;
+  endpoint: string;
+  health_url: string;
+  error?: string | null;
+}
+
 export interface McpSettings {
   enabled: boolean;
   listen_host: string;
@@ -194,7 +204,7 @@ export interface McpSettings {
 export const DEFAULT_MCP_SETTINGS: McpSettings = {
   enabled: false,
   listen_host: "127.0.0.1",
-  port: 3927,
+  port: 33927,
   auth_token: "",
 };
 

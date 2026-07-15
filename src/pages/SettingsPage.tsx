@@ -94,7 +94,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
         setSettings({
           ...s,
           ai: s.ai ?? { provider: "openai", base_url: "https://api.openai.com/v1", api_key: "", model: "gpt-5.6-terra" },
-          mcp: s.mcp ?? { enabled: false, listen_host: "127.0.0.1", port: 3927, auth_token: "" },
+          mcp: s.mcp ?? { enabled: false, listen_host: "127.0.0.1", port: 33927, auth_token: "" },
         });
         setLogRetentionDraft(String(s.log_retention_days ?? 30));
       } catch {

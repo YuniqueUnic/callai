@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Drawer, Input, Switch } from "animal-island-ui";
-import type { AiProvider, AiSettings, AppSettings, McpSettings } from "../domain/types";
+import type { AiProvider, AiSettings, AppSettings, McpHttpStatus, McpSettings } from "../domain/types";
 import {
   AI_PROVIDER_DEFAULTS,
   DEFAULT_AI_SETTINGS,
@@ -38,13 +38,14 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
   const [showMcpToken, setShowMcpToken] = useState(false);
   const [busyToken, setBusyToken] = useState(false);
   const [mcpLogsOpen, setMcpLogsOpen] = useState(false);
+  const [mcpStatus, setMcpStatus] = useState<McpHttpStatus | null>(null);
 
   // Local drafts for free-text fields (fast typing path).
   const [baseUrl, setBaseUrl] = useState(savedAi.base_url);
   const [apiKey, setApiKey] = useState(savedAi.api_key);
   const [model, setModel] = useState(savedAi.model);
   const [mcpHost, setMcpHost] = useState(savedMcp.listen_host);
-  const [mcpPort, setMcpPort] = useState(String(savedMcp.port ?? 3927));
+  const [mcpPort, setMcpPort] = useState(String(savedMcp.port ?? 33927));
   const [mcpToken, setMcpToken] = useState(savedMcp.auth_token);
 
   useEffect(() => {
@@ -55,6 +56,22 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
       document.body.classList.remove("callai-logs-open");
     };
   }, [mcpLogsOpen]);
+
+  const refreshMcpStatus = useCallback(async () => {
+    try {
+      if (typeof client.mcpHttpStatus === "function") {
+        setMcpStatus(await client.mcpHttpStatus());
+      }
+    } catch {
+      /* ignore mock / older backend */
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshMcpStatus();
+    const id = window.setInterval(() => void refreshMcpStatus(), 2000);
+    return () => window.clearInterval(id);
+  }, [refreshMcpStatus, savedMcp.enabled, savedMcp.listen_host, savedMcp.port, savedMcp.auth_token]);
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -78,7 +95,7 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
     setApiKey(savedAi.api_key);
     setModel(savedAi.model);
     setMcpHost(savedMcp.listen_host);
-    setMcpPort(String(savedMcp.port ?? 3927));
+    setMcpPort(String(savedMcp.port ?? 33927));
     setMcpToken(savedMcp.auth_token);
   }, [
     savedAi.base_url,
@@ -98,7 +115,7 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
     const mcp = cur.mcp ?? DEFAULT_MCP_SETTINGS;
     const portNum = Math.min(
       65535,
-      Math.max(1, Number(d.mcpPort.replace(/\D/g, "")) || 3927),
+      Math.max(1, Number(d.mcpPort.replace(/\D/g, "")) || 33927),
     );
     return {
       ...cur,
@@ -217,7 +234,7 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
     }
   }
 
-  const endpoint = `http://${mcpHost || "127.0.0.1"}:${Number(mcpPort) || 3927}/mcp`;
+  const endpoint = `http://${mcpHost || "127.0.0.1"}:${Number(mcpPort) || 33927}/mcp`;
 
   return (
     <>
@@ -332,11 +349,43 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
               void (async () => {
                 if (dirtyRef.current) await flushNow({ silent: true });
                 await patchMcpImmediate({ enabled: v });
+                // give supervisor a tick then refresh
+                window.setTimeout(() => void refreshMcpStatus(), 200);
               })();
             }}
           />
         </div>
         <p className="meta settings-section-hint">{t("settings:mcpEnabledNote")}</p>
+
+        <div className="settings-row mcp-status-row" style={{ marginTop: 8, marginBottom: 8 }}>
+          <span className="meta">
+            {mcpStatus == null
+              ? t("settings:mcpStatusLoading")
+              : mcpStatus.running
+                ? t("settings:mcpStatusRunning")
+                : mcpStatus.error
+                  ? `${t("settings:mcpStatusError")}: ${mcpStatus.error}`
+                  : t("settings:mcpStatusStopped")}
+          </span>
+          <IconButton
+            label={t("settings:mcpRestart")}
+            icon={<IconRefresh size={16} />}
+            sfx="soft"
+            onClick={() => {
+              void (async () => {
+                if (dirtyRef.current) await flushNow({ silent: true });
+                // re-save current mcp to re-apply supervisor
+                await patchMcpImmediate({
+                  enabled: !!savedMcp.enabled,
+                  listen_host: mcpHost,
+                  port: Number(mcpPort) || 33927,
+                  auth_token: mcpToken,
+                });
+                await refreshMcpStatus();
+              })();
+            }}
+          />
+        </div>
 
         <div className="field">
           <label className="label">{t("settings:mcpHost")}</label>

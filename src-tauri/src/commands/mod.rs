@@ -5,6 +5,7 @@ use serde::Serialize;
 use crate::app::AlarmService;
 use crate::domain::DomainError;
 use crate::infra::plugin::{McpLogStore, PluginConsoleStore, PluginManager};
+use crate::infra::mcp::McpHttpSupervisor;
 use crate::infra::AlarmScheduler;
 
 pub mod ai;
@@ -42,6 +43,8 @@ pub struct AppState {
     pub mcp_logs: Arc<McpLogStore>,
     /// Shared SQLite store (alarms + AI chat history).
     pub store: Arc<crate::infra::SqliteStore>,
+    /// In-app HTTP MCP supervisor (start/stop with settings.mcp.enabled).
+    pub mcp_http: Arc<McpHttpSupervisor>,
 }
 
 // Re-export commands so `commands::list_alarms` keep working for generate_handler!.

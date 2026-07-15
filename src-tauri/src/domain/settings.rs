@@ -239,7 +239,7 @@ fn default_mcp_host() -> String {
 }
 
 fn default_mcp_port() -> u16 {
-    3927
+    33927
 }
 
 impl Default for McpSettings {

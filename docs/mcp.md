@@ -38,7 +38,7 @@ Example Claude Desktop / Codex config:
 callai mcp-server --http
 
 # overrides
-callai mcp-server --http --host 127.0.0.1 --port 3927 --token "$TOKEN"
+callai mcp-server --http --host 127.0.0.1 --port 33927 --token "$TOKEN"
 ```
 
 - Endpoint: `http://<host>:<port>/mcp`

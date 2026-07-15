@@ -123,6 +123,16 @@ fn build_app_state() -> AppState {
     let scheduler = Arc::new(AlarmScheduler::new(Arc::clone(&service)));
     scheduler.start();
 
+    let mcp_http = crate::infra::mcp::McpHttpSupervisor::new(
+        Arc::clone(&service),
+        Arc::clone(&plugins),
+        Arc::clone(&mcp_logs),
+        Arc::clone(&plugin_console),
+    );
+    if let Ok(s) = service.get_settings() {
+        mcp_http.apply(&s.mcp);
+    }
+
     AppState {
         service: Arc::clone(&service),
         scheduler: Arc::clone(&scheduler),
@@ -130,6 +140,7 @@ fn build_app_state() -> AppState {
         plugin_console,
         mcp_logs,
         store,
+        mcp_http,
     }
 }
 
@@ -160,6 +171,7 @@ pub fn run() {
             commands::delete_log,
             commands::delete_logs,
             commands::get_settings,
+            commands::mcp_http_status,
             commands::save_settings,
             commands::check_binary,
             commands::list_templates,
