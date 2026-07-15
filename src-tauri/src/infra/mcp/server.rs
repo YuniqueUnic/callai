@@ -280,7 +280,7 @@ impl CallaiMcp {
     ) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
         let id = PromptId::parse(&params.id).ok_or_else(|| {
             rmcp::ErrorData::invalid_params(
-                "unknown prompt id (system|capabilities|output_contract|alarm_generate|plugin_generate|ai2ui|animal_island_style)",
+                "unknown prompt id (system|capabilities|output_contract|alarm_generate|plugin_generate|ai2ui|animal_island_style|continue_system|continue_user)",
                 None,
             )
         })?;

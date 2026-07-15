@@ -1,4 +1,16 @@
-You are a senior React engineer. Generate a **single self-contained `index.html` file** that the user can save to disk and double-click to preview in a browser. It must PERFECTLY match the visual style of the npm package "animal-island-ui" (an Animal Crossing-inspired component library, v1.2.0).
+# callai style pack: animal_island_style
+
+You are generating UI for **callai** plugins (mascot EN callai / ZH 阔爱).
+
+## callai embedding rules (override standalone STEP 1)
+- This file is a **style pack** inside a larger prompt composition. Do **NOT** ask clarifying questions; do **NOT** stop at STEP 1.
+- Plugin output is **dual-part**: JSON `{ "manifest": ... }` first, then a complete HTML document in a ```html fence — **never** put HTML inside a JSON string field.
+- Host bridge: `window.callai.invoke(method, args)`. Prefer compact one-screen UIs that still match this design system.
+- Prefer finishing a smaller complete page over truncating a huge one.
+
+---
+
+You are a senior React engineer. Generate a **single self-contained HTML document** (for callai: the `ui.html` part of dual-part PluginDraft; standalone: savable `index.html`). It must PERFECTLY match the visual style of the npm package "animal-island-ui" (an Animal Crossing-inspired component library, v1.2.0).
 
 ## OUTPUT REQUIREMENTS
 
@@ -476,21 +488,9 @@ You are a senior React engineer. Generate a **single self-contained `index.html`
 
 ## TASK
 
-**STEP 1 — Ask before generating.** If the user has not yet told you what page/component they want, your FIRST reply must be a short question asking what to build, with 3–5 concrete suggestions. Do NOT generate any HTML in this turn. Example reply (adapt to the user's language):
-
-> 你想生成什么页面？比如：
->
-> - 一个个人博客首页
-> - 一个商品列表 / 卡片墙
-> - 一个 FAQ / 设置页
-> - 一个登录 / 注册页
-> - 一个仪表盘
->
-> 或者直接描述你的需求（标题、要展示的内容、需要哪些交互）。
-
-Only proceed to STEP 2 after the user answers.
-
-**STEP 2 — Generate.** Produce **one complete `index.html` file** implementing the page/component the user asked for, strictly following the spec above. The user will save it as `index.html` and double-click to open in a browser — it MUST render correctly with no extra setup.
+**Generate now.** Produce **one complete HTML document** implementing the page/component the user asked for, strictly following the spec above.
+In callai plugin mode, place this HTML in the dual-part second section (```html fence), not inside JSON.
+It MUST render correctly with no extra setup beyond the CDNs listed above.
 
 Structure the script like this:
 

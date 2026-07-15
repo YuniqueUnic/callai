@@ -428,6 +428,26 @@ pub fn get_prompt(id: String) -> Result<String, String> {
     Ok(pid.body().to_string())
 }
 
+/// Render a prompt template with runtime vars (mini-jinja).
+/// Used for continuation turns (`continue_user` + incomplete_tail, round, …).
+#[tauri::command]
+pub fn render_prompt(
+    id: String,
+    vars: Option<std::collections::HashMap<String, String>>,
+) -> Result<String, String> {
+    let pid = PromptId::parse(&id).ok_or_else(|| {
+        map_err(DomainError::new(
+            crate::domain::ErrorCode::InvalidArgs,
+            "unknown prompt id",
+        ))
+    })?;
+    let map: std::collections::BTreeMap<String, String> = vars
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+    Ok(crate::domain::render_prompt_id_with(pid, &map))
+}
+
 #[tauri::command]
 pub fn list_prompts() -> Result<Vec<String>, String> {
     Ok(PromptId::all()
@@ -447,13 +467,9 @@ pub async fn list_ai_models(
     base_url: String,
     api_key: String,
 ) -> Result<Vec<String>, String> {
-    // HTTP list must not block the UI thread (refresh was freezing the app).
-    tauri::async_runtime::spawn_blocking(move || {
-        crate::infra::ai_models::list_models(&provider, &base_url, &api_key)
-    })
-    .await
-    .map_err(|e| format!("join error: {e}"))?
-    .map_err(map_err)
+    crate::infra::ai_models::list_models(&provider, &base_url, &api_key)
+        .await
+        .map_err(map_err)
 }
 
 /// Stream event for AI generation (progress + text deltas).
@@ -489,34 +505,31 @@ pub async fn ai_chat_completion(
     let app2 = app.clone();
     let started = std::time::Instant::now();
 
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        use std::sync::atomic::{AtomicU32, Ordering};
-        let chars = AtomicU32::new(0);
-        crate::infra::ai_models::chat_completion_stream(
-            &provider,
-            &base_url,
-            &api_key,
-            &model,
-            &system,
-            &user,
-            temp,
-            |phase, delta| {
-                if !delta.is_empty() {
-                    let _ = chars.fetch_add(delta.chars().count() as u32, Ordering::Relaxed);
-                }
-                let ev = AiStreamEvent {
-                    request_id: rid.clone(),
-                    phase: phase.as_str().to_string(),
-                    delta: delta.to_string(),
-                    chars: chars.load(Ordering::Relaxed),
-                    elapsed_ms: started.elapsed().as_millis() as u64,
-                };
-                let _ = app2.emit(AI_STREAM_EVENT, ev);
-            },
-        )
-    })
-    .await
-    .map_err(|e| format!("join error: {e}"))?;
+    use std::sync::atomic::{AtomicU32, Ordering};
+    let chars = AtomicU32::new(0);
+    let result = crate::infra::ai_models::chat_completion_stream(
+        &provider,
+        &base_url,
+        &api_key,
+        &model,
+        &system,
+        &user,
+        temp,
+        |phase, delta| {
+            if !delta.is_empty() {
+                let _ = chars.fetch_add(delta.chars().count() as u32, Ordering::Relaxed);
+            }
+            let ev = AiStreamEvent {
+                request_id: rid.clone(),
+                phase: phase.as_str().to_string(),
+                delta: delta.to_string(),
+                chars: chars.load(Ordering::Relaxed),
+                elapsed_ms: started.elapsed().as_millis() as u64,
+            };
+            let _ = app2.emit(AI_STREAM_EVENT, ev);
+        },
+    )
+    .await;
 
     result.map_err(map_err)
 }

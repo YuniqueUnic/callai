@@ -260,6 +260,7 @@ pub fn run() {
             commands::list_mcp_logs,
             commands::clear_mcp_logs,
             commands::get_prompt,
+            commands::render_prompt,
             commands::list_prompts,
             commands::generate_secret_token,
             commands::list_ai_models,

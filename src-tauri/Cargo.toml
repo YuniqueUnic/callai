@@ -27,6 +27,7 @@ tauri-plugin-dialog = { version = "2" }
 tauri-plugin-notification = { version = "2", default-features = false }
 serde = { version = "1", default-features = false, features = ["std", "derive"] }
 serde_json = { version = "1", default-features = false, features = ["std"] }
+minijinja = { version = "2", default-features = false, features = ["builtins", "debug", "serde"] }
 thiserror = "2"
 chrono = { version = "0.4", default-features = false, features = [
   "clock",
@@ -75,7 +76,14 @@ rmcp = { version = "2", default-features = false, features = [
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "macros", "io-std", "io-util", "sync", "time", "net", "signal"] }
 schemars = { version = "1", default-features = false, features = ["derive"] }
 futures = { version = "0.3", default-features = false, features = ["std"] }
-ureq = { version = "3", default-features = false, features = ["json", "rustls"] }
+# OpenAI-compatible client (chat stream, models list, responses)
+async-openai = { version = "0.41", default-features = false, features = [
+  "rustls",
+  "chat-completion",
+  "model",
+  "responses",
+] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json", "stream"] }
 tokio-util = { version = "0.7", default-features = false, features = ["rt"] }
 axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "tower-log"] }
 tower-http = { version = "0.7", default-features = false, features = ["cors"] }

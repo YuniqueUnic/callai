@@ -336,16 +336,31 @@ export const mockApi = {
       plugin_generate: "mock plugin",
       ai2ui: "mock ai2ui",
       animal_island_style: "mock animal-island-ui " + "x".repeat(1001),
+      continue_system: "mock continue system: emit only missing suffix",
+      continue_user:
+        "Continue round mock. --- incomplete tail ---\n{{ incomplete_tail }}\n--- end tail ---",
     };
     return map[id] ?? `mock prompt ${id}`;
+  },
+  async renderPrompt(id: string, vars?: Record<string, string>) {
+    let body = await this.getPrompt(id);
+    for (const [k, v] of Object.entries(vars ?? {})) {
+      body = body.split(`{{ ${k} }}`).join(v);
+      body = body.split(`{{${k}}}`).join(v);
+    }
+    return body;
   },
   async listPrompts() {
     return [
       "system",
+      "capabilities",
+      "output_contract",
       "alarm_generate",
       "plugin_generate",
       "ai2ui",
       "animal_island_style",
+      "continue_system",
+      "continue_user",
     ];
   },
   async generateSecretToken() {

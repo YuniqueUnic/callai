@@ -27,13 +27,28 @@
 }
 
 .edit-overlay > .ai-page .ai-scroll {
-  flex: 1 1 0 !important;
+  flex: 1 1 auto !important;
   min-height: 0 !important;
+  height: 100% !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-y;
+  padding-bottom: var(--ai-composer-clearance) !important;
+}
+
+.edit-overlay > .ai-page .ai-composer-hud {
+  position: absolute !important;
+  left: var(--ai-page-gutter) !important;
+  right: var(--ai-page-gutter) !important;
+  bottom: max(6px, env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 220 !important;
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
 }
 
 .edit-overlay > .ai-page .ai-scroll .ai-stream-card,
@@ -49,6 +64,8 @@
   /* initial readable offset under floating hero */
   --ai-hero-clearance: 112px;
   --ai-select-toolbar-h: 52px;
+  /* bottom composer is overlay HUD — scroll content pads under it */
+  --ai-composer-clearance: 168px;
   position: relative;
   min-height: 0;
   height: 100%;
@@ -101,21 +118,30 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  gap: 8px;
+  gap: 0;
   margin: 0;
-  padding: 0 var(--ai-page-gutter) 12px;
+  /* horizontal gutter only; top/bottom chrome is overlay HUD */
+  padding: 0 var(--ai-page-gutter);
   box-sizing: border-box;
   z-index: 1;
+  /* stage is pure scroll host — composer is absolute HUD, not in flow */
+  pointer-events: none;
 }
 
-/* scrollport fills stage; top padding = readable start, content can pass under header */
+.ai-stage > .ai-scroll,
+.ai-stage > .ai-composer-hud {
+  pointer-events: auto;
+}
+
+/* scrollport fills stage; pads under overlay header + bottom HUD */
 .ai-scroll {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-height: 0;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: var(--ai-hero-clearance);
-  padding-bottom: 4px;
+  padding-bottom: var(--ai-composer-clearance);
   box-sizing: border-box;
 }
 
@@ -134,7 +160,7 @@
 }
 
 .app-shell.has-titlebar .ai-page .ai-composer-hud {
-  padding-bottom: max(4px, env(safe-area-inset-bottom, 0));
+  bottom: max(6px, env(safe-area-inset-bottom, 0px));
 }
 
 /* --- stream card: no plate; scroll still owned by .ai-scroll --- */
@@ -501,44 +527,66 @@
   color: var(--callai-success) !important;
 }
 
-/* --- composer HUD: outer plates transparent; only controls keep fill --- */
+/* --- composer HUD: Overlay float (不占流 / 压在内容上) ---
+   Same model as top header: absolute bottom HUD, transparent chrome.
+   Scroll content uses --ai-composer-clearance padding so last lines stay readable.
+   Only interactive controls (textarea, segmented, buttons) keep their own fill. */
 .ai-composer-hud {
-  flex-shrink: 0;
-  position: relative;
-  z-index: 220;
-  padding-top: 4px;
-  width: 100%;
-  max-width: 100%;
+  position: absolute !important;
+  left: var(--ai-page-gutter);
+  right: var(--ai-page-gutter);
+  bottom: max(6px, env(safe-area-inset-bottom, 0px));
+  z-index: 220 !important;
+  flex: none !important;
+  flex-shrink: 0 !important;
+  width: auto;
+  max-width: none;
+  margin: 0 !important;
+  padding: 0 !important;
   box-sizing: border-box;
-  background: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.ai-composer-hud > .form-panel,
-.ai-composer-hud > [class*="animal-card"],
-.ai-page .ai-composer-card,
-.ai-page .ai-composer-card.form-panel,
-.ai-composer-hud .ai-composer-card,
-.ai-composer-hud .form-panel.ai-composer-card {
-  margin-bottom: 0 !important;
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
-  /* keep compact padding from earlier rule; no opaque plate */
+  /* empty chrome does not steal scroll; children re-enable hits */
+  pointer-events: none;
 }
 
-/* animal-island Card pattern paints may sit on data attrs / nested shells */
-.ai-composer-hud [class*="animal-card"],
-.ai-composer-hud [class*="animal-pattern"] {
-  background: transparent !important;
-  background-image: none !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
+.ai-composer-hud .ai-composer-card,
+.ai-composer-hud .ai-composer-toolbar,
+.ai-composer-hud .ai-composer-row,
+.ai-composer-hud .ai-composer-textarea,
+.ai-composer-hud .ai-send-cluster,
+.ai-composer-hud .segmented,
+.ai-composer-hud button,
+.ai-composer-hud .icon-btn-wrap,
+.ai-composer-hud .ai-composer-model-slot,
+.ai-composer-hud .ai-composer-key-hint,
+.ai-composer-hud .ai-send-menu {
+  pointer-events: auto;
+}
+
+/* outer HUD stays clear; INNER card keeps island surface */
+.ai-composer-hud > .form-panel,
+.ai-composer-hud > [class*="animal-card"],
+.ai-page .ai-composer-card,
+.ai-page .ai-composer-card.form-panel,
+.ai-composer-hud .ai-composer-card,
+.ai-composer-hud .form-panel.ai-composer-card,
+.edit-page.ai-page .ai-composer-card,
+.edit-page .ai-composer-hud .form-panel.ai-composer-card {
+  margin: 0 !important;
+  padding: 10px 12px 8px !important;
+  border-radius: var(--callai-radius, 18px) !important;
+  border: 2px solid var(--callai-border) !important;
+  background: var(--callai-surface) !important;
+  background-color: var(--callai-surface) !important;
+  /* allow island pattern if library paints one; surface is baseline */
+  box-shadow: var(--callai-card-shadow, 0 4px 14px color-mix(in srgb, #000 10%, transparent)) !important;
+  outline: none !important;
+  color: var(--callai-ink) !important;
 }
 
 .ai-composer-row {
@@ -647,6 +695,8 @@
 .ai-composer-key-hint,
 .ai-send-menu-hint {
   margin: 6px 0 0;
+  background: transparent !important;
+  text-shadow: none;
 }
 
 .ai-config-hint .panel-head h3 {
@@ -659,6 +709,13 @@
 }
 [data-theme="dark"] .ai-bubble.is-user {
   background: color-mix(in srgb, var(--callai-accent, #3d9b84) 22%, var(--callai-surface));
+}
+[data-theme="dark"] .ai-composer-card,
+[data-theme="dark"] .ai-composer-card.form-panel,
+[data-theme="dark"] .ai-composer-hud > [class*="animal-card"] {
+  background: var(--callai-surface) !important;
+  background-color: var(--callai-surface) !important;
+  border-color: var(--callai-border) !important;
 }
 [data-theme="dark"] .ai-composer-textarea {
   background: color-mix(in srgb, var(--callai-surface) 90%, #000);
@@ -673,16 +730,17 @@
     --ai-hero-clearance: 100px;
     --ai-page-gutter: 12px;
     --ai-select-toolbar-h: 56px;
+    --ai-composer-clearance: 180px;
   }
   .app-shell.has-titlebar .ai-page {
     --ai-hero-clearance: calc(100px + var(--callai-titlebar-h, 42px) - 6px);
   }
   .ai-stage {
-    gap: 6px;
-    padding-bottom: 10px;
+    gap: 0;
+    padding-bottom: 0;
   }
   .ai-composer-hud {
-    padding-top: 2px;
+    bottom: max(4px, env(safe-area-inset-bottom, 0px));
   }
   .ai-bubble.is-user,
   .ai-bubble.is-bot {
@@ -690,13 +748,10 @@
   }
 }
 
-/* ── Compact composer HUD ───────────────────────────── */
+/* ── Compact composer card surface ───────────────────── */
+.ai-composer-card,
 .ai-composer-card.form-panel {
   padding: 10px 12px 8px !important;
-  background: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  box-shadow: none !important;
 }
 
 .ai-composer-toolbar {

@@ -1,14 +1,14 @@
 # callai capabilities (what the program understands)
 
-This document is the **product contract**. Only propose work that maps to these
-capabilities. If the user asks for something outside this list, say so and offer
-the closest supported alternative.
+This document is the **product contract**. Only propose work that maps to these capabilities.
+If the user asks for something outside this list, say so and offer the closest supported alternative.
+
+Product: **{{ product.name }}** · mascot EN **{{ product.mascot_en }}** / ZH **{{ product.mascot_zh }}**.
 
 ## Core objects
 
 ### Alarm (scheduled task)
-callai runs **alarms**: named jobs that fire on a schedule and execute a local
-binary/command with args, env, retry, timeout, and optional notification/sound.
+callai runs **alarms**: named jobs that fire on a schedule and execute a local binary/command with args, env, retry, timeout, and optional notification/sound.
 
 The program **parses and validates** AlarmDraft fields:
 - name (non-empty)
@@ -27,26 +27,32 @@ The program **parses and validates** AlarmDraft fields:
   sound_id in {soft_chime, island_bell, wood_knock, warm_rise, gentle_ping} or null
 
 **Builtin binary** for pure chime / reminder (no external CLI):
-`__callai_alarm__` with optional human message args.
+`{{ product.default_chime }}` with optional human message args.
 
 Known quick templates the app already ships (you may mirror their intent):
-- cozy_alarm → `__callai_alarm__`
+- cozy_alarm → `{{ product.default_chime }}`
 - codex_hi → `codex exec hi`
 - claude_hi → `claude -p hi`
 - platform dialogs / rest prompts where appropriate for OS in runtime context
 
 ### Plugin (isolated mini-app)
-callai installs **plugins**: manifest + ui.html, sandboxed storage/history, invoke bridge.
+callai installs **plugins**: `manifest` + `ui.html` file, sandboxed storage/history, invoke bridge.
 
-The program **parses and validates** PluginDraft:
+**Model output format (dual-part)** — the client does **not** require HTML inside JSON:
+1. JSON: `{ "manifest": { id, name, version, description, permissions, ui } }`
+2. Separate HTML document (fenced ```html or after `ui.html` marker)
+
+Internally after parse, the program still stores PluginDraft `{ manifest, ui_html }` for install.
+
+Validated fields:
 - manifest.id: 2–64 chars, [a-z0-9-], no leading/trailing hyphen
 - manifest.name, version non-empty
 - manifest.permissions subset of:
   storage | timer | notification | history | network_limited | limited_exec
 - manifest.ui: simple filename (default ui.html), no path separators
-- ui_html: non-empty complete HTML document
+- ui_html (after extract): non-empty complete HTML document
 
-Plugin runtime methods the host understands via `window.callai.invoke(method, args)`:
+Plugin runtime methods via `window.callai.invoke(method, args)`:
 - storage.get / storage.set / storage.list / storage.delete
 - history.list
 - timer.now
@@ -75,12 +81,12 @@ list MCP audit logs (max 500), and fetch embedded prompts. Same validation rules
 - Cloud accounts, calendars, or SMS gateways unless the user supplies a local CLI
 - Arbitrary privileged system admin without an explicit binary the user owns
 - Storing or requiring API keys inside AlarmDraft / PluginDraft
-- Non-JSON AlarmDraft/PluginDraft payloads when in generate modes
+- Invalid dual-part plugin output (missing manifest JSON or empty HTML) in plugin generate mode
 - Unknown schedule modes or sound ids outside the enums above
 
 ## Intent routing
-- User wants a timed reminder / CLI warm-up / cron-like job → AlarmDraft
-- User wants a small interactive UI (form, checklist, timer board) → PluginDraft
-- User wants explanation / ideation only → chat text
+- Timed reminder / CLI warm-up / cron-like job → AlarmDraft
+- Small interactive UI (form, checklist, timer board) → PluginDraft (dual-part)
+- Explanation / ideation only → chat text
 
 When ambiguous, ask one short clarifying question instead of inventing fields.

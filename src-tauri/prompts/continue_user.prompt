@@ -1,0 +1,12 @@
+Your previous output was CUT OFF (incomplete JSON / unfinished HTML / open fence / mid-string).
+This is continuation round **{{ round }}** of **{{ max_rounds }}**.
+
+Continue EXACTLY from the cut-off point. Output ONLY the missing continuation —
+do not restart, do not repeat earlier text.
+
+For plugins: dual-part format is JSON `{ "manifest": ... }` first, then a ```html document
+(no HTML inside JSON strings).
+
+--- incomplete tail ---
+{{ incomplete_tail }}
+--- end tail ---

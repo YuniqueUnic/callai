@@ -1,26 +1,54 @@
-Generate a callai PluginDraft JSON from the user's request.
+# Task: plugin_generate
 
-Schema (JSON):
+Generate a callai **PluginDraft** from the user request using the **dual-part format** below.
+Do **not** embed HTML inside JSON strings — that truncates and breaks escaping.
+
+## Output format (exactly two parts, in this order)
+
+### Part 1 — Schema (JSON)
+
+A single JSON object with **only** `manifest` (no `ui_html` field):
+
+```json
 {
   "manifest": {
     "id": "lowercase-hyphen-id",
-    "name": string,
+    "name": "显示名",
     "version": "0.1.0",
-    "description": string,
-    "permissions": ["storage"|"timer"|"notification"|"history"|"network_limited"|"limited_exec"],
+    "description": "一句话说明",
+    "permissions": ["storage", "timer", "notification", "history", "network_limited", "limited_exec"],
     "ui": "ui.html"
-  },
-  "ui_html": string  // complete HTML document (see animal-island-style)
+  }
 }
+```
 
-Rules:
-- Output ONLY valid JSON (no markdown fences).
-- plugin id: 2-64 chars, [a-z0-9-], no leading/trailing hyphen.
-- Request only permissions you need. Always include "storage" if the UI persists data.
-- **ui_html MUST follow the animal-island-style prompt** (loaded in system context as animal_island_style). That document is the visual/API source of truth: tokens, Card/Button/Input/Table/Wallet/Phone/Form, fonts, radii, 3D shadows. Do not invent a different design language.
-- For callai in-app sandbox, still expose persistence via:
-  window.callai.invoke(method, args)
-  Methods: storage.get/set/list/delete, history.list, timer.now, notification.show, ping.
-  If the island-style HTML uses React CDN components, wire form actions / save buttons to callai.invoke.
-- Prefer self-contained HTML. When following animal-island-style CDN mode, keep React/Babel/unpkg only (no other CDNs except Google Fonts as specified there).
-- For interactive checklists/timers/forms, persist via storage.* methods.
+### Part 2 — ui.html
+
+Immediately after the JSON, emit a complete HTML document in an `html` fenced block:
+
+```html
+<!DOCTYPE html>
+<html lang="...">
+...
+</html>
+```
+
+You may also use a plain line marker `ui.html` before the fence. Do not put the HTML inside the JSON.
+
+## Manifest rules
+- `id`: 2–64 chars, `[a-z0-9]+(-[a-z0-9]+)*` (no leading/trailing hyphen)
+- Request only permissions you need. Always include `"storage"` if the UI persists data
+- `ui` stays `"ui.html"` unless the user needs another simple filename (no path separators)
+
+## UI rules
+- **Visual source of truth** = `animal_island_style` + `ai2ui` style packs in context
+- Host bridge: `window.callai.invoke(method, args)` → Promise
+  Methods: `storage.get|set|list|delete`, `history.list`, `timer.now`, `notification.show`, `ping`
+- Prefer self-contained HTML; CDN only as style pack allows (React/Babel/unpkg + Google Fonts)
+- Compact but complete: one screen of island UI; core CRUD first; avoid multi-page monsters
+- Prefer a short `<style>` or the island component set over thousands of lines of CSS
+
+## Completeness
+- JSON object must close fully before the HTML part
+- HTML must include matching open/close tags and a usable root UI
+- Prefer finishing a smaller complete UI over an incomplete huge one

@@ -117,6 +117,8 @@ export const api = {
     call<McpLogEntry[]>("list_mcp_logs", { limit }),
   clearMcpLogs: () => call<number>("clear_mcp_logs"),
   getPrompt: (id: string) => call<string>("get_prompt", { id }),
+  renderPrompt: (id: string, vars?: Record<string, string>) =>
+    call<string>("render_prompt", { id, vars: vars ?? null }),
   getAiRuntimeContext: () =>
     call<import("../ai/runtimeContext").AiRuntimeContextDto>("get_ai_runtime_context"),
   listPrompts: () => call<string[]>("list_prompts"),

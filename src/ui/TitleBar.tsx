@@ -2,10 +2,13 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isTauri } from "../infra/tauriApi";
 
 /**
@@ -43,33 +46,42 @@ type WinApi = {
   onScaleChanged: (cb: () => void) => Promise<() => void>;
 };
 
-async function getWin(): Promise<WinApi | null> {
+/**
+ * Build a thin WinApi around the current Tauri window.
+ * IMPORTANT: must be synchronous when used from mousedown/pointerdown for
+ * startDragging / startResizeDragging — those APIs require an active native
+ * mouse button gesture. Dynamic-import-then-await loses the gesture.
+ */
+function getWin(): WinApi | null {
   if (!isTauri()) return null;
-  const { getCurrentWindow } = await import("@tauri-apps/api/window");
-  const w = getCurrentWindow();
-  return {
-    minimize: () => w.minimize(),
-    toggleMaximize: () => w.toggleMaximize(),
-    close: () => w.close(),
-    isMaximized: () => w.isMaximized(),
-    isFullscreen: () => w.isFullscreen(),
-    setFullscreen: (v) => w.setFullscreen(v),
-    setAlwaysOnTop: (v) => w.setAlwaysOnTop(v),
-    startDragging: () => w.startDragging(),
-    startResizeDragging: (dir) => w.startResizeDragging(dir),
-    onResized: async (cb) => {
-      const un = await w.onResized(() => cb());
-      return () => {
-        void un();
-      };
-    },
-    onScaleChanged: async (cb) => {
-      const un = await w.onScaleChanged(() => cb());
-      return () => {
-        void un();
-      };
-    },
-  };
+  try {
+    const w = getCurrentWindow();
+    return {
+      minimize: () => w.minimize(),
+      toggleMaximize: () => w.toggleMaximize(),
+      close: () => w.close(),
+      isMaximized: () => w.isMaximized(),
+      isFullscreen: () => w.isFullscreen(),
+      setFullscreen: (v) => w.setFullscreen(v),
+      setAlwaysOnTop: (v) => w.setAlwaysOnTop(v),
+      startDragging: () => w.startDragging(),
+      startResizeDragging: (dir) => w.startResizeDragging(dir),
+      onResized: async (cb) => {
+        const un = await w.onResized(() => cb());
+        return () => {
+          void un();
+        };
+      },
+      onScaleChanged: async (cb) => {
+        const un = await w.onScaleChanged(() => cb());
+        return () => {
+          void un();
+        };
+      },
+    };
+  } catch {
+    return null;
+  }
 }
 
 function detectPlatform(): "macos" | "windows" | "linux" | "web" {
@@ -110,9 +122,11 @@ export function TitleBar() {
   const [pinned, setPinned] = useState(false);
   const [ready, setReady] = useState(!isTauri());
   const controlsLeft = platform === "macos";
+  /** Cached window API so resize/drag can fire synchronously on pointerdown. */
+  const winRef = useRef<WinApi | null>(null);
 
   const syncState = useCallback(async () => {
-    const win = await getWin();
+    const win = getWin();
     if (!win) return;
     try {
       const [max, full] = await Promise.all([
@@ -133,7 +147,8 @@ export function TitleBar() {
     const unsubs: Array<() => void> = [];
 
     void (async () => {
-      const win = await getWin();
+      const win = getWin();
+      winRef.current = win;
       if (disposed) return;
       setReady(true);
       if (!win) return;
@@ -162,7 +177,7 @@ export function TitleBar() {
     // Keep native double-click maximize; also fire for non-Windows.
     if (e.detail >= 2) {
       void (async () => {
-        const win = await getWin();
+        const win = getWin();
         if (!win) return;
         if (await win.isFullscreen()) {
           await win.setFullscreen(false);
@@ -174,10 +189,12 @@ export function TitleBar() {
       return;
     }
     // Prefer data-tauri-drag-region; startDragging is a reliable fallback.
-    void (async () => {
-      const win = await getWin();
-      await win?.startDragging();
-    })();
+    // Must not await imports/setup before this call (gesture-sensitive).
+    const win = winRef.current ?? getWin();
+    winRef.current = win;
+    void win?.startDragging().catch((err) => {
+      console.warn("[callai] startDragging failed", err);
+    });
   }, [syncState]);
 
   const run = useCallback(
@@ -189,7 +206,7 @@ export function TitleBar() {
         | "togglePin"
         | "toggleFullscreen",
     ) => {
-      const win = await getWin();
+      const win = getWin();
       if (!win) return;
       if (op === "minimize") {
         await win.minimize();
@@ -225,13 +242,25 @@ export function TitleBar() {
     [pinned, syncState],
   );
 
-  const beginResize = useCallback((dir: ResizeDir) => {
-    if (maximized || fullscreen) return;
-    void (async () => {
-      const win = await getWin();
-      await win?.startResizeDragging(dir);
-    })();
-  }, [fullscreen, maximized]);
+  /**
+   * Start OS-level resize. Must invoke startResizeDragging in the same user-gesture
+   * turn as pointerdown/mousedown (no prior await).
+   */
+  const beginResize = useCallback(
+    (dir: ResizeDir, e?: MouseEvent | ReactPointerEvent) => {
+      if (maximized || fullscreen) return;
+      if (e && "button" in e && e.button !== 0) return;
+      e?.preventDefault();
+      e?.stopPropagation();
+      const win = winRef.current ?? getWin();
+      winRef.current = win;
+      if (!win) return;
+      void win.startResizeDragging(dir).catch((err) => {
+        console.warn("[callai] startResizeDragging failed", dir, err);
+      });
+    },
+    [fullscreen, maximized],
+  );
 
   const controls = (
     <div
@@ -459,11 +488,8 @@ export function TitleBar() {
             <div
               key={dir}
               className={`window-resize-grip grip-${cls}`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                beginResize(dir);
-              }}
+              data-resize-dir={dir}
+              onPointerDown={(e) => beginResize(dir, e)}
             />
           ))}
         </div>

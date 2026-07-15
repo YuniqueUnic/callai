@@ -16,6 +16,13 @@ import { splitModelOutput } from "./splitModelOutput";
 import { client } from "../infra/client";
 import { isTauri } from "../infra/tauriApi";
 import { loadRuntimeContextBlock } from "./runtimeContext";
+import { AiParseError, parseOrThrow } from "./parseShared";
+import {
+  isLikelyTruncatedPluginOutput,
+  parsePluginDraftFromModelText,
+} from "./parsePluginOutput";
+
+export { AiParseError } from "./parseShared";
 
 const AlarmDraftSchema = z.object({
   name: z.string().min(1),
@@ -55,27 +62,6 @@ const AlarmDraftSchema = z.object({
     .optional(),
 });
 
-const PluginDraftSchema = z.object({
-  manifest: z.object({
-    id: z.string().min(2).max(64),
-    name: z.string().min(1),
-    version: z.string().min(1),
-    description: z.string().default(""),
-    permissions: z.array(
-      z.enum([
-        "storage",
-        "timer",
-        "notification",
-        "network_limited",
-        "limited_exec",
-        "history",
-      ]),
-    ),
-    ui: z.string().default("ui.html"),
-  }),
-  ui_html: z.string().min(1),
-});
-
 export type AiIntent = "alarm" | "plugin" | "chat";
 
 export interface PromptBundle {
@@ -99,91 +85,6 @@ export interface CompleteTextHandlers {
   onDelta?: (delta: string, full: string) => void;
 }
 
-/** Parse/schema failure that preserves the raw model output for the UI. */
-export class AiParseError extends Error {
-  readonly raw: string;
-  constructor(message: string, raw: string) {
-    super(message);
-    this.name = "AiParseError";
-    this.raw = raw;
-  }
-}
-
-function tryParseJsonObject(slice: string): unknown {
-  try {
-    return JSON.parse(slice);
-  } catch {
-    // trailing commas common from models
-    const cleaned = slice
-      .replace(/,\s*([}\]])/g, "$1")
-      .replace(/\n/g, "\n");
-    return JSON.parse(cleaned);
-  }
-}
-
-/** Extract first top-level JSON object; throws AiParseError with full text on failure. */
-export function extractJson(text: string): unknown {
-  const source = text ?? "";
-  const fenced = source.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const raw = (fenced?.[1] ?? source).trim();
-  const start = raw.indexOf("{");
-  if (start < 0) {
-    throw new AiParseError("AI response is not JSON", source);
-  }
-  // brace-scan for balanced object (handles trailing prose after JSON)
-  let depth = 0;
-  let inStr = false;
-  let esc = false;
-  for (let i = start; i < raw.length; i++) {
-    const ch = raw[i];
-    if (inStr) {
-      if (esc) esc = false;
-      else if (ch === "\\") esc = true;
-      else if (ch === "\"") inStr = false;
-      continue;
-    }
-    if (ch === "\"") {
-      inStr = true;
-      continue;
-    }
-    if (ch === "{") depth++;
-    else if (ch === "}") {
-      depth--;
-      if (depth === 0) {
-        const slice = raw.slice(start, i + 1);
-        try {
-          return tryParseJsonObject(slice);
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          throw new AiParseError(msg, source);
-        }
-      }
-    }
-  }
-  // truncated stream — still keep raw for the user
-  try {
-    return tryParseJsonObject(raw.slice(start));
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    throw new AiParseError(msg || "JSON truncated or incomplete", source);
-  }
-}
-
-function parseOrThrow<T>(
-  schema: z.ZodType<T>,
-  text: string,
-  label: string,
-): T {
-  try {
-    const data = extractJson(text);
-    return schema.parse(data);
-  } catch (e) {
-    if (e instanceof AiParseError) throw e;
-    const msg = e instanceof Error ? e.message : String(e);
-    throw new AiParseError(`${label}: ${msg}`, text);
-  }
-}
-
 function requireAiConfig(ai: AiSettings) {
   if (!ai.base_url.trim() || !ai.api_key.trim()) {
     throw new Error("AI_NOT_CONFIGURED");
@@ -204,6 +105,43 @@ function browserSafeFetch(
 function newRequestId(): string {
   return `ai-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
+
+/** Heuristic: model hit max tokens or cut mid-JSON / mid-string / dual-part HTML. */
+export function isLikelyTruncatedOutput(text: string): boolean {
+  if (isLikelyTruncatedPluginOutput(text)) return true;
+  const s = (text ?? "").trim();
+  if (!s) return false;
+  if (/callai:\s*truncated\s+finish_reason/i.test(s)) return true;
+  const fences = (s.match(/```/g) || []).length;
+  if (fences % 2 === 1) return true;
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  let sawObj = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') {
+      inStr = true;
+      continue;
+    }
+    if (ch === "{") {
+      depth++;
+      sawObj = true;
+    } else if (ch === "}") depth--;
+  }
+  if (inStr) return true;
+  if (sawObj && depth > 0) return true;
+  if (/[,:{]\s*$/.test(s) || /\\$/.test(s)) return true;
+  return false;
+}
+
+const CONTINUE_MAX_ROUNDS = 4;
 
 /**
  * Complete a system+user turn with optional streaming callbacks.
@@ -288,6 +226,123 @@ export async function completeText(
   handlers?.onDelta?.(text, text);
   handlers?.onPhase?.("done", { chars: text.length, elapsedMs: 0 });
   return text;
+}
+
+
+const TRUNCATED_MARKER_RE = /\n\n\/\* callai: truncated[\s\S]*?\*\/\s*$/i;
+const CONTINUE_TAIL_CHARS = 3500;
+
+function stripTruncatedMarker(text: string): string {
+  return (text ?? "").replace(TRUNCATED_MARKER_RE, "");
+}
+
+/**
+ * If the model restarts and re-emits the end of the previous text, drop the overlap.
+ */
+export function stitchContinuation(base: string, piece: string): string {
+  const suffix = (piece ?? "").replace(/^\uFEFF/, "");
+  if (!suffix) return base;
+  const left = base ?? "";
+  if (!left) return suffix;
+
+  const max = Math.min(left.length, suffix.length, 1200);
+  for (let n = max; n >= 12; n--) {
+    if (left.endsWith(suffix.slice(0, n))) {
+      return left + suffix.slice(n);
+    }
+  }
+  // Full restart of a closed JSON object — prefer append only when piece looks like a suffix.
+  if (suffix.trimStart().startsWith("{") && left.includes("{") && !isLikelyTruncatedOutput(left)) {
+    // Base already complete; ignore restarting piece.
+    return left;
+  }
+  return left + suffix;
+}
+
+async function loadContinuePrompts(
+  incomplete: string,
+  round: number,
+  maxRounds: number,
+): Promise<{ systemAddendum: string; user: string }> {
+  const tail = incomplete.slice(-CONTINUE_TAIL_CHARS);
+  const vars = {
+    incomplete_tail: tail,
+    round: String(round),
+    max_rounds: String(maxRounds),
+  };
+
+  const render =
+    typeof client.renderPrompt === "function"
+      ? (id: string, v?: Record<string, string>) => client.renderPrompt(id, v)
+      : async (id: string, v?: Record<string, string>) => {
+          // Fallback: load body + simple {{ key }} substitution (browser mock path).
+          let body = await client.getPrompt(id);
+          for (const [k, val] of Object.entries(v ?? {})) {
+            body = body.split(`{{ ${k} }}`).join(val).split(`{{${k}}}`).join(val);
+          }
+          return body;
+        };
+
+  const [systemAddendum, user] = await Promise.all([
+    render("continue_system", vars),
+    render("continue_user", vars),
+  ]);
+  return { systemAddendum, user };
+}
+
+/**
+ * Keep requesting continuation until JSON/prose/HTML looks complete or rounds exhausted.
+ * Continuation instructions live in `continue_system.prompt` + `continue_user.prompt`
+ * (mini-jinja rendered) — never inline in this file.
+ */
+export async function completeTextWithContinue(
+  ai: AiSettings,
+  system: string,
+  user: string,
+  temperature: number,
+  handlers?: CompleteTextHandlers,
+): Promise<string> {
+  let text = stripTruncatedMarker(
+    await completeText(ai, system, user, temperature, handlers),
+  );
+  let rounds = 0;
+  let stagnant = 0;
+
+  while (rounds < CONTINUE_MAX_ROUNDS && isLikelyTruncatedOutput(text)) {
+    rounds += 1;
+    handlers?.onPhase?.("streaming", {
+      chars: text.length,
+      elapsedMs: 0,
+    });
+
+    const beforeLen = text.length;
+    const { systemAddendum, user: contUser } = await loadContinuePrompts(
+      text,
+      rounds,
+      CONTINUE_MAX_ROUNDS,
+    );
+    const contSystem = joinPromptLayers([system, systemAddendum]);
+    const piece = await completeText(
+      ai,
+      contSystem,
+      contUser,
+      Math.min(temperature, 0.2),
+      handlers,
+    );
+    if (!piece.trim()) break;
+
+    text = stripTruncatedMarker(stitchContinuation(text, piece));
+
+    // No meaningful progress → stop (avoid infinite loop of near-empty pieces).
+    if (text.length <= beforeLen + 8) {
+      stagnant += 1;
+      if (stagnant >= 2) break;
+    } else {
+      stagnant = 0;
+    }
+  }
+
+  return stripTruncatedMarker(text);
 }
 
 export async function loadPromptBundle(): Promise<PromptBundle> {
@@ -379,7 +434,7 @@ export async function generateAlarmDraft(
     loadPromptBundle(),
     loadRuntimeContextBlock(),
   ]);
-  const text = await completeText(
+  const text = await completeTextWithContinue(
     ai,
     composeSystemPrompt(bundle, runtime, "alarm"),
     userMessage,
@@ -404,7 +459,7 @@ export async function generatePluginDraft(
     loadPromptBundle(),
     loadRuntimeContextBlock(),
   ]);
-  const text = await completeText(
+  const text = await completeTextWithContinue(
     ai,
     composeSystemPrompt(bundle, runtime, "plugin"),
     userMessage,
@@ -412,12 +467,17 @@ export async function generatePluginDraft(
     handlers,
   );
   const split = splitModelOutput(text);
-  const draft = parseOrThrow(
-    PluginDraftSchema,
-    split.body || text,
-    "PluginDraft",
-  ) as PluginDraft;
-  return { draft, thinking: split.thinking, raw: text };
+  try {
+    const draft = parsePluginDraftFromModelText(split.body || text);
+    return { draft, thinking: split.thinking, raw: text };
+  } catch (e) {
+    // Retry against full text (body split may drop HTML after JSON incorrectly)
+    if (e instanceof AiParseError && split.body && split.body !== text) {
+      const draft = parsePluginDraftFromModelText(text);
+      return { draft, thinking: split.thinking, raw: text };
+    }
+    throw e;
+  }
 }
 
 export async function chatReply(
@@ -433,7 +493,7 @@ export async function chatReply(
   const transcript = history
     .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
     .join("\n");
-  const text = await completeText(
+  const text = await completeTextWithContinue(
     ai,
     composeSystemPrompt(bundle, runtime, "chat"),
     `${transcript}\nUser: ${userMessage}\nAssistant:`,
