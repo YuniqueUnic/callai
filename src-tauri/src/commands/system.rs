@@ -59,7 +59,7 @@ pub fn check_binary(state: State<'_, AppState>, binary: String) -> Result<Option
 
 #[tauri::command]
 pub fn list_templates(state: State<'_, AppState>) -> Result<Vec<TemplateDto>, String> {
-    use crate::domain::{BUILTIN_PLUGIN_BINARY, AlarmPluginConfig};
+    use crate::domain::{AlarmPluginConfig, BUILTIN_PLUGIN_BINARY};
     let mut out: Vec<TemplateDto> = TEMPLATES
         .iter()
         .map(|t| TemplateDto {
@@ -99,7 +99,7 @@ pub fn template_draft(
     state: State<'_, AppState>,
     id: String,
 ) -> Result<Option<AlarmDraft>, String> {
-    use crate::domain::{BUILTIN_PLUGIN_BINARY, AlarmPluginConfig, DEFAULT_TIMEOUT_SECS};
+    use crate::domain::{AlarmPluginConfig, BUILTIN_PLUGIN_BINARY, DEFAULT_TIMEOUT_SECS};
     if let Some(rest) = id.strip_prefix("plugin:") {
         let summary = state.plugins.get_summary(rest).map_err(map_err)?;
         return Ok(Some(AlarmDraft {
@@ -258,4 +258,3 @@ pub fn preview_alarm_sound(sound_id: Option<String>) -> Result<bool, String> {
         .unwrap_or_default();
     alarm_sound::play_sound(id)
 }
-

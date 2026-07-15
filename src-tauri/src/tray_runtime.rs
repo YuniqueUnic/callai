@@ -88,8 +88,6 @@ fn load_tray_icon() -> Option<(tauri::image::Image<'static>, bool)> {
     }
 }
 
-
-
 /// Build tray icon + wire menu/click handlers. Returns Ok after tray is installed.
 pub fn install_tray(app: &tauri::App) -> tauri::Result<()> {
     let locale = app

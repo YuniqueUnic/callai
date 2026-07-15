@@ -95,10 +95,7 @@ fn build_client(
         .with_api_key(api_key)
         .with_api_base(api_base);
     cfg = cfg
-        .with_header(
-            reqwest::header::USER_AGENT,
-            codex_user_agent().as_str(),
-        )
+        .with_header(reqwest::header::USER_AGENT, codex_user_agent().as_str())
         .map_err(map_openai_err)?;
     cfg = cfg
         .with_header("originator", CODEX_ORIGINATOR)
@@ -156,7 +153,10 @@ fn validate_args(base_url: &str, api_key: &str, model: Option<&str>) -> DomainRe
     }
     if let Some(m) = model {
         if m.trim().is_empty() {
-            return Err(DomainError::new(ErrorCode::InvalidArgs, "AI model is empty"));
+            return Err(DomainError::new(
+                ErrorCode::InvalidArgs,
+                "AI model is empty",
+            ));
         }
     }
     Ok(())
@@ -172,11 +172,7 @@ pub async fn list_models(
     let provider = provider.trim().to_ascii_lowercase();
     let base = normalize_api_base(base_url);
     let client = build_client(&base, api_key.trim(), &provider)?;
-    let list = client
-        .models()
-        .list()
-        .await
-        .map_err(map_openai_err)?;
+    let list = client.models().list().await.map_err(map_openai_err)?;
     let mut ids: Vec<String> = list
         .data
         .into_iter()
@@ -295,7 +291,9 @@ where
     on_event(StreamPhase::WaitingFirstToken, "");
 
     match kind {
-        CompletionKind::Chat => stream_chat(&client, model, system, user, temperature, on_event).await,
+        CompletionKind::Chat => {
+            stream_chat(&client, model, system, user, temperature, on_event).await
+        }
         CompletionKind::Responses => {
             stream_responses(&client, model, system, user, temperature, on_event).await
         }

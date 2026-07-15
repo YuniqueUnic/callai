@@ -224,7 +224,12 @@ impl AlarmDraft {
                 .as_ref()
                 .map(|p| p.plugin_id.trim())
                 .filter(|s| !s.is_empty())
-                .or_else(|| self.args.first().map(|s| s.trim()).filter(|s| !s.is_empty()));
+                .or_else(|| {
+                    self.args
+                        .first()
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                });
             if pid.is_none() {
                 return Err(DomainError::new(
                     ErrorCode::InvalidArgs,

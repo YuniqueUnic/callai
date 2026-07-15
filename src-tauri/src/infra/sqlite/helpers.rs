@@ -1,10 +1,10 @@
 //! Shared SQLite row helpers.
 #![allow(dead_code, clippy::too_many_arguments, clippy::type_complexity)]
-use chrono::{DateTime, Utc};
 use crate::domain::{
     Alarm, AlarmLifecycle, AlarmNotificationSettings, AlarmPluginConfig, DomainError, DomainResult,
     EnvVar, ErrorCode, ExecutionLog, ExecutionStatus, RetryInterval, RetryPolicy, ScheduleSpec,
 };
+use chrono::{DateTime, Utc};
 
 pub(crate) fn dt_to_str(dt: DateTime<Utc>) -> String {
     dt.to_rfc3339()
@@ -67,7 +67,6 @@ pub(crate) fn alarm_from_row(
         updated_at: str_to_dt(&updated_at)?,
     })
 }
-
 
 pub(crate) fn status_str(s: ExecutionStatus) -> &'static str {
     match s {

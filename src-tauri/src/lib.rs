@@ -1,9 +1,9 @@
 mod app;
 pub mod cli;
 mod commands;
-mod tray_runtime;
 mod domain;
 mod infra;
+mod tray_runtime;
 
 use std::sync::Arc;
 
@@ -16,11 +16,8 @@ use tracing_subscriber::EnvFilter;
 use app::{AlarmService, SystemClock, SystemSleeper};
 use commands::AppState;
 use domain::{LocaleCode, ThemeMode};
-use infra::{
-    AlarmScheduler, AppPaths, SqliteStore, SystemProcessRunner,
-    TomlConfigBackup,
-};
 use infra::plugin::set_app_handle as set_plugin_app_handle;
+use infra::{AlarmScheduler, AppPaths, SqliteStore, SystemProcessRunner, TomlConfigBackup};
 
 pub const EVENT_NAVIGATE: &str = "callai://navigate";
 

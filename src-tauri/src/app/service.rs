@@ -9,9 +9,7 @@ use crate::domain::{
     ErrorCode, ExecutionLog, LogFilter,
 };
 
-use super::{
-    AlarmStore, CancelFlag, Clock, ConfigBackup, OutputChunkFn, ProcessRunner, Sleeper,
-};
+use super::{AlarmStore, CancelFlag, Clock, ConfigBackup, OutputChunkFn, ProcessRunner, Sleeper};
 
 pub struct AlarmService {
     pub(crate) store: Arc<dyn AlarmStore>,

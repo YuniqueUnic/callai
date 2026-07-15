@@ -1,14 +1,14 @@
 //! Alarm / log / settings store methods.
 #![allow(dead_code, clippy::too_many_arguments, clippy::type_complexity)]
-use chrono::Utc;
-use rusqlite::{params, OptionalExtension};
+use super::helpers::{alarm_from_row, dt_to_str, map_log_row, map_logs, status_str};
+use super::SqliteStore;
 use crate::app::AlarmStore;
 use crate::domain::{
     Alarm, AppSettings, DomainError, DomainResult, ErrorCode, ExecutionLog, LocaleCode, LogFilter,
     ThemeMode,
 };
-use super::helpers::{alarm_from_row, dt_to_str, map_log_row, map_logs, status_str};
-use super::SqliteStore;
+use chrono::Utc;
+use rusqlite::{params, OptionalExtension};
 
 const SQL_LIST_ALARMS: &str = concat!(
     "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json, ",
@@ -452,4 +452,3 @@ impl AlarmStore for SqliteStore {
         Ok(n as u64)
     }
 }
-

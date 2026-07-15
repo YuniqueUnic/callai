@@ -80,7 +80,6 @@ impl PluginManager {
         Ok(manifest)
     }
 
-
     fn unique_display_name(&self, desired: &str) -> String {
         let base = desired.trim();
         let base = if base.is_empty() { "plugin" } else { base };
@@ -231,10 +230,7 @@ impl PluginManager {
     pub fn write_ui_html(&self, id: &str, html: &str) -> DomainResult<()> {
         crate::domain::validate_plugin_id(id)?;
         if html.trim().is_empty() {
-            return Err(DomainError::new(
-                ErrorCode::InvalidArgs,
-                "ui html is empty",
-            ));
+            return Err(DomainError::new(ErrorCode::InvalidArgs, "ui html is empty"));
         }
         if html.len() > 1024 * 1024 {
             return Err(DomainError::new(
@@ -245,8 +241,9 @@ impl PluginManager {
         let manifest = self.read_manifest(id)?;
         let path = self.plugin_dir(id).join(&manifest.ui);
         let sanitized = Self::sanitize_plugin_html(html);
-        std::fs::write(&path, sanitized)
-            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("write ui.html: {e}")))?;
+        std::fs::write(&path, sanitized).map_err(|e| {
+            DomainError::new(ErrorCode::StorageFailed, format!("write ui.html: {e}"))
+        })?;
         if let Ok(mut cache) = self.compose_cache.lock() {
             cache.remove(id);
         }

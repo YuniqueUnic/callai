@@ -1,8 +1,8 @@
 //! AI chat message persistence on SqliteStore.
 #![allow(dead_code)]
-use rusqlite::params;
-use crate::domain::{DomainError, DomainResult, ErrorCode};
 use super::SqliteStore;
+use crate::domain::{DomainError, DomainResult, ErrorCode};
+use rusqlite::params;
 
 fn ai_role_str(r: &crate::domain::AiChatRole) -> &'static str {
     match r {
@@ -50,14 +50,8 @@ fn map_ai_chat_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<crate::domain::A
     })
 }
 
-
-
-
 impl SqliteStore {
-    pub fn upsert_ai_chat_message(
-        &self,
-        msg: &crate::domain::AiChatMessage,
-    ) -> DomainResult<()> {
+    pub fn upsert_ai_chat_message(&self, msg: &crate::domain::AiChatMessage) -> DomainResult<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             r#"INSERT INTO ai_chat_messages
@@ -165,5 +159,4 @@ impl SqliteStore {
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         Ok(())
     }
-
 }

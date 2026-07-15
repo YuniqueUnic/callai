@@ -22,8 +22,7 @@ fn env() -> &'static Environment<'static> {
 
 /// Render the postMessage + callai SDK bridge for a plugin id.
 pub fn render_bridge(plugin_id: &str) -> String {
-    let plugin_id_js =
-        serde_json::to_string(plugin_id).unwrap_or_else(|_| "\"\"".to_string());
+    let plugin_id_js = serde_json::to_string(plugin_id).unwrap_or_else(|_| "\"\"".to_string());
     match env().get_template("bridge").and_then(|t| {
         t.render(context! {
             plugin_id_js => plugin_id_js,

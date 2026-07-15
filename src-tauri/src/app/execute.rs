@@ -65,7 +65,11 @@ impl AlarmService {
         log.retry_count = attempt;
         log.stdout = out.stdout;
         log.stderr = out.stderr;
-        log.status = final_status(success, canceled || out.canceled, timed_out || out.timed_out);
+        log.status = final_status(
+            success,
+            canceled || out.canceled,
+            timed_out || out.timed_out,
+        );
         self.store.update_log(&log)?;
 
         alarm.mark_idle();

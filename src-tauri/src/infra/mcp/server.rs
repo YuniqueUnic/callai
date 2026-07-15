@@ -108,15 +108,13 @@ impl CallaiMcp {
     }
 
     fn parse_alarm_draft(v: Value) -> Result<AlarmDraft, rmcp::ErrorData> {
-        serde_json::from_value(v).map_err(|e| {
-            rmcp::ErrorData::invalid_params(format!("invalid AlarmDraft: {e}"), None)
-        })
+        serde_json::from_value(v)
+            .map_err(|e| rmcp::ErrorData::invalid_params(format!("invalid AlarmDraft: {e}"), None))
     }
 
     fn parse_plugin_draft(v: Value) -> Result<PluginDraft, rmcp::ErrorData> {
-        serde_json::from_value(v).map_err(|e| {
-            rmcp::ErrorData::invalid_params(format!("invalid PluginDraft: {e}"), None)
-        })
+        serde_json::from_value(v)
+            .map_err(|e| rmcp::ErrorData::invalid_params(format!("invalid PluginDraft: {e}"), None))
     }
 }
 
@@ -269,7 +267,11 @@ impl CallaiMcp {
                 .flat_map(|p| p.aliases().iter().copied())
                 .collect();
             rmcp::ErrorData::invalid_params(
-                format!("unknown prompt id {:?}; known: {}", params.id, known.join(", ")),
+                format!(
+                    "unknown prompt id {:?}; known: {}",
+                    params.id,
+                    known.join(", ")
+                ),
                 None,
             )
         })?;
@@ -296,8 +298,12 @@ impl CallaiMcp {
         >,
     ) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
         let kind = params.kind.trim().to_ascii_lowercase();
-        let want_style = params.style.unwrap_or(matches!(kind.as_str(), "plugin" | "fix"));
-        let want_sdk = params.sdk.unwrap_or(matches!(kind.as_str(), "plugin" | "fix"));
+        let want_style = params
+            .style
+            .unwrap_or(matches!(kind.as_str(), "plugin" | "fix"));
+        let want_sdk = params
+            .sdk
+            .unwrap_or(matches!(kind.as_str(), "plugin" | "fix"));
 
         let mut layers: Vec<Value> = Vec::new();
         let mut push = |id: PromptId| {
@@ -529,7 +535,10 @@ impl CallaiMcp {
         >,
     ) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
         let args = json!({ "id": &params.id });
-        let res = self.plugins.read_ui_html(&params.id).map(|s| json!({ "id": params.id, "html": s }));
+        let res = self
+            .plugins
+            .read_ui_html(&params.id)
+            .map(|s| json!({ "id": params.id, "html": s }));
         self.audit("get_plugin_source", &args, &res);
         Self::ok_json(&res.map_err(Self::map_err)?)
     }
@@ -628,7 +637,9 @@ impl CallaiMcp {
 
     // —— MCP audit logs ——————————————————————————————————————
 
-    #[rmcp::tool(description = "List MCP audit logs only (max 500, source=mcp). UI/plugin host never writes here.")]
+    #[rmcp::tool(
+        description = "List MCP audit logs only (max 500, source=mcp). UI/plugin host never writes here."
+    )]
     fn list_mcp_logs(
         &self,
         rmcp::handler::server::wrapper::Parameters(params): rmcp::handler::server::wrapper::Parameters<

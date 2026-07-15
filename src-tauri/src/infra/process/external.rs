@@ -75,11 +75,7 @@ pub(crate) fn run_external_process(
     }
 }
 
-fn spawn_child(
-    binary: &str,
-    args: &[String],
-    env: &[(String, String)],
-) -> DomainResult<Child> {
+fn spawn_child(binary: &str, args: &[String], env: &[(String, String)]) -> DomainResult<Child> {
     let mut cmd = Command::new(binary);
     cmd.args(args)
         .stdin(Stdio::null())

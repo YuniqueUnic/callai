@@ -55,5 +55,9 @@ fn ai_chat_upsert_list_delete_page() {
 
     let cleared = store.clear_ai_chat_messages().unwrap();
     assert_eq!(cleared, 1);
-    assert!(store.list_ai_chat_messages(None, 10).unwrap().messages.is_empty());
+    assert!(store
+        .list_ai_chat_messages(None, 10)
+        .unwrap()
+        .messages
+        .is_empty());
 }

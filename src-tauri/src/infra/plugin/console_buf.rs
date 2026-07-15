@@ -44,7 +44,14 @@ impl PluginConsoleStore {
             return Vec::new();
         };
         let lim = limit.clamp(1, MAX_PER_PLUGIN);
-        q.iter().rev().take(lim).cloned().collect::<Vec<_>>().into_iter().rev().collect()
+        q.iter()
+            .rev()
+            .take(lim)
+            .cloned()
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect()
     }
 
     pub fn clear(&self, plugin_id: &str) {

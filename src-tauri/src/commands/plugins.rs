@@ -1,9 +1,9 @@
 #![allow(dead_code)]
-use tauri::State;
 use serde_json::Value;
+use tauri::State;
 
 use crate::domain::{
-    McpLogEntry, PluginDraft, PluginHistoryEntry, PluginSummary, PromptId, DomainError,
+    DomainError, McpLogEntry, PluginDraft, PluginHistoryEntry, PluginSummary, PromptId,
 };
 use crate::infra::plugin::PluginConsoleEntry;
 
@@ -49,12 +49,7 @@ pub fn plugin_invoke(
             .and_then(|v| v.as_str())
             .unwrap_or("callai");
         let body = args.get("body").and_then(|v| v.as_str()).unwrap_or("");
-        let _ = app
-            .notification()
-            .builder()
-            .title(title)
-            .body(body)
-            .show();
+        let _ = app.notification().builder().title(title).body(body).show();
     }
     res.map_err(map_err)
 }
@@ -197,10 +192,8 @@ pub fn render_prompt(
             "unknown prompt id",
         ))
     })?;
-    let map: std::collections::BTreeMap<String, String> = vars
-        .unwrap_or_default()
-        .into_iter()
-        .collect();
+    let map: std::collections::BTreeMap<String, String> =
+        vars.unwrap_or_default().into_iter().collect();
     Ok(crate::domain::render_prompt_id_with(pid, &map))
 }
 
@@ -211,4 +204,3 @@ pub fn list_prompts() -> Result<Vec<String>, String> {
         .map(|p| p.as_str().to_string())
         .collect())
 }
-

@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 use std::sync::Arc;
 
-use serde::Serialize;
 use crate::app::AlarmService;
 use crate::domain::DomainError;
-use crate::infra::plugin::{McpLogStore, PluginConsoleStore, PluginManager};
 use crate::infra::mcp::McpHttpSupervisor;
+use crate::infra::plugin::{McpLogStore, PluginConsoleStore, PluginManager};
 use crate::infra::AlarmScheduler;
+use serde::Serialize;
 
 pub mod ai;
 pub mod alarms;

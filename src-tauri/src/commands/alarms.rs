@@ -100,4 +100,3 @@ fn maybe_notify_failure(app: &tauri::AppHandle, state: &AppState, name: &str) {
 pub fn cancel_alarm_run(state: State<'_, AppState>, id: String) -> Result<bool, String> {
     state.service.cancel_alarm_run(&id).map_err(map_err)
 }
-

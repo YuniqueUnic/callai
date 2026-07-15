@@ -43,7 +43,10 @@ pub fn config_from_args_env(args: &[String], env: &[(String, String)]) -> AlarmP
     let mut params = serde_json::Map::new();
     for a in args.iter().skip(1) {
         if let Some((k, v)) = a.split_once('=') {
-            params.insert(k.trim().to_string(), serde_json::Value::String(v.to_string()));
+            params.insert(
+                k.trim().to_string(),
+                serde_json::Value::String(v.to_string()),
+            );
         }
     }
     let popup = env
@@ -107,7 +110,10 @@ pub fn run_builtin_plugin(
         let body = if cfg.params.is_empty() {
             "插件定时任务触发了".into()
         } else {
-            format!("插件参数: {}", serde_json::to_string(&cfg.params).unwrap_or_default())
+            format!(
+                "插件参数: {}",
+                serde_json::to_string(&cfg.params).unwrap_or_default()
+            )
         };
         let _ = app.notification().builder().title(title).body(body).show();
         actions.push("notify".to_string());

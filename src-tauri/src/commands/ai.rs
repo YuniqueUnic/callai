@@ -102,7 +102,10 @@ pub fn upsert_ai_chat_message(
     state: State<'_, AppState>,
     message: AiChatMessage,
 ) -> Result<(), String> {
-    state.store.upsert_ai_chat_message(&message).map_err(map_err)
+    state
+        .store
+        .upsert_ai_chat_message(&message)
+        .map_err(map_err)
 }
 
 #[tauri::command]
@@ -124,6 +127,8 @@ pub fn set_ai_chat_applied(
     id: String,
     applied: bool,
 ) -> Result<(), String> {
-    state.store.set_ai_chat_applied(&id, applied).map_err(map_err)
+    state
+        .store
+        .set_ai_chat_applied(&id, applied)
+        .map_err(map_err)
 }
-

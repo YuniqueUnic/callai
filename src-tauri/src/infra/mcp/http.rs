@@ -57,8 +57,7 @@ pub fn run_mcp_http_server_with_console(
     let token = auth_token.trim().to_string();
     if token.is_empty() {
         return Err(
-            "MCP auth token is empty; open the app once or generate a token in Settings"
-                .into(),
+            "MCP auth token is empty; open the app once or generate a token in Settings".into(),
         );
     }
     if host.is_empty() {
@@ -84,15 +83,7 @@ pub fn run_mcp_http_server_with_console(
         });
 
         serve_mcp_http(
-            service,
-            plugins,
-            logs,
-            console,
-            &host,
-            port,
-            &token,
-            &bind,
-            cancel,
+            service, plugins, logs, console, &host, port, &token, &bind, cancel,
         )
         .await
     })
