@@ -240,6 +240,9 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
               if (dirtyRef.current) void flushNow({ silent: true });
             }}
           />
+          <p className="meta" style={{ marginTop: 6 }}>
+            {t("settings:aiBaseUrlHint")}
+          </p>
         </div>
 
         <div className="field">

@@ -89,5 +89,6 @@
   "aiModelsSeeded": "Suggested models (offline): {{count}}",
   "mcpTokenAutoHint": "Generated automatically on first launch; rotate with the refresh button.",
   "mcpHttpDaemonHint": "Start the HTTP daemon in a terminal (foreground until Ctrl+C):",
-  "mcpEnabledNote": "Enabling does not bind a port inside the app; start the CLI daemon yourself."
+  "mcpEnabledNote": "Enabling does not bind a port inside the app; start the CLI daemon yourself.",
+  "aiBaseUrlHint": "e.g. https://api.openai.com/v1 or https://proxy.example.com/v1/responses"
 }

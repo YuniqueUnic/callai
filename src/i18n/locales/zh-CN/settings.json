@@ -89,5 +89,6 @@
   "aiModelsSeeded": "建议模型（离线）: {{count}}",
   "mcpTokenAutoHint": "首次启动会自动生成；点刷新可轮换。",
   "mcpHttpDaemonHint": "在终端启动 HTTP daemon（前台常驻，Ctrl+C 结束）：",
-  "mcpEnabledNote": "开启不会在 App 内绑定端口；请用 CLI 启动 HTTP daemon。"
+  "mcpEnabledNote": "开启不会在 App 内绑定端口；请用 CLI 启动 HTTP daemon。",
+  "aiBaseUrlHint": "例如 https://api.openai.com/v1 或 https://proxy.example.com/v1/responses"
 }

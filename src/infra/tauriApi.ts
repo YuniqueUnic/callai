@@ -13,24 +13,53 @@ import type {
   TemplateDto,
 } from "../domain/types";
 
-function parseError(raw: unknown): DomainError {
+function coerceDomainError(raw: unknown): DomainError {
   if (typeof raw === "string") {
     try {
       const obj = JSON.parse(raw) as DomainError;
-      if (obj && obj.code) return obj;
+      if (obj && (obj.message || obj.code)) {
+        return {
+          code: obj.code || "INTERNAL",
+          message: String(obj.message ?? raw),
+        };
+      }
     } catch {
       return { code: "INTERNAL", message: raw };
     }
     return { code: "INTERNAL", message: raw };
   }
+  if (raw && typeof raw === "object") {
+    const o = raw as Record<string, unknown>;
+    // Tauri sometimes wraps { message: "..." } or DomainError-shaped objects.
+    if (typeof o.message === "string" && o.message.trim()) {
+      return {
+        code: typeof o.code === "string" ? o.code : "INTERNAL",
+        message: o.message,
+      };
+    }
+    try {
+      return { code: "INTERNAL", message: JSON.stringify(raw) };
+    } catch {
+      return { code: "INTERNAL", message: "unknown error" };
+    }
+  }
   return { code: "INTERNAL", message: String(raw) };
+}
+
+/** Always throw Error so UI can read `.message` (not `[object Object]`). */
+function throwInvokeError(raw: unknown): never {
+  const de = coerceDomainError(raw);
+  const err = new Error(de.message);
+  (err as Error & { code?: string; domain?: DomainError }).code = de.code;
+  (err as Error & { domain?: DomainError }).domain = de;
+  throw err;
 }
 
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   try {
     return await invoke<T>(cmd, args);
   } catch (err) {
-    throw parseError(err);
+    throwInvokeError(err);
   }
 }
 

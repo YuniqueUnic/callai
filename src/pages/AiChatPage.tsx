@@ -133,7 +133,23 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
   }
 
   function formatError(e: unknown): string {
-    const msg = e instanceof Error ? e.message : String(e);
+    let msg = "";
+    if (e instanceof Error) {
+      msg = e.message;
+    } else if (e && typeof e === "object" && "message" in e) {
+      msg = String((e as { message: unknown }).message ?? "");
+    } else if (typeof e === "string") {
+      msg = e;
+    } else {
+      try {
+        msg = JSON.stringify(e);
+      } catch {
+        msg = "unknown error";
+      }
+    }
+    if (!msg || msg === "[object Object]") {
+      msg = "unknown error";
+    }
     if (msg === "AI_NOT_CONFIGURED") return t("ai:needConfig");
     if (/JSON|parse|Zod|schema|AI response/i.test(msg)) {
       return t("ai:parseFail", { msg });
