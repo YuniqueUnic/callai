@@ -1,9 +1,14 @@
+mod ai_chat_store;
 mod backup_prune;
 mod domain_alarm;
 mod domain_argv;
 mod domain_retry;
 mod domain_schedule;
+mod legacy_ai_model;
+mod mcp_logs;
 mod paths_version;
+mod plugin_manager;
 mod process_timeout;
+mod prompts_embed;
 mod scheduler_queue;
 mod service_alarm;

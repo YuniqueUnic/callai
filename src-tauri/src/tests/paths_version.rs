@@ -7,8 +7,8 @@ fn app_paths_backups_dir_is_under_config() {
     let data = dir.path().join("data");
     let paths = AppPaths::from_dirs(config.clone(), data);
     paths.ensure().unwrap();
-    assert_eq!(paths.backups_dir, config.join("backups"));
-    assert!(paths.backups_dir.is_dir());
+    assert_eq!(paths.backups_dir(), config.join("backups"));
+    assert!(paths.backups_dir().is_dir());
 }
 
 #[test]

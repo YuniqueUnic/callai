@@ -1,0 +1,239 @@
+/* toast-drawer.css: Callai toast + logs drawer shell (from global.css L2540-2778) */
+
+/* ========== Callai toast (reliable body portal) ========== */
+[data-callai-toast-root] {
+  z-index: 2147483000 !important;
+}
+
+.callai-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(384px, calc(100vw - 28px));
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 2px solid #c4b89e;
+  background: #f7f3df;
+  color: #725d42;
+  box-shadow: 0 8px 22px rgba(61, 52, 40, 0.18);
+  font-family: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+  animation: callai-toast-in 0.28s cubic-bezier(0.34, 1.3, 0.45, 1) both;
+  box-sizing: border-box;
+}
+
+.callai-toast.is-leaving {
+  animation: callai-toast-out 0.2s ease forwards;
+}
+
+.callai-toast-success {
+  background: #f5fae9;
+  border-color: #6fba2c;
+}
+.callai-toast-info {
+  background: #ecf9f6;
+  border-color: #19c8b9;
+}
+.callai-toast-warning {
+  background: #fdf6d9;
+  border-color: #f5c31c;
+}
+.callai-toast-error {
+  background: #fde8e8;
+  border-color: #e05a5a;
+}
+
+.callai-toast-icon {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 15px;
+  background: #e8dfc8;
+  color: #5a4a32;
+}
+.callai-toast-success .callai-toast-icon {
+  background: #d8efc1;
+  color: #3f8f1e;
+}
+.callai-toast-info .callai-toast-icon {
+  background: #c2ece6;
+  color: #0f8f84;
+}
+.callai-toast-warning .callai-toast-icon {
+  background: #fbeaa1;
+  color: #9a7408;
+}
+.callai-toast-error .callai-toast-icon {
+  background: #f7c8c8;
+  color: #c0392b;
+}
+
+.callai-toast-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.callai-toast-title {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #5a3d1e;
+  word-break: break-word;
+}
+.callai-toast-desc {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #7a6548;
+  word-break: break-word;
+}
+.callai-toast-btn {
+  flex: 0 0 auto;
+}
+.callai-toast-close {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #8a7b66;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.callai-toast-close:hover {
+  background: rgba(114, 93, 66, 0.12);
+  color: #5a3d1e;
+}
+
+@keyframes callai-toast-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes callai-toast-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .callai-toast,
+  .callai-toast.is-leaving {
+    animation: none;
+  }
+}
+
+
+/* Hide body-portaled FAB while logs drawer is open */
+body.callai-logs-open > .fab {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* Drawer above FAB */
+body.callai-logs-open [class*="animal-panel"] {
+  z-index: 20050 !important;
+}
+body.callai-logs-open [class*="animal-mask"] {
+  z-index: 20040 !important;
+}
+
+/* Drawer column fill viewport */
+body.callai-logs-open [class*="animal-panelRight"],
+body.callai-logs-open [class*="animal-panel"][class*="Right"],
+body.callai-logs-open [class*="animal-panel"] {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+/* Header fixed size */
+body.callai-logs-open [class*="animal-header"] {
+  flex: 0 0 auto !important;
+}
+
+/* Body is the scrollport (or hosts logs-panel flex child) */
+body.callai-logs-open [class*="animal-body"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  display: block !important;
+  padding-bottom: 20px !important;
+}
+
+/* Logs panel fills body; scrolling is on drawer body OR panel-scroll */
+.logs-panel {
+  position: relative !important;
+  isolation: isolate;
+  display: block !important;
+  width: 100%;
+  min-height: 100%;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+}
+
+.logs-panel-scroll {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* leave space for bottom watermark bird */
+  padding-bottom: 120px !important;
+  min-height: 0;
+  overflow: visible !important;
+}
+
+.logs-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.logs-filter {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.logs-watermark {
+  position: absolute !important;
+  right: 8px !important;
+  bottom: 8px !important;
+  left: auto !important;
+  top: auto !important;
+  width: 200px !important;
+  max-width: 55% !important;
+  height: auto !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  opacity: 0.4 !important;
+  filter: drop-shadow(0 10px 16px rgba(61, 52, 40, 0.14));
+  margin: 0 !important;
+}
+
+.logs-panel-scroll .log-list,
+.logs-panel-scroll .empty-state,
+.logs-panel-scroll .logs-toolbar,
+.logs-panel-scroll .logs-filter {
+  position: relative;
+  z-index: 1;
+}
+
+.logs-panel-scroll .empty-state .callai-element {
+  opacity: 1;
+}

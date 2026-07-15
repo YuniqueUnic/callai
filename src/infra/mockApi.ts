@@ -22,6 +22,18 @@ let settings: AppSettings = {
   timezone: "system",
   auto_backup_on_start: true,
   backup_keep_count: 10,
+  ai: {
+    provider: "openai",
+    base_url: "https://api.openai.com/v1",
+    api_key: "",
+    model: "gpt-5.6-terra",
+  },
+  mcp: {
+    enabled: false,
+    listen_host: "127.0.0.1",
+    port: 33927,
+    auth_token: "",
+  },
 };
 let logSeq = 1;
 let mockBackups: string[] = ["config.toml.mock.bak"];
@@ -48,6 +60,9 @@ function toAlarm(draft: AlarmDraft, id?: string): Alarm {
     updated_at: ts,
   };
 }
+
+
+const mockAiChat: import("../domain/types").AiChatMessage[] = [];
 
 export const mockApi = {
   async listAlarms() {
@@ -142,6 +157,7 @@ export const mockApi = {
     return binary ? `/usr/bin/${binary}` : null;
   },
   async listTemplates(): Promise<TemplateDto[]> {
+    // mock builtins only
     return [
       {
         id: "cozy_alarm",
@@ -228,5 +244,222 @@ export const mockApi = {
   async previewAlarmSound(sound_id?: string | null) {
     playAlarmSoundPreview(sound_id ?? "soft_chime");
     return true;
+  },
+
+  async listPlugins() {
+    return [] as import("../domain/types").PluginSummary[];
+  },
+  async getPlugin(_id: string) {
+    throw { code: "ALARM_NOT_FOUND", message: "plugin not found" };
+  },
+  async installPlugin(draft: import("../domain/types").PluginDraft) {
+    return {
+      id: draft.manifest.id,
+      name: draft.manifest.name,
+      version: draft.manifest.version,
+      description: draft.manifest.description,
+      permissions: draft.manifest.permissions,
+      ui: draft.manifest.ui,
+      installed_at: now(),
+      last_run_at: null,
+      record_count: 0,
+    };
+  },
+  async deletePlugin(_id: string) {},
+  async pluginInvoke(_pluginId: string, method: string, _args: unknown) {
+    if (method === "ping") return { pong: true };
+    return {};
+  },
+  _console: {} as Record<string, { level: string; args: string[]; t: number }[]>,
+  async pluginGetSource(id: string) {
+    return `<html><body>mock ${id}</body></html>`;
+  },
+  async pluginSetSource(_id: string, _html: string) {},
+  async pluginAppendConsole(id: string, entries: { level: string; args: string[]; t: number }[]) {
+    this._console[id] = [...(this._console[id] || []), ...entries].slice(-300);
+  },
+  async pluginGetConsole(id: string, limit?: number) {
+    return (this._console[id] || []).slice(-(limit ?? 100));
+  },
+  async pluginClearConsole(id: string) {
+    delete this._console[id];
+  },
+  async openPluginWindow(id: string) {
+    // Browser mock: open a blank preview tab with the composed HTML if possible.
+    console.info("[mock] openPluginWindow", id);
+    const html = await this.pluginUiHtml(id);
+    const w = window.open("", `plugin-${id}`, "width=440,height=720");
+    if (w) {
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+    }
+  },
+  async pluginUiHtml(_id: string) {
+    return "<html><body>mock plugin</body></html>";
+  },
+  async pluginMarkRun(_id: string) {},
+  async pluginListHistory(_id: string, _limit?: number) {
+    return [];
+  },
+  async listMcpLogs(_limit?: number) {
+    return [];
+  },
+  async mcpHttpStatus() {
+    return {
+      enabled: false,
+      running: false,
+      host: "127.0.0.1",
+      port: 33927,
+      endpoint: "http://127.0.0.1:33927/mcp",
+      health_url: "http://127.0.0.1:33927/health",
+      error: null,
+    };
+  },
+  async clearMcpLogs() {
+    return 0;
+  },
+  async aiChatCompletion(opts: {
+    request_id?: string;
+    provider: string;
+    base_url: string;
+    api_key: string;
+    model: string;
+    system: string;
+    user: string;
+    temperature?: number;
+  }) {
+    // Deterministic mock for browser / vitest — not a real model.
+    const u = opts.user.toLowerCase();
+    if (u.includes("plugin") || u.includes("插件")) {
+      return JSON.stringify({
+        manifest: {
+          id: "mock-plugin",
+          name: "Mock Plugin",
+          version: "0.1.0",
+          description: "browser mock",
+          permissions: ["storage"],
+          ui: "ui.html",
+        },
+        ui_html: "<!doctype html><html><body><h1>mock</h1></body></html>",
+      });
+    }
+    return JSON.stringify({
+      name: "Mock Alarm",
+      enabled: true,
+      schedule: { mode: "daily", times: ["16:50"] },
+      binary: "__callai_alarm__",
+      args: ["TODO time"],
+      env_vars: [],
+      retry: { interval: "1m", max_attempts: 1 },
+      timeout_secs: 20,
+      notification: {
+        enabled: true,
+        notification_type: "with_sound",
+        sound_id: "soft_chime",
+      },
+    });
+  },
+  async getAiRuntimeContext() {
+    const { buildBrowserRuntimeContext } = await import("../ai/runtimeContext");
+    return buildBrowserRuntimeContext();
+  },
+  async getPrompt(id: string) {
+    const map: Record<string, string> = {
+      system: "mock system",
+      capabilities: "mock capabilities AlarmDraft __callai_alarm__",
+      output_contract: "mock output contract JSON parse",
+      alarm_generate: "mock alarm",
+      plugin_generate: "mock plugin",
+      ai2ui: "mock ai2ui",
+      animal_island_style: "mock animal-island-ui " + "x".repeat(1001),
+      continue_system: "mock continue system: emit only missing suffix",
+      continue_user:
+        "Continue round mock. --- incomplete tail ---\n{{ incomplete_tail }}\n--- end tail ---",
+    };
+    return map[id] ?? `mock prompt ${id}`;
+  },
+  async renderPrompt(id: string, vars?: Record<string, string>) {
+    let body = await this.getPrompt(id);
+    for (const [k, v] of Object.entries(vars ?? {})) {
+      body = body.split(`{{ ${k} }}`).join(v);
+      body = body.split(`{{${k}}}`).join(v);
+    }
+    return body;
+  },
+  async listPrompts() {
+    return [
+      "system",
+      "capabilities",
+      "output_contract",
+      "alarm_generate",
+      "plugin_generate",
+      "ai2ui",
+      "animal_island_style",
+      "continue_system",
+      "continue_user",
+    ];
+  },
+  async generateSecretToken() {
+    return (
+      crypto.randomUUID().split("-").join("") +
+      crypto.randomUUID().split("-").join("")
+    );
+  },
+
+  async listAiChatMessages(before?: string | null, limit?: number) {
+    const lim = Math.min(100, Math.max(1, limit ?? 30));
+    let rows = [...mockAiChat].sort((a, b) =>
+      a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0,
+    );
+    if (before) rows = rows.filter((m) => m.created_at < before);
+    const has_more = rows.length > lim;
+    const page = rows.slice(0, lim).reverse();
+    return { messages: page, has_more };
+  },
+  async upsertAiChatMessage(message: import("../domain/types").AiChatMessage) {
+    const i = mockAiChat.findIndex((m) => m.id === message.id);
+    if (i >= 0) mockAiChat[i] = message;
+    else mockAiChat.push(message);
+  },
+  async deleteAiChatMessages(ids: string[]) {
+    let n = 0;
+    for (const id of ids) {
+      const i = mockAiChat.findIndex((m) => m.id === id);
+      if (i >= 0) {
+        mockAiChat.splice(i, 1);
+        n++;
+      }
+    }
+    return n;
+  },
+  async clearAiChatMessages() {
+    const n = mockAiChat.length;
+    mockAiChat.length = 0;
+    return n;
+  },
+  async setAiChatApplied(id: string, applied: boolean) {
+    const m = mockAiChat.find((x) => x.id === id);
+    if (m) m.applied = applied;
+  },
+
+  async listAiModels(_provider: string, _base_url: string, _api_key: string) {
+    // Keep in sync with AI_MODEL_HINTS / current public frontier models (2026-07).
+    return [
+      "gpt-5.6-terra",
+      "gpt-5.6-sol",
+      "gpt-5.6-luna",
+      "gpt-5.6",
+      "gpt-5.5",
+      "claude-sonnet-5",
+      "claude-opus-4-8",
+      "claude-fable-5",
+      "claude-haiku-4-5",
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-3-flash-preview",
+      "deepseek-chat",
+      "deepseek-reasoner",
+    ];
   },
 };

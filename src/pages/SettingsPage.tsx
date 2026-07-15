@@ -16,6 +16,7 @@ import {
   ensureDetectedTimezone,
   peekDetectedTimezone,
 } from "../infra/timezoneCache";
+import { SettingsAiMcpPanel } from "./SettingsAiMcpPanel";
 import {
   getAppVersionCached,
   getAutostartCached,
@@ -79,6 +80,9 @@ export function SettingsPage({ onOpenLogs }: Props) {
   const [detectedTz, setDetectedTz] = useState<string>(() => peekDetectedTimezone());
   const [appVersion, setAppVersion] = useState<string>(() => peekAppVersion() ?? "");
   const [autostartOn, setAutostartOn] = useState<boolean>(() => peekAutostart() ?? false);
+  const [logRetentionDraft, setLogRetentionDraft] = useState<string>(() =>
+    String(peekSettings()?.log_retention_days ?? 30),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -87,7 +91,12 @@ export function SettingsPage({ onOpenLogs }: Props) {
       try {
         const s = await getSettingsCached();
         if (cancelled) return;
-        setSettings(s);
+        setSettings({
+          ...s,
+          ai: s.ai ?? { provider: "openai", base_url: "https://api.openai.com/v1", api_key: "", model: "gpt-5.6-terra" },
+          mcp: s.mcp ?? { enabled: false, listen_host: "127.0.0.1", port: 33927, auth_token: "" },
+        });
+        setLogRetentionDraft(String(s.log_retention_days ?? 30));
       } catch {
         if (!cancelled) setSettings(null);
         return;
@@ -114,7 +123,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
     };
   }, []);
 
-  async function save(next: AppSettings) {
+  async function save(next: AppSettings, opts?: { silent?: boolean }) {
     const saved = await client.saveSettings(next);
     setSettingsCache(saved);
     setSettings(saved);
@@ -122,7 +131,9 @@ export function SettingsPage({ onOpenLogs }: Props) {
     if (saved.locale !== i18n.language) {
       await i18n.changeLanguage(saved.locale);
     }
-    toast.success({ message: t("settings:saved"), key: "settings-save", duration: 2.6 });
+    if (!opts?.silent) {
+      toast.success({ message: t("settings:saved"), key: "settings-save", duration: 2.6 });
+    }
   }
 
 
@@ -282,6 +293,14 @@ export function SettingsPage({ onOpenLogs }: Props) {
             </div>
           </div>
 
+          <SettingsAiMcpPanel
+            settings={settings}
+            onSave={async (next, opts) => {
+              setSettings(next);
+              await save(next, opts);
+            }}
+          />
+
           <div className="settings-row">
             <span>{t("settings:launchMinimized")}</span>
             <Switch
@@ -387,16 +406,21 @@ export function SettingsPage({ onOpenLogs }: Props) {
             />
           </div>
 
-          <div className="field">
+                    <div className="field">
             <label className="label">{t("settings:logRetention")}</label>
             <Input
               type="number"
-              value={String(settings.log_retention_days)}
+              value={logRetentionDraft}
               onChange={(e) => {
-                const n = Number(e.target.value) || 30;
-                setSettings({ ...settings, log_retention_days: n });
+                setLogRetentionDraft(e.target.value);
               }}
-              onBlur={() => void save(settings)}
+              onBlur={() => {
+                if (!settings) return;
+                const n = Math.max(1, Number(logRetentionDraft) || 30);
+                setLogRetentionDraft(String(n));
+                if (n === settings.log_retention_days) return;
+                void save({ ...settings, log_retention_days: n }, { silent: true });
+              }}
               style={{ width: "100%", maxWidth: 160 }}
             />
           </div>

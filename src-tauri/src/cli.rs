@@ -63,6 +63,24 @@ pub enum Commands {
     },
     /// Launch the desktop GUI (same as running with no subcommand)
     App,
+    /// Run Model Context Protocol server
+    ///
+    /// Default: stdio (spawned by AI clients; exits when the client disconnects).
+    /// `--http`: long-running Streamable HTTP daemon (keep-alive until Ctrl+C).
+    McpServer {
+        /// Use Streamable HTTP and keep running (daemon-style foreground).
+        #[arg(long)]
+        http: bool,
+        /// Listen host for `--http` (default: settings.mcp.listen_host)
+        #[arg(long)]
+        host: Option<String>,
+        /// Listen port for `--http` (default: settings.mcp.port)
+        #[arg(long)]
+        port: Option<u16>,
+        /// Bearer token override (default: settings.mcp.auth_token, auto-generated if empty)
+        #[arg(long)]
+        token: Option<String>,
+    },
     /// Print version (same as --version / -V)
     Version,
 }
@@ -71,7 +89,7 @@ pub fn is_cli_invocation(args: &[String]) -> bool {
     match args.get(1).map(String::as_str) {
         Some(
             "run" | "daemon" | "list" | "run-once" | "validate" | "generate-example" | "app"
-            | "help" | "--help" | "-h" | "--version" | "-V" | "version",
+            | "mcp-server" | "help" | "--help" | "-h" | "--version" | "-V" | "version",
         ) => true,
         Some(s) if s.starts_with('-') => true,
         _ => false,
@@ -114,6 +132,15 @@ pub fn run(args: Vec<String>) -> Result<(), String> {
         }
         Commands::App => {
             crate::run();
+            Ok(())
+        }
+        Commands::McpServer {
+            http,
+            host,
+            port,
+            token,
+        } => {
+            run_mcp(http, host, port, token).map_err(err_str)?;
             Ok(())
         }
         Commands::GenerateExample { out } => {
@@ -235,10 +262,54 @@ fn err_str(e: DomainError) -> String {
     format!("{:?}: {}", e.code, e.message)
 }
 
+fn run_mcp(
+    http: bool,
+    host: Option<String>,
+    port: Option<u16>,
+    token: Option<String>,
+) -> DomainResult<()> {
+    use crate::infra::{McpLogStore, PluginManager};
+    use std::sync::Arc;
+    let paths = AppPaths::resolve()?;
+    paths.ensure()?;
+    // bootstrap ensures mcp.auth_token exists
+    let svc = Arc::new(open_service(true)?);
+    let plugins = Arc::new(PluginManager::new(&paths)?);
+    let logs = Arc::new(McpLogStore::open(paths.mcp_log_file())?);
+    let settings = svc.get_settings()?;
+
+    if http {
+        let host = host
+            .filter(|h| !h.trim().is_empty())
+            .unwrap_or_else(|| settings.mcp.listen_host.clone());
+        let port = port.unwrap_or(settings.mcp.port);
+        let token = token
+            .filter(|t| !t.trim().is_empty())
+            .unwrap_or_else(|| settings.mcp.auth_token.clone());
+        // If still empty (should not happen after bootstrap), mint + persist.
+        let token = if token.trim().is_empty() {
+            let mut s = settings;
+            s.mcp.auth_token = crate::domain::generate_secret_token();
+            let saved = svc.save_settings(s)?;
+            saved.mcp.auth_token
+        } else {
+            token
+        };
+        eprintln!("callai mcp-server --http  (shared DB; host={host} port={port})");
+        crate::infra::mcp::run_mcp_http_server(svc, plugins, logs, &host, port, &token)
+            .map_err(|e| DomainError::new(ErrorCode::Internal, e))?;
+    } else {
+        // stdio: client-spawned lifecycle; no daemon. HTTP flag is the keep-alive path.
+        crate::infra::mcp::run_mcp_server(svc, plugins, logs)
+            .map_err(|e| DomainError::new(ErrorCode::Internal, e))?;
+    }
+    Ok(())
+}
+
 fn open_service(use_real_sleeper: bool) -> DomainResult<AlarmService> {
     let paths = AppPaths::resolve()?;
     paths.ensure()?;
-    let store = Arc::new(SqliteStore::open(&paths.db_file)?);
+    let store = Arc::new(SqliteStore::open(paths.db_file())?);
     let runner = Arc::new(SystemProcessRunner);
     let clock = Arc::new(SystemClock);
     let backup = Arc::new(TomlConfigBackup::new(paths));
@@ -297,7 +368,7 @@ retry_interval = "2m"
 fn validate(config_path: Option<&std::path::Path>) -> DomainResult<()> {
     let path = match config_path {
         Some(p) => p.to_path_buf(),
-        None => AppPaths::resolve()?.config_file,
+        None => AppPaths::resolve()?.config_file().to_path_buf(),
     };
     if !path.exists() {
         return Err(DomainError::new(
@@ -381,6 +452,7 @@ fn validate(config_path: Option<&std::path::Path>) -> DomainResult<()> {
             retry: RetryPolicy::default(),
             timeout_secs: 20,
             notification: Default::default(),
+            plugin: None,
         },
     );
     Ok(())

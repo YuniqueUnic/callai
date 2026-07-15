@@ -1,0 +1,25 @@
+<script>
+/* callai: force classic JSX for UMD React (no import statements) */
+(function () {
+  function register() {
+    if (
+      !window.Babel ||
+      !window.Babel.registerPreset ||
+      !window.Babel.availablePresets
+    ) {
+      return;
+    }
+    try {
+      window.Babel.registerPreset("react-classic", {
+        presets: [
+          [window.Babel.availablePresets.react, { runtime: "classic" }],
+        ],
+      });
+    } catch (e) {
+      /* already registered */
+    }
+  }
+  register();
+  document.addEventListener("DOMContentLoaded", register);
+})();
+</script>

@@ -1,0 +1,44 @@
+# Task: alarm_generate
+
+Generate **one** callai AlarmDraft JSON object from the user request.
+
+## Schema (JSON only — no markdown fences)
+
+```json
+{
+  "name": "string",
+  "enabled": true,
+  "schedule": {
+    "mode": "daily|weekly|monthly|cron",
+    "times": ["HH:MM"],
+    "days": [0],
+    "expression": "m h dom mon dow"
+  },
+  "binary": "string",
+  "args": ["string"],
+  "env_vars": [{ "key": "string", "value": "string" }],
+  "retry": { "interval": "1m|2m|5m|10m", "max_attempts": 1 },
+  "timeout_secs": 20,
+  "notification": {
+    "enabled": true,
+    "notification_type": "system_only|with_sound",
+    "sound_id": "soft_chime|island_bell|wood_knock|warm_rise|gentle_ping|null"
+  }
+}
+```
+
+Schedule shapes (pick exactly one mode):
+- daily: `{ "mode":"daily", "times":["HH:MM", ...] }`
+- weekly: `{ "mode":"weekly", "days":[0-6], "times":["HH:MM", ...] }`  // 0=Sunday
+- monthly: `{ "mode":"monthly", "days":[1-31], "times":["HH:MM", ...] }`
+- cron: `{ "mode":"cron", "expression":"m h dom mon dow" }`
+
+## Rules
+- Output **ONLY** one valid JSON object (no prose, no ``` fences)
+- Pure reminder / chime (no external CLI): `"binary":"{{ product.default_chime }}"`, `args` empty or short message strings
+- `timeout_secs` default 20; retry default `interval:"1m"`, `max_attempts` 1 for simple reminders, up to 3 for AI CLI warmers
+- Prefer **daily times** over cron when the user means “every day at …”
+- Times zero-padded `"HH:MM"` when possible (e.g. `"16:50"` for 下午 4.50)
+- `name` short, island-cozy, clear — prefer user's language
+- Resolve relative times using runtime `now.local` + `timezone.resolved`
+- Pick binaries / shell idioms that match runtime `os_family` / `shell`

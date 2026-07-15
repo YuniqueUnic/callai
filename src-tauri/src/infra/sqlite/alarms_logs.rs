@@ -1,194 +1,30 @@
-//! SQLite adapter. SQL lives only in this module (constants + helpers);
-//! call sites must not embed ad-hoc SQL strings.
+//! Alarm / log / settings store methods.
 #![allow(dead_code, clippy::too_many_arguments, clippy::type_complexity)]
-use std::sync::Mutex;
-
-use chrono::{DateTime, TimeZone, Utc};
-use rusqlite::{params, Connection, OptionalExtension};
-
+use super::helpers::{alarm_from_row, dt_to_str, map_log_row, map_logs, status_str};
+use super::SqliteStore;
 use crate::app::AlarmStore;
 use crate::domain::{
-    Alarm, AlarmLifecycle, AlarmNotificationSettings, AppSettings, DomainError, DomainResult,
-    EnvVar, ErrorCode, ExecutionLog, ExecutionStatus, LocaleCode, LogFilter, RetryInterval,
-    RetryPolicy, ScheduleSpec, ThemeMode,
+    Alarm, AppSettings, DomainError, DomainResult, ErrorCode, ExecutionLog, LocaleCode, LogFilter,
+    ThemeMode,
 };
+use chrono::Utc;
+use rusqlite::{params, OptionalExtension};
 
 const SQL_LIST_ALARMS: &str = concat!(
     "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json, ",
-    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json ",
+    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json, ",
+    "COALESCE(plugin_json, '') ",
     "FROM alarms ORDER BY created_at DESC"
 );
 const SQL_GET_ALARM: &str = concat!(
     "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json, ",
-    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json ",
+    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json, ",
+    "COALESCE(plugin_json, '') ",
     "FROM alarms WHERE id = ?1"
 );
 const SQL_DELETE_LOG: &str = "DELETE FROM execution_logs WHERE id = ?1";
 const SQL_DELETE_LOGS_BY_ALARM: &str = "DELETE FROM execution_logs WHERE alarm_id = ?1";
 const SQL_DELETE_ALARM: &str = "DELETE FROM alarms WHERE id = ?1";
-
-pub struct SqliteStore {
-    conn: Mutex<Connection>,
-}
-
-impl SqliteStore {
-    pub fn open(path: &std::path::Path) -> DomainResult<Self> {
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| {
-                DomainError::new(ErrorCode::StorageFailed, format!("mkdir db: {e}"))
-            })?;
-        }
-        let conn = Connection::open(path)
-            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("open db: {e}")))?;
-        let store = Self {
-            conn: Mutex::new(conn),
-        };
-        store.migrate()?;
-        Ok(store)
-    }
-
-    pub fn open_in_memory() -> DomainResult<Self> {
-        let conn = Connection::open_in_memory()
-            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("open mem db: {e}")))?;
-        let store = Self {
-            conn: Mutex::new(conn),
-        };
-        store.migrate()?;
-        Ok(store)
-    }
-
-    fn migrate(&self) -> DomainResult<()> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute_batch(
-            r#"
-            CREATE TABLE IF NOT EXISTS alarms (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                enabled INTEGER NOT NULL,
-                schedule_json TEXT NOT NULL,
-                binary_path TEXT NOT NULL,
-                args_json TEXT NOT NULL,
-                env_json TEXT NOT NULL,
-                retry_interval TEXT NOT NULL,
-                timeout_secs INTEGER NOT NULL DEFAULT 20,
-                lifecycle_json TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                notification_json TEXT NOT NULL DEFAULT '{"enabled":true,"notification_type":"with_sound"}'
-            );
-
-            CREATE TABLE IF NOT EXISTS execution_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                alarm_id TEXT NOT NULL,
-                alarm_name TEXT NOT NULL,
-                started_at TEXT NOT NULL,
-                finished_at TEXT,
-                status TEXT NOT NULL,
-                exit_code INTEGER,
-                duration_ms INTEGER,
-                retry_count INTEGER NOT NULL DEFAULT 0,
-                command_preview TEXT NOT NULL,
-                stdout TEXT NOT NULL DEFAULT '',
-                stderr TEXT NOT NULL DEFAULT ''
-            );
-
-            CREATE TABLE IF NOT EXISTS app_settings (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                theme TEXT NOT NULL,
-                locale TEXT NOT NULL,
-                launch_minimized INTEGER NOT NULL,
-                log_retention_days INTEGER NOT NULL,
-                notify_on_failure INTEGER NOT NULL,
-                sound_enabled INTEGER NOT NULL DEFAULT 1,
-                timezone TEXT NOT NULL DEFAULT 'system',
-                auto_backup_on_start INTEGER NOT NULL,
-                backup_keep_count INTEGER NOT NULL
-            );
-
-            -- Insert without sound_enabled so pre-migration DBs (missing the column)
-            -- still accept this statement; DEFAULT applies on fresh CREATE TABLE.
-            INSERT OR IGNORE INTO app_settings (
-                id, theme, locale, launch_minimized, log_retention_days,
-                notify_on_failure, auto_backup_on_start, backup_keep_count
-            ) VALUES (1, 'system', 'zh-CN', 0, 30, 0, 1, 10);
-            "#,
-        )
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("migrate: {e}")))?;
-        // Additive columns for existing installs (must run after CREATE/INSERT batch).
-        let _ = conn.execute(
-            "ALTER TABLE alarms ADD COLUMN timeout_secs INTEGER NOT NULL DEFAULT 20",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN sound_enabled INTEGER NOT NULL DEFAULT 1",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN timezone TEXT NOT NULL DEFAULT 'system'",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE alarms ADD COLUMN notification_json TEXT NOT NULL DEFAULT '{\"enabled\":true,\"notification_type\":\"with_sound\"}'",
-            [],
-        );
-        Ok(())
-    }
-}
-
-fn dt_to_str(dt: DateTime<Utc>) -> String {
-    dt.to_rfc3339()
-}
-
-fn str_to_dt(s: &str) -> DomainResult<DateTime<Utc>> {
-    DateTime::parse_from_rfc3339(s)
-        .map(|d| d.with_timezone(&Utc))
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("bad datetime: {e}")))
-}
-
-fn alarm_from_row(
-    id: String,
-    name: String,
-    enabled: i64,
-    schedule_json: String,
-    binary_path: String,
-    args_json: String,
-    env_json: String,
-    retry_interval: String,
-    timeout_secs: i64,
-    lifecycle_json: String,
-    created_at: String,
-    updated_at: String,
-    notification_json: String,
-) -> DomainResult<Alarm> {
-    let schedule: ScheduleSpec = serde_json::from_str(&schedule_json)
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("schedule json: {e}")))?;
-    let args: Vec<String> = serde_json::from_str(&args_json)
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("args json: {e}")))?;
-    let env_vars: Vec<EnvVar> = serde_json::from_str(&env_json)
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("env json: {e}")))?;
-    let lifecycle: AlarmLifecycle = serde_json::from_str(&lifecycle_json)
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("lifecycle json: {e}")))?;
-    let notification: AlarmNotificationSettings = if notification_json.trim().is_empty() {
-        AlarmNotificationSettings::default()
-    } else {
-        serde_json::from_str(&notification_json).unwrap_or_default()
-    };
-    Ok(Alarm {
-        id,
-        name,
-        enabled: enabled != 0,
-        schedule,
-        binary: binary_path,
-        args,
-        env_vars,
-        retry: RetryPolicy::new(RetryInterval::parse(&retry_interval)?),
-        timeout_secs: timeout_secs.clamp(1, 3600) as u32,
-        notification,
-        lifecycle,
-        created_at: str_to_dt(&created_at)?,
-        updated_at: str_to_dt(&updated_at)?,
-    })
-}
 
 impl AlarmStore for SqliteStore {
     fn list_alarms(&self) -> DomainResult<Vec<Alarm>> {
@@ -212,6 +48,7 @@ impl AlarmStore for SqliteStore {
                     row.get::<_, String>(10)?,
                     row.get::<_, String>(11)?,
                     row.get::<_, String>(12)?,
+                    row.get::<_, String>(13)?,
                 ))
             })
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
@@ -220,7 +57,7 @@ impl AlarmStore for SqliteStore {
         for r in rows {
             let t = r.map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
             out.push(alarm_from_row(
-                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12,
+                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12, t.13,
             )?);
         }
         Ok(out)
@@ -244,13 +81,14 @@ impl AlarmStore for SqliteStore {
                     row.get::<_, String>(10)?,
                     row.get::<_, String>(11)?,
                     row.get::<_, String>(12)?,
+                    row.get::<_, String>(13)?,
                 ))
             })
             .optional()
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         match row {
             Some(t) => Ok(Some(alarm_from_row(
-                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12,
+                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12, t.13,
             )?)),
             None => Ok(None),
         }
@@ -268,12 +106,17 @@ impl AlarmStore for SqliteStore {
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         let notification_json = serde_json::to_string(&alarm.notification)
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
+        let plugin_json = match &alarm.plugin {
+            Some(p) => serde_json::to_string(p)
+                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?,
+            None => String::new(),
+        };
         conn.execute(
             "INSERT INTO alarms (
                 id, name, enabled, schedule_json, binary_path, args_json, env_json,
                 retry_interval, timeout_secs, lifecycle_json, created_at, updated_at,
-                notification_json
-             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)
+                notification_json, plugin_json
+             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)
              ON CONFLICT(id) DO UPDATE SET
                 name=excluded.name,
                 enabled=excluded.enabled,
@@ -285,7 +128,8 @@ impl AlarmStore for SqliteStore {
                 timeout_secs=excluded.timeout_secs,
                 lifecycle_json=excluded.lifecycle_json,
                 updated_at=excluded.updated_at,
-                notification_json=excluded.notification_json",
+                notification_json=excluded.notification_json,
+                plugin_json=excluded.plugin_json",
             params![
                 alarm.id,
                 alarm.name,
@@ -300,6 +144,7 @@ impl AlarmStore for SqliteStore {
                 dt_to_str(alarm.created_at),
                 dt_to_str(alarm.updated_at),
                 notification_json,
+                plugin_json,
             ],
         )
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
@@ -466,34 +311,79 @@ impl AlarmStore for SqliteStore {
     }
 
     fn get_settings(&self) -> DomainResult<AppSettings> {
+        use crate::domain::{
+            AiProvider, AiSettings, AppearanceSettings, BackupSettings, McpSettings,
+            NotifySettings, RuntimeSettings,
+        };
         let conn = self.conn.lock().unwrap();
         conn.query_row(
             "SELECT theme, locale, launch_minimized, log_retention_days,
-                    notify_on_failure, sound_enabled, timezone, auto_backup_on_start, backup_keep_count
+                    notify_on_failure, sound_enabled, timezone, auto_backup_on_start, backup_keep_count,
+                    COALESCE(ai_base_url, ''), COALESCE(ai_api_key, ''), COALESCE(ai_model, 'gpt-5.6-terra'),
+                    COALESCE(ai_provider, 'openai'),
+                    COALESCE(mcp_enabled, 0), COALESCE(mcp_listen_host, '127.0.0.1'),
+                    COALESCE(mcp_port, 33927), COALESCE(mcp_auth_token, '')
              FROM app_settings WHERE id = 1",
             [],
             |row| {
+                let theme = match row.get::<_, String>(0)?.as_str() {
+                    "light" => ThemeMode::Light,
+                    "dark" => ThemeMode::Dark,
+                    _ => ThemeMode::System,
+                };
+                let locale = LocaleCode::parse(&row.get::<_, String>(1)?);
+                let timezone: String = {
+                    let tz: String = row.get(6)?;
+                    if tz.trim().is_empty() {
+                        "system".into()
+                    } else {
+                        tz
+                    }
+                };
+                let provider = AiProvider::parse(&row.get::<_, String>(12)?);
+                let model: String = {
+                    let m: String = row.get(11)?;
+                    if m.trim().is_empty() {
+                        provider.default_model().into()
+                    } else {
+                        m
+                    }
+                };
+                let port = row.get::<_, i64>(15)?.clamp(1, 65535) as u16;
                 Ok(AppSettings {
-                    theme: match row.get::<_, String>(0)?.as_str() {
-                        "light" => ThemeMode::Light,
-                        "dark" => ThemeMode::Dark,
-                        _ => ThemeMode::System,
+                    appearance: AppearanceSettings { theme, locale },
+                    runtime: RuntimeSettings {
+                        launch_minimized: row.get::<_, i64>(2)? != 0,
+                        log_retention_days: row.get::<_, i64>(3)? as u32,
+                        timezone,
                     },
-                    locale: LocaleCode::parse(&row.get::<_, String>(1)?),
-                    launch_minimized: row.get::<_, i64>(2)? != 0,
-                    log_retention_days: row.get::<_, i64>(3)? as u32,
-                    notify_on_failure: row.get::<_, i64>(4)? != 0,
-                    sound_enabled: row.get::<_, i64>(5)? != 0,
-                    timezone: {
-                        let tz: String = row.get(6)?;
-                        if tz.trim().is_empty() {
-                            "system".into()
-                        } else {
-                            tz
-                        }
+                    notify: NotifySettings {
+                        notify_on_failure: row.get::<_, i64>(4)? != 0,
+                        sound_enabled: row.get::<_, i64>(5)? != 0,
                     },
-                    auto_backup_on_start: row.get::<_, i64>(7)? != 0,
-                    backup_keep_count: row.get::<_, i64>(8)? as u32,
+                    backup: BackupSettings {
+                        auto_backup_on_start: row.get::<_, i64>(7)? != 0,
+                        backup_keep_count: row.get::<_, i64>(8)? as u32,
+                    },
+                    ai: AiSettings {
+                        provider,
+                        base_url: row.get::<_, String>(9)?,
+                        api_key: row.get::<_, String>(10)?,
+                        model,
+                    },
+                    mcp: McpSettings {
+                        enabled: row.get::<_, i64>(13)? != 0,
+                        listen_host: {
+                            let h: String = row.get(14)?;
+                            if h.trim().is_empty() {
+                                "127.0.0.1".into()
+                            } else {
+                                h
+                            }
+                        },
+                        port,
+                        auth_token: row.get::<_, String>(16)?,
+                    },
                 })
             },
         )
@@ -506,22 +396,44 @@ impl AlarmStore for SqliteStore {
             "UPDATE app_settings SET
                 theme=?1, locale=?2, launch_minimized=?3, log_retention_days=?4,
                 notify_on_failure=?5, sound_enabled=?6, timezone=?7,
-                auto_backup_on_start=?8, backup_keep_count=?9
+                auto_backup_on_start=?8, backup_keep_count=?9,
+                ai_base_url=?10, ai_api_key=?11, ai_model=?12, ai_provider=?13,
+                mcp_enabled=?14, mcp_listen_host=?15, mcp_port=?16, mcp_auth_token=?17
              WHERE id=1",
             params![
-                match settings.theme {
+                match settings.appearance.theme {
                     ThemeMode::System => "system",
                     ThemeMode::Light => "light",
                     ThemeMode::Dark => "dark",
                 },
-                settings.locale.as_str(),
-                if settings.launch_minimized { 1 } else { 0 },
-                settings.log_retention_days as i64,
-                if settings.notify_on_failure { 1 } else { 0 },
-                if settings.sound_enabled { 1 } else { 0 },
-                settings.timezone.as_str(),
-                if settings.auto_backup_on_start { 1 } else { 0 },
-                settings.backup_keep_count as i64,
+                settings.appearance.locale.as_str(),
+                if settings.runtime.launch_minimized {
+                    1
+                } else {
+                    0
+                },
+                settings.runtime.log_retention_days as i64,
+                if settings.notify.notify_on_failure {
+                    1
+                } else {
+                    0
+                },
+                if settings.notify.sound_enabled { 1 } else { 0 },
+                settings.runtime.timezone.as_str(),
+                if settings.backup.auto_backup_on_start {
+                    1
+                } else {
+                    0
+                },
+                settings.backup.backup_keep_count as i64,
+                settings.ai.base_url.as_str(),
+                settings.ai.api_key.as_str(),
+                settings.ai.resolved_model(),
+                settings.ai.provider.as_str(),
+                if settings.mcp.enabled { 1 } else { 0 },
+                settings.mcp.listen_host.as_str(),
+                settings.mcp.port as i64,
+                settings.mcp.auth_token.as_str(),
             ],
         )
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
@@ -539,108 +451,4 @@ impl AlarmStore for SqliteStore {
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         Ok(n as u64)
     }
-}
-
-fn status_str(s: ExecutionStatus) -> &'static str {
-    match s {
-        ExecutionStatus::Running => "running",
-        ExecutionStatus::Success => "success",
-        ExecutionStatus::Failed => "failed",
-        ExecutionStatus::Retrying => "retrying",
-        ExecutionStatus::Canceled => "canceled",
-        ExecutionStatus::Timeout => "timeout",
-    }
-}
-
-fn parse_status(s: &str) -> ExecutionStatus {
-    match s {
-        "success" => ExecutionStatus::Success,
-        "failed" => ExecutionStatus::Failed,
-        "retrying" => ExecutionStatus::Retrying,
-        "canceled" | "cancelled" => ExecutionStatus::Canceled,
-        "timeout" => ExecutionStatus::Timeout,
-        _ => ExecutionStatus::Running,
-    }
-}
-
-fn map_log_row(
-    row: &rusqlite::Row<'_>,
-) -> rusqlite::Result<(
-    i64,
-    String,
-    String,
-    String,
-    Option<String>,
-    String,
-    Option<i32>,
-    Option<i64>,
-    i64,
-    String,
-    String,
-    String,
-)> {
-    Ok((
-        row.get(0)?,
-        row.get(1)?,
-        row.get(2)?,
-        row.get(3)?,
-        row.get(4)?,
-        row.get(5)?,
-        row.get(6)?,
-        row.get(7)?,
-        row.get(8)?,
-        row.get(9)?,
-        row.get(10)?,
-        row.get(11)?,
-    ))
-}
-
-fn map_logs(
-    rows: impl Iterator<
-        Item = Result<
-            (
-                i64,
-                String,
-                String,
-                String,
-                Option<String>,
-                String,
-                Option<i32>,
-                Option<i64>,
-                i64,
-                String,
-                String,
-                String,
-            ),
-            rusqlite::Error,
-        >,
-    >,
-) -> DomainResult<Vec<ExecutionLog>> {
-    let mut out = Vec::new();
-    for r in rows {
-        let t = r.map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-        out.push(ExecutionLog {
-            id: t.0,
-            alarm_id: t.1,
-            alarm_name: t.2,
-            started_at: str_to_dt(&t.3)?,
-            finished_at: match t.4 {
-                Some(s) => Some(str_to_dt(&s)?),
-                None => None,
-            },
-            status: parse_status(&t.5),
-            exit_code: t.6,
-            duration_ms: t.7,
-            retry_count: t.8 as u32,
-            command_preview: t.9,
-            stdout: t.10,
-            stderr: t.11,
-        });
-    }
-    Ok(out)
-}
-
-#[allow(dead_code)]
-fn _unused_tz() {
-    let _ = Utc.timestamp_opt(0, 0);
 }

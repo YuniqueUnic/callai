@@ -1,0 +1,24 @@
+# AI2UI bridge for callai plugins
+
+When generating the **ui.html** part of a PluginDraft (dual-part output):
+
+1. **Visual design** = `animal_island_style` (authoritative tokens / components / composition).
+2. **Host bridge** = prefer high-level helpers from `plugin_sdk`:
+   - `window.callai.storage.*` / `timer.now` / `notification.show` / `history.list`
+   - Raw: `window.callai.invoke(method, args)` → Promise (host may normalize results).
+3. **Identity**: `window.callai.pluginId`, `window.callai.ready`, `window.callai.ping()`.
+4. **Layout vocabulary**: form, table, wallet, phone-frame (see animal-island Card / Phone / Wallet / Form).
+5. Prefer a **complete** HTML document that runs under host injection:
+   ```js
+   // never overwrite an existing host inject
+   window.callai = window.callai || {};
+   ```
+6. Sandbox note: host injects postMessage bridge + babel classic runtime; do not replace `invoke`.
+
+## Output placement
+- HTML is the **second part** of plugin_generate (```html fence), **not** a JSON `ui_html` string.
+- If the user only wants a UI sketch, still emit HTML in a ```html fence (manifest optional / minimal).
+
+## Persistence & business params
+- CRUD / settings that belong to the plugin must live **inside the plugin UI** via storage.
+- The main app only schedules trigger time + popup / suppress-when-fullscreen for `__callai_plugin__` alarms.

@@ -76,6 +76,7 @@ fn cozy_alarm_draft() -> AlarmDraft {
         retry: RetryPolicy::default(),
         timeout_secs: 120,
         notification: Default::default(),
+        plugin: None,
     }
 }
 
@@ -96,6 +97,7 @@ pub fn draft_from_template(template_id: &str) -> Option<AlarmDraft> {
         retry: RetryPolicy::default(),
         timeout_secs: DEFAULT_TIMEOUT_SECS,
         notification: Default::default(),
+        plugin: None,
     })
 }
 

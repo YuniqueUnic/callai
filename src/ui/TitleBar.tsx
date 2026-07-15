@@ -2,10 +2,13 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isTauri } from "../infra/tauriApi";
 
 /**
@@ -43,33 +46,42 @@ type WinApi = {
   onScaleChanged: (cb: () => void) => Promise<() => void>;
 };
 
-async function getWin(): Promise<WinApi | null> {
+/**
+ * Build a thin WinApi around the current Tauri window.
+ * IMPORTANT: must be synchronous when used from mousedown/pointerdown for
+ * startDragging / startResizeDragging — those APIs require an active native
+ * mouse button gesture. Dynamic-import-then-await loses the gesture.
+ */
+function getWin(): WinApi | null {
   if (!isTauri()) return null;
-  const { getCurrentWindow } = await import("@tauri-apps/api/window");
-  const w = getCurrentWindow();
-  return {
-    minimize: () => w.minimize(),
-    toggleMaximize: () => w.toggleMaximize(),
-    close: () => w.close(),
-    isMaximized: () => w.isMaximized(),
-    isFullscreen: () => w.isFullscreen(),
-    setFullscreen: (v) => w.setFullscreen(v),
-    setAlwaysOnTop: (v) => w.setAlwaysOnTop(v),
-    startDragging: () => w.startDragging(),
-    startResizeDragging: (dir) => w.startResizeDragging(dir),
-    onResized: async (cb) => {
-      const un = await w.onResized(() => cb());
-      return () => {
-        void un();
-      };
-    },
-    onScaleChanged: async (cb) => {
-      const un = await w.onScaleChanged(() => cb());
-      return () => {
-        void un();
-      };
-    },
-  };
+  try {
+    const w = getCurrentWindow();
+    return {
+      minimize: () => w.minimize(),
+      toggleMaximize: () => w.toggleMaximize(),
+      close: () => w.close(),
+      isMaximized: () => w.isMaximized(),
+      isFullscreen: () => w.isFullscreen(),
+      setFullscreen: (v) => w.setFullscreen(v),
+      setAlwaysOnTop: (v) => w.setAlwaysOnTop(v),
+      startDragging: () => w.startDragging(),
+      startResizeDragging: (dir) => w.startResizeDragging(dir),
+      onResized: async (cb) => {
+        const un = await w.onResized(() => cb());
+        return () => {
+          void un();
+        };
+      },
+      onScaleChanged: async (cb) => {
+        const un = await w.onScaleChanged(() => cb());
+        return () => {
+          void un();
+        };
+      },
+    };
+  } catch {
+    return null;
+  }
 }
 
 function detectPlatform(): "macos" | "windows" | "linux" | "web" {
@@ -80,29 +92,80 @@ function detectPlatform(): "macos" | "windows" | "linux" | "web" {
   return "linux";
 }
 
-function applyShellFlags(flags: {
-  maximized?: boolean;
-  fullscreen?: boolean;
-  pinned?: boolean;
-}) {
-  const shell = document.querySelector(".app-shell");
-  if (!shell) return;
-  if (flags.maximized != null) {
-    shell.classList.toggle("is-maximized", flags.maximized);
+function applyShellFlags(
+  flags: {
+    maximized?: boolean;
+    fullscreen?: boolean;
+    pinned?: boolean;
+    compact?: boolean;
+  },
+  shellSelector = ".app-shell",
+) {
+  const shell = document.querySelector(shellSelector);
+  if (shell) {
+    if (flags.maximized != null) {
+      shell.classList.toggle("is-maximized", flags.maximized);
+    }
+    if (flags.fullscreen != null) {
+      shell.classList.toggle("is-fullscreen", flags.fullscreen);
+    }
+    if (flags.pinned != null) {
+      shell.classList.toggle("is-pinned", flags.pinned);
+    }
+    if (flags.compact != null) {
+      shell.classList.toggle("is-compact", flags.compact);
+    }
   }
-  if (flags.fullscreen != null) {
-    shell.classList.toggle("is-fullscreen", flags.fullscreen);
+  // Square chrome only for true maximized/fullscreen — never for compact strip.
+  const flat =
+    Boolean(flags.maximized || flags.fullscreen) && !flags.compact;
+  if (flags.maximized != null || flags.fullscreen != null || flags.compact != null) {
+    // Recompute from shell classes if partial update
+    const s = document.querySelector(shellSelector);
+    const isMax = s?.classList.contains("is-maximized") ?? false;
+    const isFull = s?.classList.contains("is-fullscreen") ?? false;
+    const isCompact = s?.classList.contains("is-compact") ?? false;
+    document.documentElement.classList.toggle(
+      "callai-window-chrome-flat",
+      (isMax || isFull) && !isCompact,
+    );
+  } else {
+    document.documentElement.classList.toggle("callai-window-chrome-flat", flat);
   }
-  if (flags.pinned != null) {
-    shell.classList.toggle("is-pinned", flags.pinned);
-  }
-  document.documentElement.classList.toggle(
-    "callai-window-chrome-flat",
-    Boolean(flags.maximized || flags.fullscreen),
-  );
 }
 
-export function TitleBar() {
+export type TitleBarVariant = "main" | "plugin";
+
+export interface TitleBarProps {
+  /** main = app shell; plugin = independent plugin host window */
+  variant?: TitleBarVariant;
+  /** Override brand title (plugin name) */
+  title?: string;
+  /** Override tagline */
+  tagline?: string;
+  /** Plugin compact strip (content hidden) */
+  compact?: boolean;
+  /** Plugin: minimize toggles compact instead of OS minimize (may be async). */
+  onCompactChange?: (compact: boolean) => void | Promise<void>;
+  /** Shell root selector for chrome flags */
+  shellSelector?: string;
+  /** Notify parent of chrome state */
+  onChromeState?: (s: {
+    maximized: boolean;
+    fullscreen: boolean;
+    pinned: boolean;
+  }) => void;
+}
+
+export function TitleBar({
+  variant = "main",
+  title: titleProp,
+  tagline: taglineProp,
+  compact = false,
+  onCompactChange,
+  shellSelector = ".app-shell",
+  onChromeState,
+}: TitleBarProps = {}) {
   const { t } = useTranslation("common");
   const platform = useMemo(() => detectPlatform(), []);
   const [maximized, setMaximized] = useState(false);
@@ -110,9 +173,16 @@ export function TitleBar() {
   const [pinned, setPinned] = useState(false);
   const [ready, setReady] = useState(!isTauri());
   const controlsLeft = platform === "macos";
+  const isPlugin = variant === "plugin";
+  /** Cached window API so resize/drag can fire synchronously on pointerdown. */
+  const winRef = useRef<WinApi | null>(null);
+
+  useEffect(() => {
+    applyShellFlags({ compact }, shellSelector);
+  }, [compact, shellSelector]);
 
   const syncState = useCallback(async () => {
-    const win = await getWin();
+    const win = getWin();
     if (!win) return;
     try {
       const [max, full] = await Promise.all([
@@ -121,11 +191,15 @@ export function TitleBar() {
       ]);
       setMaximized(max);
       setFullscreen(full);
-      applyShellFlags({ maximized: max, fullscreen: full });
+      applyShellFlags(
+        { maximized: max, fullscreen: full, compact },
+        shellSelector,
+      );
+      onChromeState?.({ maximized: max, fullscreen: full, pinned });
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [compact, onChromeState, pinned, shellSelector]);
 
   useEffect(() => {
     if (!isTauri()) return;
@@ -133,7 +207,8 @@ export function TitleBar() {
     const unsubs: Array<() => void> = [];
 
     void (async () => {
-      const win = await getWin();
+      const win = getWin();
+      winRef.current = win;
       if (disposed) return;
       setReady(true);
       if (!win) return;
@@ -153,16 +228,19 @@ export function TitleBar() {
     return () => {
       disposed = true;
       for (const u of unsubs) u();
-      applyShellFlags({ maximized: false, fullscreen: false, pinned: false });
+      applyShellFlags(
+        { maximized: false, fullscreen: false, pinned: false, compact: false },
+        shellSelector,
+      );
     };
-  }, [syncState]);
+  }, [shellSelector, syncState]);
 
   const onDragMouseDown = useCallback((e: MouseEvent) => {
     if (e.button !== 0) return;
     // Keep native double-click maximize; also fire for non-Windows.
     if (e.detail >= 2) {
       void (async () => {
-        const win = await getWin();
+        const win = getWin();
         if (!win) return;
         if (await win.isFullscreen()) {
           await win.setFullscreen(false);
@@ -174,10 +252,12 @@ export function TitleBar() {
       return;
     }
     // Prefer data-tauri-drag-region; startDragging is a reliable fallback.
-    void (async () => {
-      const win = await getWin();
-      await win?.startDragging();
-    })();
+    // Must not await imports/setup before this call (gesture-sensitive).
+    const win = winRef.current ?? getWin();
+    winRef.current = win;
+    void win?.startDragging().catch((err) => {
+      console.warn("[callai] startDragging failed", err);
+    });
   }, [syncState]);
 
   const run = useCallback(
@@ -189,18 +269,28 @@ export function TitleBar() {
         | "togglePin"
         | "toggleFullscreen",
     ) => {
-      const win = await getWin();
+      const win = getWin();
       if (!win) return;
       if (op === "minimize") {
+        // Plugin host: collapse to compact titlebar strip (not OS minimize).
+        if (isPlugin && onCompactChange) {
+          onCompactChange(!compact);
+          return;
+        }
         await win.minimize();
         return;
       }
       if (op === "close") {
-        // CloseRequested in Rust prevents destroy and hides to tray.
+        // Main: CloseRequested hides to tray. Plugin windows destroy normally.
         await win.close();
         return;
       }
       if (op === "toggleMaximize") {
+        // Must fully leave compact (restore size + show body) before maximize/fullscreen.
+        if (isPlugin && compact && onCompactChange) {
+          await Promise.resolve(onCompactChange(false));
+          await new Promise((r) => setTimeout(r, 80));
+        }
         if (await win.isFullscreen()) {
           await win.setFullscreen(false);
         } else {
@@ -213,25 +303,56 @@ export function TitleBar() {
         const next = !pinned;
         await win.setAlwaysOnTop(next);
         setPinned(next);
-        applyShellFlags({ pinned: next });
+        applyShellFlags({ pinned: next, compact }, shellSelector);
+        onChromeState?.({
+          maximized,
+          fullscreen,
+          pinned: next,
+        });
         return;
       }
       if (op === "toggleFullscreen") {
+        if (isPlugin && compact && onCompactChange) {
+          await Promise.resolve(onCompactChange(false));
+          await new Promise((r) => setTimeout(r, 80));
+        }
         const next = !(await win.isFullscreen());
         await win.setFullscreen(next);
         await syncState();
       }
     },
-    [pinned, syncState],
+    [
+      compact,
+      isPlugin,
+      maximized,
+      onChromeState,
+      onCompactChange,
+      pinned,
+      shellSelector,
+      syncState,
+      fullscreen,
+    ],
   );
 
-  const beginResize = useCallback((dir: ResizeDir) => {
-    if (maximized || fullscreen) return;
-    void (async () => {
-      const win = await getWin();
-      await win?.startResizeDragging(dir);
-    })();
-  }, [fullscreen, maximized]);
+  /**
+   * Start OS-level resize. Must invoke startResizeDragging in the same user-gesture
+   * turn as pointerdown/mousedown (no prior await).
+   */
+  const beginResize = useCallback(
+    (dir: ResizeDir, e?: MouseEvent | ReactPointerEvent) => {
+      if (maximized || fullscreen) return;
+      if (e && "button" in e && e.button !== 0) return;
+      e?.preventDefault();
+      e?.stopPropagation();
+      const win = winRef.current ?? getWin();
+      winRef.current = win;
+      if (!win) return;
+      void win.startResizeDragging(dir).catch((err) => {
+        console.warn("[callai] startResizeDragging failed", dir, err);
+      });
+    },
+    [fullscreen, maximized],
+  );
 
   const controls = (
     <div
@@ -403,11 +524,13 @@ export function TitleBar() {
         />
       </span>
       <span className="titlebar-title" data-tauri-drag-region>
-        {t("appName")}
+        {titleProp ?? t("appName")}
       </span>
-      <span className="titlebar-tagline" data-tauri-drag-region>
-        {t("tagline")}
-      </span>
+      {(taglineProp ?? t("tagline")) && !compact ? (
+        <span className="titlebar-tagline" data-tauri-drag-region>
+          {taglineProp ?? t("tagline")}
+        </span>
+      ) : null}
       {pinned ? (
         <span className="titlebar-pill" data-tauri-drag-region>
           {t("windowPinnedBadge")}
@@ -424,7 +547,7 @@ export function TitleBar() {
   return (
     <>
       <header
-        className={`titlebar platform-${platform} ${controlsLeft ? "controls-left" : "controls-right"}`}
+        className={`titlebar platform-${platform} ${controlsLeft ? "controls-left" : "controls-right"}${isPlugin ? " is-plugin-titlebar" : ""}${compact ? " is-plugin-compact" : ""}`}
       >
         {controlsLeft ? (
           <>
@@ -443,7 +566,7 @@ export function TitleBar() {
 
       {/* Edge resize grips — undeco windows need explicit resize affordances */}
       {!maximized && !fullscreen ? (
-        <div className="window-resize-layer" aria-hidden>
+        <div className={`window-resize-layer${compact ? " is-compact-grips" : ""}`} aria-hidden>
           {(
             [
               ["n", "North"],
@@ -459,11 +582,8 @@ export function TitleBar() {
             <div
               key={dir}
               className={`window-resize-grip grip-${cls}`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                beginResize(dir);
-              }}
+              data-resize-dir={dir}
+              onPointerDown={(e) => beginResize(dir, e)}
             />
           ))}
         </div>

@@ -33,10 +33,13 @@
 | 12 | [12 运行时硬化与音效](./12-runtime-hardening-and-sfx.md) | 超时/取消/shlex/DurationPicker/SFX/去 hint |
 | 13 | [13 GitHub Issue/PR 周期](./13-github-issue-pr-lifecycle.md) | Issue→分支→PR→gate→rebase merge；#16–#19 样板 |
 | 14 | [14 自绘 Titlebar 与窗口铬](./14-custom-titlebar-and-window-chrome.md) | decorations/transparent；圆角坑（host / fixed 海浪 / OS·CSS 外阴影 / Drawer mask）；clip-path；pin/fullscreen/grips |
+| 15 | [15 AI / MCP / Prompt 分层](./15-ai-mcp-prompt-composition.md) | Epic #42；prompt 组合；runtime；WebView CORS→Rust 代理；Settings 防抖 |
+| 16 | [16 MCP Tools / Logs / In-App HTTP](./16-mcp-tools-and-logs.md) | 审计边界；compose_prompt；App supervisor；端口 33927；Host 不白名单 |
 
 ### 路径 B · 只学「如何写 prompt」
 
-精读每篇 **§原始 prompt 拆解** 与 **§给 AI 的提示模板**，对照根目录 `TODO` 原文。
+精读每篇 **§原始 prompt 拆解** 与 **§给 AI 的提示模板**，对照根目录 `TODO` 原文；并打开 `src-tauri/prompts/*.prompt` 对照 15§11 / 16§7 的「失败模式 → 文件」表。  
+**AI 生成 / 契约分层** 精读 [15](./15-ai-mcp-prompt-composition.md) §2–3、§6.4。
 
 ### 路径 C · 只学发布工程
 
@@ -49,6 +52,10 @@
 ### 路径 E · 只学桌面窗口铬 / 自绘 titlebar
 
 `02`（托盘）→ `04` → `14`（含附录 C 海浪 fixed、**附录 E 外侧方框线**）→ `05`（层级），配合三平台拖拽/圆角/close-to-tray 手测。
+
+### 路径 F · 只学 AI 生成与 MCP
+
+`03`（CLI/daemon 心智）→ `15`（prompt 分层 / runtime / CORS 代理 / Settings 防抖）→ `docs/mcp.md`，配合 `bun tauri dev` 真 key 手测。
 
 ## 提交时间线（证据）
 
@@ -74,6 +81,9 @@
 | Issues #16–#19 功能与周期教材 | `fix/issues-16-19` | 13 |
 | 自绘 titlebar / 透明圆角 / 窗口增强 | `fix/dark-modal-contrast` + TitleBar | 14 |
 | UI 切换卡顿 / keep-alive / 多级 cache | 工作区 App panes + *Cache.ts | 05 附录 C |
+| AI / MCP / Prompt 分层 / WebView 代理 | `2d8e1d3` `5c663ea` `c140399` + `ai_chat_completion` | 15 |
+| 插件窗 / Fix seed / dual-part / 流式 | `7b9a443` `5b270af` `0e5480b` | 15 §11 · 16 |
+| MCP tools 扩 + 日志分离 + App HTTP | `6e00da2` `8fb8b57` | 16 · 15 纠偏 |
 
 ```bash
 git log --oneline --reverse

@@ -33,6 +33,9 @@
     "core:window:allow-is-fullscreen",
     "core:window:allow-outer-position",
     "core:window:allow-outer-size",
-    "core:window:allow-inner-size"
+    "core:window:allow-inner-size",
+    "core:window:allow-set-title",
+    "core:window:allow-create",
+    "core:webview:allow-create-webview-window"
   ]
 }

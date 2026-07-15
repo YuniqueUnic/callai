@@ -1,0 +1,38 @@
+/* fab-base.css: Base FAB (pre-cluster) (from global.css L529-565) */
+
+/* ── FAB ────────────────────────────────────────────── */
+
+.fab {
+  /* portaled to document.body — free of app overflow/radius clipping */
+  position: fixed !important;
+  right: max(20px, env(safe-area-inset-right, 0px)) !important;
+  /* sea ~80px + gap; keep fully above window bottom radius */
+  bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 3px solid #fff9e6;
+  background: var(--callai-fab);
+  color: #fff;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 6px 0 0 var(--callai-fab-shadow), 0 10px 20px rgba(61, 52, 40, 0.18);
+  cursor: pointer;
+  z-index: 19000 !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  pointer-events: auto !important;
+}
+
+.fab:hover {
+  transform: translateY(-2px);
+}
+
+.fab:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 0 var(--callai-fab-shadow);
+}

@@ -1,0 +1,175 @@
+/* header-actions.css: Header tools + icon-button chrome (from global.css L261-435) */
+
+/* ── Header ─────────────────────────────────────────── */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--callai-header-gap);
+  padding: var(--callai-page-pad);
+  padding-bottom: 10px;
+  flex-wrap: wrap;
+  border-bottom: 2px solid color-mix(in srgb, var(--callai-border) 55%, transparent);
+  background: color-mix(in srgb, var(--callai-surface) 88%, transparent);
+  backdrop-filter: blur(8px);
+  flex: 0 0 auto;
+  z-index: 10;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.header-brand > div {
+  min-width: 0;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: clamp(1.1rem, 3.5vw, 1.4rem);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--callai-ink);
+  line-height: 1.2;
+}
+
+.app-header p {
+  margin: 3px 0 0;
+  color: var(--callai-ink-soft);
+  font-size: clamp(0.78rem, 2.4vw, 0.9rem);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Header action buttons — icon-first, same visual height */
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+}
+
+.header-actions .icon-btn-wrap,
+.header-actions .icon-btn {
+  flex: 0 0 auto;
+}
+
+.header-actions button,
+.header-actions .animal-btn-QoKe1,
+.header-actions .icon-btn {
+  height: 40px !important;
+  min-height: 40px !important;
+  min-width: 40px !important;
+  width: 40px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: none !important;
+  transform: none !important;
+  vertical-align: middle;
+  margin: 0 !important;
+  border-radius: 14px !important;
+}
+
+.header-actions .animal-btn-primary-9tMG9,
+.header-actions button.animal-btn-primary-9tMG9 {
+  box-shadow: 0 2px 0 0 #0d6f66 !important;
+  transform: none !important;
+  position: relative;
+  top: 0 !important;
+}
+
+.header-actions button:hover,
+.header-actions .animal-btn-QoKe1:hover {
+  transform: none !important;
+}
+
+.header-actions button:active,
+.header-actions .animal-btn-QoKe1:active {
+  transform: translateY(1px) !important;
+}
+
+/* Icon-only buttons across app */
+.icon-btn-wrap {
+  display: inline-flex;
+  line-height: 0;
+  vertical-align: middle;
+}
+
+.icon-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.icon-actions .icon-btn,
+.card-actions .icon-btn,
+.icon-actions button {
+  min-width: 36px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
+}
+
+.icon-actions .icon-btn svg,
+.header-actions .icon-btn svg,
+.fab svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.alarm-next {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.schedule-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: center;
+}
+
+.alarm-next-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--callai-ink-muted);
+  letter-spacing: 0.02em;
+}
+
+.alarm-next strong {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--callai-ink);
+}
+
+.alarm-card-title {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.alarm-status-row {
+  min-height: 28px;
+}

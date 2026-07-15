@@ -1,0 +1,125 @@
+/* tokens.css: Design tokens + early dark library ink overrides (from global.css L1-125) */
+
+/* callai app chrome — sits on top of animal-island-ui tokens */
+
+:root,
+[data-theme="light"] {
+  /* parchment island, restrained */
+  --callai-bg: #efe6d4;
+  --callai-bg-soft: #f7f1e4;
+  --callai-surface: #fffaf0;
+  --callai-ink: #4a3118;
+  --callai-ink-soft: #6b4e32;
+  --callai-ink-muted: #7a5c3e;
+  --callai-border: #b89f7e;
+  --callai-primary: #0f9f92;
+  --callai-primary-ink: #063d38;
+  --callai-success: #3f8f1e;
+  --callai-warn: #b8860b;
+  --callai-danger: #c0392b;
+  --callai-card-shadow: 0 4px 0 0 #cbb89a, 0 8px 18px rgba(61, 52, 40, 0.1);
+  --callai-fab: #1aa89a;
+  --callai-fab-shadow: #0d6f66;
+  --callai-focus: #d4a017;
+  --callai-page-pad: clamp(12px, 3vw, 22px);
+  --callai-header-gap: 12px;
+  --callai-radius: 18px;
+  --callai-content-max: 920px;
+  --callai-window-radius: 16px;
+}
+
+[data-theme="dark"] {
+  --callai-bg: #121a17;
+  --callai-bg-soft: #1c2823;
+  --callai-surface: #24332c;
+  /* High-contrast parchment text on dark green */
+  --callai-ink: #fff6e8;
+  --callai-ink-soft: #f0e0c8;
+  --callai-ink-muted: #e2d0b4;
+  --callai-border: #8a9e93;
+  --callai-primary: #5ee0d2;
+  --callai-primary-ink: #042f2b;
+  --callai-success: #a6e86a;
+  --callai-warn: #ffd666;
+  --callai-danger: #ff9b8a;
+  --callai-card-shadow: 0 4px 0 0 #0c1411, 0 8px 18px rgba(0, 0, 0, 0.45);
+  --callai-fab: #3dcec0;
+  --callai-fab-shadow: #0e6b62;
+  --callai-focus: #ffd666;
+  --callai-window-radius: 16px;
+}
+
+/* Library buttons / inputs on dark: readable ink without washing primary teal */
+[data-theme="dark"] .header-actions button,
+[data-theme="dark"] .header-actions .animal-btn-QoKe1,
+[data-theme="dark"] .animal-btn-default-L7yE6,
+[data-theme="dark"] .icon-btn {
+  color: #3a2714 !important;
+}
+
+[data-theme="dark"] .animal-btn-primary-9tMG9,
+[data-theme="dark"] button.animal-btn-primary-9tMG9 {
+  color: #042f2b !important;
+  background: #5ee0d2 !important;
+  border-color: #3bb8ab !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .animal-input,
+[data-theme="dark"] [class*="animal-input"] {
+  color: #2a1c0e !important;
+  -webkit-text-fill-color: #2a1c0e !important;
+  caret-color: #2a1c0e;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #7a6548 !important;
+  -webkit-text-fill-color: #7a6548 !important;
+  opacity: 1;
+}
+
+[data-theme="dark"] .settings-card,
+[data-theme="dark"] .form-panel,
+[data-theme="dark"] .alarm-card,
+[data-theme="dark"] .log-card {
+  color: var(--callai-ink) !important;
+}
+
+[data-theme="dark"] .meta,
+[data-theme="dark"] .field .hint,
+[data-theme="dark"] .empty-state p {
+  color: var(--callai-ink-soft) !important;
+}
+
+[data-theme="dark"] .settings-row > span,
+[data-theme="dark"] .field label,
+[data-theme="dark"] .field .label,
+[data-theme="dark"] .panel-head h3,
+[data-theme="dark"] .app-header h1,
+[data-theme="dark"] .app-header p {
+  color: var(--callai-ink) !important;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}

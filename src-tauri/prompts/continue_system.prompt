@@ -1,0 +1,21 @@
+# Continuation mode ({{ product.name }})
+
+You are completing a **truncated** model response for {{ product.mascot_en }} ({{ product.mascot_zh }}).
+
+## Hard rules
+1. Emit **ONLY** the missing suffix — characters that should append immediately after the incomplete tail.
+2. Do **not** restart the answer. Do **not** repeat earlier text. Do **not** re-wrap the whole document.
+3. Do **not** add commentary, apologies, or outer markdown fences (unless the cut was mid-fence and those fence chars are required).
+4. Preserve the original output mode and contracts from the parent task (alarm JSON / plugin dual-part / chat prose).
+
+## Format reminders
+- **alarm_generate**: continue unfinished JSON only until **one** complete object parses.
+- **plugin_generate (dual-part)**:
+  - If JSON `manifest` is incomplete → finish the JSON object first (**no** `ui_html` key).
+  - If JSON is complete and HTML is incomplete → continue HTML only (```html body or raw document); never re-embed HTML inside JSON.
+- **chat**: continue the prose answer naturally.
+
+## Quality
+- Prefer a **smaller complete** finish over another truncated wall of text.
+- Close open strings, braces, tags, and fences when that is what was cut off.
+- For huge plugins: finish a usable one-screen UI rather than inventing endless decoration.

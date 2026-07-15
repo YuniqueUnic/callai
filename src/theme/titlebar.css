@@ -1,0 +1,429 @@
+/* titlebar.css: custom window titlebar chrome */
+
+
+/* ── Custom title bar (cross-platform, no OS chrome) ──
+   Pitfalls fixed:
+   - drag via data-tauri-drag-region only (no -webkit-app-region)
+   - controls/extras OUTSIDE drag region
+   - transparent host + single painted shell for true rounded corners
+   - flat chrome when maximized/fullscreen
+*/
+.app-shell.has-titlebar {
+  position: relative;
+}
+
+/* HUD overlay titlebar — content scrolls underneath (same idea as floating tab pill) */
+.titlebar {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  flex: none !important;
+  height: 42px;
+  min-height: 42px;
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 10px;
+  /* fully clear HUD: no band, no side-fade gradient, no blur plate */
+  background: transparent !important;
+  background-image: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: var(--callai-ink);
+  user-select: none;
+  z-index: 520 !important;
+  pointer-events: none; /* band itself passes scroll; children re-enable */
+}
+.titlebar > * {
+  pointer-events: auto;
+}
+
+.titlebar.controls-right {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.titlebar.controls-left {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding-left: 8px;
+}
+
+.titlebar-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  cursor: default;
+}
+
+.titlebar-logo {
+  width: 18px;
+  height: 18px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+.titlebar-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 35% 35%, #fff6e8 0 28%, transparent 30%),
+    radial-gradient(circle at 50% 55%, #5ee0d2 0 55%, #0f9f92 56% 100%);
+  box-shadow: 0 1px 0 #0d6f66;
+}
+
+.titlebar-title {
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  color: var(--callai-ink);
+  flex: 0 0 auto;
+}
+
+.titlebar-tagline {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--callai-ink-soft);
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.titlebar-pill {
+  flex: 0 0 auto;
+  font-size: 0.66rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--callai-primary) 45%, var(--callai-border));
+  background: color-mix(in srgb, var(--callai-primary) 16%, var(--callai-bg-soft));
+  color: var(--callai-ink);
+}
+.titlebar-pill.is-focus {
+  border-color: color-mix(in srgb, var(--callai-warn) 55%, var(--callai-border));
+  background: color-mix(in srgb, var(--callai-warn) 20%, var(--callai-bg-soft));
+}
+
+.titlebar-controls,
+.titlebar-extras {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.titlebar-btn {
+  width: 30px;
+  height: 28px;
+  border-radius: 10px;
+  border: 2px solid color-mix(in srgb, var(--callai-border) 80%, transparent);
+  background: var(--callai-bg-soft);
+  color: var(--callai-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.titlebar-btn:hover {
+  background: color-mix(in srgb, var(--callai-primary) 22%, var(--callai-bg-soft));
+  border-color: var(--callai-primary);
+}
+.titlebar-btn:active {
+  transform: translateY(1px);
+}
+.titlebar-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.titlebar-btn.is-active {
+  background: color-mix(in srgb, var(--callai-primary) 28%, var(--callai-bg-soft));
+  border-color: var(--callai-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--callai-primary) 40%, transparent);
+}
+
+.titlebar-close:hover {
+  background: color-mix(in srgb, var(--callai-danger) 28%, var(--callai-bg-soft));
+  border-color: var(--callai-danger);
+  color: #5c1a12;
+}
+
+/* macOS-like traffic lights (still custom, same API) */
+.titlebar-btn.is-traffic {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border-width: 1px;
+  padding: 0;
+}
+.titlebar-btn.is-traffic .traffic-dot {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+}
+.titlebar-close.is-traffic {
+  background: #ff5f57;
+  border-color: #e0443e;
+}
+.titlebar-min.is-traffic {
+  background: #febc2e;
+  border-color: #d19e1a;
+}
+.titlebar-max.is-traffic {
+  background: #28c840;
+  border-color: #1a9f2e;
+}
+.titlebar-btn.is-traffic:hover {
+  filter: brightness(1.06);
+  transform: none;
+}
+.titlebar.controls-left .titlebar-controls {
+  padding-left: 4px;
+  gap: 8px;
+}
+
+[data-theme="dark"] .titlebar {
+  background: transparent !important;
+  background-image: none !important;
+  border-bottom: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+/* Dark: only rectangular chrome buttons — never wash traffic lights */
+[data-theme="dark"] .titlebar-btn:not(.is-traffic) {
+  background: #2a3a33;
+  border-color: #a8bdb2;
+  color: #fff6e8;
+}
+[data-theme="dark"] .titlebar-close:not(.is-traffic):hover {
+  background: color-mix(in srgb, #ff9b8a 42%, #2a3a33);
+  border-color: #ff9b8a;
+  color: #fff6e8;
+}
+
+/* Traffic lights: force saturated system colors on both themes (esp. dark titlebar) */
+.titlebar-btn.is-traffic,
+[data-theme="dark"] .titlebar-btn.is-traffic {
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
+  border-radius: 50% !important;
+  border-width: 1px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.22) !important;
+  filter: none !important;
+}
+.titlebar-close.is-traffic,
+[data-theme="dark"] .titlebar-close.is-traffic,
+[data-theme="dark"] .titlebar-close.is-traffic:hover {
+  background: #ff5f57 !important;
+  border-color: #e0443e !important;
+  color: transparent !important;
+}
+.titlebar-min.is-traffic,
+[data-theme="dark"] .titlebar-min.is-traffic,
+[data-theme="dark"] .titlebar-min.is-traffic:hover {
+  background: #febc2e !important;
+  border-color: #d19e1a !important;
+  color: transparent !important;
+}
+.titlebar-max.is-traffic,
+[data-theme="dark"] .titlebar-max.is-traffic,
+[data-theme="dark"] .titlebar-max.is-traffic:hover {
+  background: #28c840 !important;
+  border-color: #1a9f2e !important;
+  color: transparent !important;
+}
+
+/* Hover glyphs for contrast/affordance (macOS-like) */
+.titlebar-btn.is-traffic {
+  position: relative;
+}
+.titlebar-btn.is-traffic .traffic-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.titlebar-btn.is-traffic:hover .traffic-dot::before {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  color: rgba(40, 20, 10, 0.72);
+  -webkit-text-fill-color: rgba(40, 20, 10, 0.72);
+}
+.titlebar-close.is-traffic:hover .traffic-dot::before {
+  content: "×";
+  font-size: 11px;
+}
+.titlebar-min.is-traffic:hover .traffic-dot::before {
+  content: "−";
+  font-size: 12px;
+}
+.titlebar-max.is-traffic:hover .traffic-dot::before {
+  content: "+";
+  font-size: 11px;
+}
+
+[data-theme="dark"] .titlebar-pill {
+  color: #1f1408;
+  -webkit-text-fill-color: #1f1408;
+}
+
+/* Edge resize grips for decorations:false
+   - layer is fixed to the viewport so grips always cover the true window edge
+   - edges ~8–10px, corners ~16px (5px was too thin to start a drag reliably)
+   - z-index above app chrome; layer itself is pointer-events:none so only grips hit */
+.window-resize-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483000;
+}
+.window-resize-grip {
+  position: absolute;
+  pointer-events: auto;
+  background: transparent;
+  /* slightly larger hit target than painted area feel */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.grip-n { top: 0; left: 14px; right: 14px; height: 8px; cursor: ns-resize; }
+.grip-s { bottom: 0; left: 14px; right: 14px; height: 8px; cursor: ns-resize; }
+.grip-e { top: 14px; right: 0; bottom: 14px; width: 8px; cursor: ew-resize; }
+.grip-w { top: 14px; left: 0; bottom: 14px; width: 8px; cursor: ew-resize; }
+.grip-ne { top: 0; right: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+.grip-nw { top: 0; left: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+.grip-se { bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+.grip-sw { bottom: 0; left: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+
+/* When maximized/fullscreen, grips are unmounted; still neutralize if present */
+.app-shell.is-maximized .window-resize-layer,
+.app-shell.is-fullscreen .window-resize-layer {
+  display: none !important;
+}
+
+/* Flat chrome when maximized/fullscreen: no rounded "ears" */
+html.tauri .app-shell.has-titlebar.is-maximized,
+html.tauri .app-shell.has-titlebar.is-fullscreen,
+html.callai-window-chrome-flat .app-shell.has-titlebar {
+  border-radius: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+html.tauri .app-shell.has-titlebar.is-maximized > .titlebar,
+html.tauri .app-shell.has-titlebar.is-fullscreen > .titlebar {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+/* ── Transparent host for rounded undeco window (must win cascade) ── */
+html.tauri,
+html.tauri body,
+html.tauri body.tauri,
+html.tauri #root,
+html.tauri .cursor-root,
+html.tauri [class*="animal-cursor"],
+html.tauri [class*="animal-Cursor"],
+html.tauri .callai-cursor {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+html.tauri .app-shell.has-titlebar {
+  /* only painted surface inside transparent OS window */
+  background: var(--callai-bg) !important;
+  border-radius: var(--callai-window-radius, 16px) !important;
+  overflow: hidden !important;
+  isolation: isolate;
+}
+
+html.tauri .app-shell.has-titlebar.is-maximized {
+  border-radius: 0 !important;
+}
+
+
+/* ── Bottom radius + sea: keep waves inside rounded shell ── */
+html.tauri .app-shell.has-titlebar {
+  overflow: hidden !important;
+}
+html.tauri .app-shell.has-titlebar .app-footer-band {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  overflow: hidden !important;
+  border-bottom-left-radius: calc(var(--callai-window-radius, 16px) - 2px);
+  border-bottom-right-radius: calc(var(--callai-window-radius, 16px) - 2px);
+}
+html.tauri .app-shell.has-titlebar.is-maximized .app-footer-band,
+html.tauri .app-shell.has-titlebar.is-fullscreen .app-footer-band {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* ── Titlebar dark contrast: extras + pills + labels ── */
+[data-theme="dark"] .titlebar-title {
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .titlebar-tagline {
+  color: #e2d0b4 !important;
+  opacity: 1;
+}
+[data-theme="dark"] .titlebar-btn:not(.is-traffic) {
+  background: #2a3a33 !important;
+  border-color: #a8bdb2 !important;
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .titlebar-btn:not(.is-traffic):hover {
+  background: color-mix(in srgb, #5ee0d2 35%, #2a3a33) !important;
+  border-color: #5ee0d2 !important;
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .titlebar-btn.is-active:not(.is-traffic) {
+  background: #5ee0d2 !important;
+  border-color: #3bb8ab !important;
+  color: #042f2b !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .titlebar-close:not(.is-traffic):hover {
+  background: color-mix(in srgb, #ff9b8a 42%, #2a3a33) !important;
+  border-color: #ff9b8a !important;
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .titlebar-pill {
+  background: #fff1d6 !important;
+  border-color: #d4b48a !important;
+  color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
+}
+[data-theme="dark"] .titlebar-pill.is-focus {
+  background: #ffe8a8 !important;
+  border-color: #e0b020 !important;
+  color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
+}
+[data-theme="dark"] .titlebar-extra svg {
+  color: inherit;
+}

@@ -1,0 +1,373 @@
+/* dark-overlays.css: dark modal/drawer/popup overlays */
+
+/* ── Dark overlays: Modal / Drawer / popups ──
+   animal-island-ui keeps parchment surfaces (#f7f3df) with brown ink.
+   Our dark theme sets --callai-ink / .meta to light parchment text for page chrome,
+   which bleeds into portaled overlays → low contrast (light-on-light).
+   Fix: force parchment + dark-brown ink on all overlay surfaces. */
+
+/* Confirm Modal (Home run/stop/delete, Logs delete, Settings backup delete) */
+[data-theme="dark"] [class*="animal-mask"] {
+  background: rgba(0, 0, 0, 0.55) !important;
+}
+
+[data-theme="dark"] [class*="animal-modal"],
+[data-theme="dark"] [class*="animal-modalClipped"],
+[data-theme="dark"] [class*="animal-modal"] [class*="animal-modalClipped"] {
+  color: #5a3d1e !important;
+}
+
+[data-theme="dark"] [class*="animal-modalClipped"],
+[data-theme="dark"] [class*="animal-modal"] [class*="clipped"],
+[data-theme="dark"] [class*="animal-modal"] > div {
+  /* keep island parchment plate */
+  background: #f7f3df !important;
+  color: #5a3d1e !important;
+}
+
+[data-theme="dark"] [class*="animal-modal"] [class*="animal-title"],
+[data-theme="dark"] [class*="animal-modal"] [class*="title"],
+[data-theme="dark"] [class*="animal-modalClipped"] [class*="animal-title"] {
+  color: #5a3d1e !important;
+}
+
+[data-theme="dark"] [class*="animal-modal"] [class*="animal-body"],
+[data-theme="dark"] [class*="animal-modal"] [class*="animal-body"] *,
+[data-theme="dark"] [class*="animal-modalClipped"] [class*="animal-body"],
+[data-theme="dark"] [class*="animal-modalClipped"] [class*="animal-body"] * {
+  color: #6b5640 !important;
+}
+
+/* .meta inside modals must NOT use page light-ink tokens */
+[data-theme="dark"] [class*="animal-modal"] .meta,
+[data-theme="dark"] [class*="animal-modalClipped"] .meta,
+[data-theme="dark"] [class*="animal-modal"] .hint {
+  color: #7a6548 !important;
+}
+
+[data-theme="dark"] [class*="animal-modal"] [class*="animal-close"],
+[data-theme="dark"] [class*="animal-modalClipped"] [class*="animal-close"] {
+  color: #725d42 !important;
+}
+[data-theme="dark"] [class*="animal-modal"] [class*="animal-close"]:hover {
+  color: #5a3d1e !important;
+  background: rgba(114, 93, 66, 0.14) !important;
+}
+
+/* Footer buttons on modal (cancel / ok) */
+[data-theme="dark"] [class*="animal-modal"] [class*="animal-footer"] button,
+[data-theme="dark"] [class*="animal-modal"] [class*="footer-btn"],
+[data-theme="dark"] [class*="animal-footer-btn"],
+[data-theme="dark"] [class*="animal-footer-btn-primary"] {
+  color: #5a3d1e !important;
+  border-color: rgba(114, 93, 66, 0.35) !important;
+}
+[data-theme="dark"] [class*="animal-footer-btn-primary"],
+[data-theme="dark"] [class*="animal-modal"] [class*="footer-btn-primary"] {
+  background: #fc0 !important;
+  border-color: #fc0 !important;
+  color: #5a3d1e !important;
+}
+
+/* Logs Drawer: follow app theme (dark = dark surface, not forced warm parchment) */
+[data-theme="dark"] [class*="animal-panel"],
+[data-theme="dark"] body.callai-logs-open [class*="animal-panel"] {
+  background: var(--callai-surface) !important; /* #24332c */
+  color: var(--callai-ink) !important; /* #fff6e8 */
+  border-color: var(--callai-border) !important;
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-title"],
+[data-theme="dark"] [class*="animal-panel"] [class*="title"],
+[data-theme="dark"] body.callai-logs-open [class*="animal-header"] {
+  color: var(--callai-ink) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"],
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] p,
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] label,
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] .meta,
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-body"] .label,
+[data-theme="dark"] [class*="animal-panel"] .meta,
+[data-theme="dark"] [class*="animal-panel"] .label,
+[data-theme="dark"] [class*="animal-panel"] .empty-state p,
+[data-theme="dark"] [class*="animal-panel"] .empty-state h2 {
+  color: var(--callai-ink-soft) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-close"] {
+  color: var(--callai-ink-soft) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-close"]:hover {
+  color: var(--callai-ink) !important;
+  background: rgba(255, 246, 232, 0.1) !important;
+}
+
+/* log cards on dark drawer */
+[data-theme="dark"] [class*="animal-panel"] .log-card,
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-card"],
+[data-theme="dark"] .logs-panel .log-card {
+  background: #1a2621 !important;
+  border-color: #6a7f74 !important;
+  color: var(--callai-ink) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] .log-card.success,
+[data-theme="dark"] .logs-panel .log-card.success {
+  border-color: color-mix(in srgb, var(--callai-success) 55%, #6a7f74) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] .log-card.failed,
+[data-theme="dark"] .logs-panel .log-card.failed {
+  border-color: color-mix(in srgb, var(--callai-danger) 55%, #6a7f74) !important;
+}
+[data-theme="dark"] [class*="animal-panel"] .log-card .meta,
+[data-theme="dark"] .logs-panel .log-card .meta {
+  color: var(--callai-ink-soft) !important;
+}
+
+/* search input: high-contrast parchment field on dark drawer (same as edit env inputs) */
+[data-theme="dark"] [class*="animal-panel"] input,
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-input"],
+[data-theme="dark"] .logs-panel input,
+[data-theme="dark"] .logs-panel [class*="animal-input"] {
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+  background: #fff8ea !important;
+  border-color: #c4a574 !important;
+  caret-color: #1f1408 !important;
+}
+[data-theme="dark"] [class*="animal-panel"] input::placeholder,
+[data-theme="dark"] .logs-panel input::placeholder {
+  color: #6b5640 !important;
+  -webkit-text-fill-color: #6b5640 !important;
+}
+
+/* segmented filter in logs drawer */
+[data-theme="dark"] .logs-panel .segmented,
+[data-theme="dark"] [class*="animal-panel"] .segmented {
+  background: #1a2621 !important;
+  border-color: #6a7f74 !important;
+}
+[data-theme="dark"] .logs-panel .segmented button,
+[data-theme="dark"] [class*="animal-panel"] .segmented button {
+  color: var(--callai-ink-soft) !important;
+}
+[data-theme="dark"] .logs-panel .segmented button.active,
+[data-theme="dark"] [class*="animal-panel"] .segmented button.active {
+  background: #5ee0d2 !important;
+  color: #042f2b !important;
+  border-color: #3bb8ab !important;
+}
+
+/* icon buttons inside dark drawer */
+[data-theme="dark"] [class*="animal-panel"] .icon-btn,
+[data-theme="dark"] .logs-panel .icon-btn {
+  color: #2a1c0e !important;
+}
+[data-theme="dark"] [class*="animal-panel"] .icon-btn svg,
+[data-theme="dark"] .logs-panel .icon-btn svg {
+  color: inherit !important;
+}
+
+/* tags in dark drawer: filled chips with dark ink (same as alarm cards) */
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-tag"],
+[data-theme="dark"] .logs-panel [class*="animal-tag"] {
+  background: #fff1d6 !important;
+  border-color: #d4b48a !important;
+  color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
+  font-weight: 800 !important;
+}
+
+/* Portaled tooltips: stay parchment + dark ink */
+[data-theme="dark"] .callai-tooltip {
+  background: #f7f3df !important;
+  border-color: #c4b89e !important;
+  color: #5a3d1e !important;
+}
+
+/* Select / dropdown popups: dark plate + cream ink */
+[data-theme="dark"] [class*="animal-dropdown"],
+[data-theme="dark"] [class*="animal-select-popup"] {
+  background: #101814 !important;
+  border-color: #b7d0c4 !important;
+  color: #fffaf0 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Tags on dark page cards: soft filled chips (never pale outline-on-dark) */
+[data-theme="dark"] .alarm-card [class*="animal-tag"],
+[data-theme="dark"] .log-card [class*="animal-tag"],
+[data-theme="dark"] .settings-card [class*="animal-tag"],
+[data-theme="dark"] .form-panel [class*="animal-tag"],
+[data-theme="dark"] [class*="animal-panel"] [class*="animal-tag"] {
+  font-weight: 800 !important;
+  border-width: 1.5px !important;
+  /* default filled parchment chip */
+  background: #fff1d6 !important;
+  border-color: #d4b48a !important;
+  color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
+}
+
+/* color-coded solids stay vivid but force dark ink for yellow/teal pastels */
+[data-theme="dark"] .alarm-card [class*="app-yellow"],
+[data-theme="dark"] .alarm-card [class*="animal-color-app-yellow"] {
+  background: #f7cd67 !important;
+  border-color: #e0b020 !important;
+  color: #3a2714 !important;
+  -webkit-text-fill-color: #3a2714 !important;
+}
+[data-theme="dark"] .alarm-card [class*="app-teal"],
+[data-theme="dark"] .alarm-card [class*="animal-color-app-teal"] {
+  background: #82d5bb !important;
+  border-color: #3a9f86 !important;
+  color: #14352c !important;
+  -webkit-text-fill-color: #14352c !important;
+}
+[data-theme="dark"] .alarm-card [class*="app-orange"],
+[data-theme="dark"] .alarm-card [class*="animal-color-app-orange"] {
+  background: #e59266 !important;
+  border-color: #c46a3e !important;
+  color: #2a1408 !important;
+  -webkit-text-fill-color: #2a1408 !important;
+}
+[data-theme="dark"] .alarm-card [class*="app-blue"],
+[data-theme="dark"] .alarm-card [class*="animal-color-app-blue"] {
+  background: #889df0 !important;
+  border-color: #5a6fd0 !important;
+  color: #0f1638 !important;
+  -webkit-text-fill-color: #0f1638 !important;
+}
+[data-theme="dark"] .alarm-card [class*="purple"],
+[data-theme="dark"] .alarm-card [class*="animal-color-purple"] {
+  background: #b77dee !important;
+  border-color: #8a4fc4 !important;
+  color: #1a0a2a !important;
+  -webkit-text-fill-color: #1a0a2a !important;
+}
+[data-theme="dark"] .alarm-card [class*="brown"],
+[data-theme="dark"] .alarm-card [class*="animal-color-brown"] {
+  background: #c4a574 !important;
+  border-color: #8a6a3e !important;
+  color: #2a1c0e !important;
+  -webkit-text-fill-color: #2a1c0e !important;
+}
+
+/* Alarm card dark surface hierarchy */
+[data-theme="dark"] .alarm-card,
+[data-theme="dark"] .alarm-card[class*="animal-"] {
+  background: #24332c !important;
+  border-color: #8a9e93 !important;
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .alarm-card h3,
+[data-theme="dark"] .alarm-card .alarm-next-when,
+[data-theme="dark"] .alarm-card .alarm-next strong {
+  color: #fff6e8 !important;
+}
+[data-theme="dark"] .alarm-card .alarm-next-label {
+  color: #e2d0b4 !important;
+}
+[data-theme="dark"] .alarm-card .alarm-next-remain {
+  color: #5ee0d2 !important;
+}
+[data-theme="dark"] .alarm-card.paused {
+  opacity: 0.88;
+  filter: grayscale(0.08) brightness(0.96);
+}
+[data-theme="dark"] .alarm-card.is-running,
+[data-theme="dark"] .alarm-card.is-busy {
+  border-color: color-mix(in srgb, #5ee0d2 55%, #8a9e93) !important;
+  box-shadow:
+    0 4px 0 0 #0c1411,
+    0 8px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 3px color-mix(in srgb, #5ee0d2 18%, transparent) !important;
+}
+
+/* Progress on dark alarm cards: light track + readable % */
+[data-theme="dark"] .alarm-card [class*="animal-progress"] [class*="animal-info"],
+[data-theme="dark"] .alarm-card [class*="animal-progress"] [class*="info"] {
+  color: #fff6e8 !important;
+  -webkit-text-fill-color: #fff6e8 !important;
+  font-weight: 800 !important;
+}
+[data-theme="dark"] .alarm-card [class*="animal-track"],
+[data-theme="dark"] .alarm-card [class*="track"] {
+  background: #1a2621 !important;
+  border-color: #6a7f74 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme="dark"] .alarm-card [class*="animal-fill"],
+[data-theme="dark"] .alarm-card [class*="fill"] {
+  /* keep teal stripe fill */
+  filter: saturate(1.15) brightness(1.05);
+}
+
+/* status row spacing */
+[data-theme="dark"] .alarm-card .status-inline {
+  color: #fff6e8;
+}
+
+/* Home hero text on dark */
+[data-theme="dark"] .home-hero-copy h1,
+[data-theme="dark"] .home-hero-copy p {
+  color: var(--callai-ink) !important;
+}
+[data-theme="dark"] .home-hero-copy p {
+  color: var(--callai-ink-soft) !important;
+}
+
+
+/* Switch row labels already covered; ensure Switch track text if any */
+[data-theme="dark"] [class*="animal-switch"] {
+  /* leave track; no text */
+}
+
+/* Notification from animal-island (if used) */
+[data-theme="dark"] [class*="animal-notification"] {
+  background: #f7f3df !important;
+  color: #5a3d1e !important;
+  border-color: #c4b89e !important;
+}
+
+/* Segmented controls on dark: inactive buttons readable */
+[data-theme="dark"] .segmented button {
+  color: var(--callai-ink-soft) !important;
+}
+[data-theme="dark"] .segmented button.active {
+  color: #1f1408 !important;
+  background: #5ee0d2 !important;
+}
+
+/* Schedule mode chips */
+[data-theme="dark"] .schedule-mode button {
+  color: var(--callai-ink-soft) !important;
+}
+[data-theme="dark"] .schedule-mode button.active {
+  color: #1f1408 !important;
+}
+
+/* Empty state / home on dark already uses tokens; strengthen empty */
+[data-theme="dark"] .empty-state h2,
+[data-theme="dark"] .empty-state .label {
+  color: var(--callai-ink) !important;
+}
+
+/* Settings card body text */
+[data-theme="dark"] .settings-card,
+[data-theme="dark"] .settings-card .label,
+[data-theme="dark"] .settings-row > span {
+  color: var(--callai-ink) !important;
+}
+
+/* Logs filter toolbar on dark page (when not in drawer) */
+[data-theme="dark"] .logs-toolbar,
+[data-theme="dark"] .logs-filter,
+[data-theme="dark"] .log-list .meta {
+  color: var(--callai-ink-soft) !important;
+}
+
+/* Preview box on dark edit */
+[data-theme="dark"] .preview-box {
+  background: #1a2621 !important;
+  border-color: var(--callai-border) !important;
+  color: var(--callai-ink) !important;
+}

@@ -1,0 +1,100 @@
+# callai capabilities (what the program understands)
+
+This document is the **product contract**. Only propose work that maps to these capabilities.
+If the user asks for something outside this list, say so and offer the closest supported alternative.
+
+Product: **{{ product.name }}** · mascot EN **{{ product.mascot_en }}** / ZH **{{ product.mascot_zh }}**.
+
+## Core objects
+
+### Alarm (scheduled task)
+callai runs **alarms**: named jobs that fire on a schedule and execute a local binary/command with args, env, retry, timeout, and optional notification/sound.
+
+The program **parses and validates** AlarmDraft fields:
+- name (non-empty)
+- enabled (bool)
+- schedule:
+  - daily: times as "HH:MM" (24h)
+  - weekly: days 0=Sunday … 6=Saturday + times
+  - monthly: days 1–31 + times
+  - cron: classic 5-field "m h dom mon dow"
+- binary (non-empty executable or builtin)
+- args: string[]
+- env_vars: { key, value }[] (keys non-empty)
+- retry: interval in {1m,2m,5m,10m}, max_attempts 1–3
+- timeout_secs: 1–3600
+- notification: enabled, notification_type in {system_only, with_sound},
+  sound_id in {soft_chime, island_bell, wood_knock, warm_rise, gentle_ping} or null
+
+**Builtin binary** for pure chime / reminder (no external CLI):
+`{{ product.default_chime }}` with optional human message args.
+
+Known quick templates the app already ships (you may mirror their intent):
+- cozy_alarm → `{{ product.default_chime }}`
+- codex_hi → `codex exec hi`
+- claude_hi → `claude -p hi`
+- platform dialogs / rest prompts where appropriate for OS in runtime context
+
+### Plugin (isolated mini-app)
+callai installs **plugins**: `manifest` + `ui.html` file, sandboxed storage/history, invoke bridge.
+
+### Plugin as scheduled task
+Alarms may use builtin binary `__callai_plugin__` with `plugin` config:
+- `plugin_id`, `popup`, `suppress_when_fullscreen`
+- Business parameters stay **inside the plugin UI** (storage), not in the main alarm editor
+
+### External agents (MCP)
+External tools (Codex/Claude) may create/update alarms/plugins, read prompts, read plugin source/history, and apply `set_plugin_source` fixes. They share the same domain validation rules as the in-app AI.
+
+**Model output format (dual-part)** — the client does **not** require HTML inside JSON:
+1. JSON: `{ "manifest": { id, name, version, description, permissions, ui } }`
+2. Separate HTML document (fenced ```html or after `ui.html` marker)
+
+Internally after parse, the program still stores PluginDraft `{ manifest, ui_html }` for install.
+
+Validated fields:
+- manifest.id: 2–64 chars, [a-z0-9-], no leading/trailing hyphen
+- manifest.name, version non-empty
+- manifest.permissions subset of:
+  storage | timer | notification | history | network_limited | limited_exec
+- manifest.ui: simple filename (default ui.html), no path separators
+- ui_html (after extract): non-empty complete HTML document
+
+Plugin runtime methods via `window.callai.invoke(method, args)`:
+- storage.get / storage.set / storage.list / storage.delete
+- history.list
+- timer.now
+- notification.show
+- ping
+
+Do not invent other host methods.
+
+### Chat / guidance
+Natural-language help about how to use callai, schedule ideas, troubleshooting.
+Chat replies are free text (not JSON) unless the user asked to generate a draft.
+
+### MCP tools (external agents; same domain)
+External MCP clients can list/create/run alarms, install/delete/invoke plugins,
+list MCP audit logs (max 500), and fetch embedded prompts. Same validation rules.
+
+## Operations the UI / domain can perform
+- create / update / delete / enable / disable alarms
+- run alarm now / cancel running alarm
+- list logs, purge by retention
+- install / delete plugins, open plugin UI, invoke methods
+- change theme, locale, timezone, sound, notifications, AI provider/model
+- MCP stdio (`callai mcp-server`) and HTTP daemon (`callai mcp-server --http`)
+
+## What callai does NOT understand / cannot do
+- Cloud accounts, calendars, or SMS gateways unless the user supplies a local CLI
+- Arbitrary privileged system admin without an explicit binary the user owns
+- Storing or requiring API keys inside AlarmDraft / PluginDraft
+- Invalid dual-part plugin output (missing manifest JSON or empty HTML) in plugin generate mode
+- Unknown schedule modes or sound ids outside the enums above
+
+## Intent routing
+- Timed reminder / CLI warm-up / cron-like job → AlarmDraft
+- Small interactive UI (form, checklist, timer board) → PluginDraft (dual-part)
+- Explanation / ideation only → chat text
+
+When ambiguous, ask one short clarifying question instead of inventing fields.

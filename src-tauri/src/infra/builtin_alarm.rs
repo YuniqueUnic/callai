@@ -379,6 +379,8 @@ fn ps_quote(s: &str) -> String {
 pub fn builtin_which(binary: &str) -> Option<String> {
     if is_builtin_alarm(binary) {
         Some(format!("builtin:{BUILTIN_ALARM_BINARY}"))
+    } else if crate::infra::plugin::is_builtin_plugin(binary) {
+        Some(format!("builtin:{}", crate::domain::BUILTIN_PLUGIN_BINARY))
     } else {
         None
     }

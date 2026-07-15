@@ -103,5 +103,12 @@
   "soundIslandBell": "小岛铃",
   "soundWoodKnock": "木敲",
   "soundWarmRise": "暖升",
-  "soundGentlePing": "轻点"
+  "soundGentlePing": "轻点",
+  "aiCreate": "AI 创建",
+  "createSuccess": "闹钟已创建",
+  "pluginRun": "插件运行",
+  "pluginRunHint": "只负责触发时机与是否弹窗；业务参数请在插件窗口内配置。",
+  "pluginPopup": "弹出插件窗口",
+  "pluginSuppressFs": "全屏时不弹窗（仅通知）",
+  "pluginParams": "插件参数（每行 key=value）"
 }

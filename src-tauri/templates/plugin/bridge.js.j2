@@ -1,0 +1,198 @@
+<script>
+(function () {
+  var PLUGIN_ID = {{ plugin_id_js | safe }};
+  window.callai = window.callai || {};
+  window.callai.pluginId = PLUGIN_ID;
+  if (window.callai.__hostBound) return;
+  window.callai.__hostBound = true;
+
+  var __consoleBuf = [];
+  function pushConsole(level, args) {
+    try {
+      var entry = {
+        level: level,
+        args: Array.prototype.map.call(args, function (a) {
+          try {
+            return typeof a === "string" ? a : JSON.stringify(a);
+          } catch (e) {
+            return String(a);
+          }
+        }),
+        t: Date.now(),
+      };
+      __consoleBuf.push(entry);
+      if (__consoleBuf.length > 300) __consoleBuf.shift();
+      var target =
+        window.parent && window.parent !== window ? window.parent : window;
+      target.postMessage(
+        {
+          __callai_plugin_console: true,
+          pluginId: PLUGIN_ID,
+          entry: entry,
+        },
+        "*",
+      );
+    } catch (e) {}
+  }
+  ["log", "info", "warn", "error", "debug"].forEach(function (level) {
+    var orig = console[level] ? console[level].bind(console) : function () {};
+    console[level] = function () {
+      pushConsole(level, arguments);
+      return orig.apply(console, arguments);
+    };
+  });
+  window.addEventListener("error", function (ev) {
+    pushConsole("error", [
+      String(ev.message || ev.error || "error"),
+      ev.filename,
+      ev.lineno,
+    ]);
+  });
+  window.addEventListener("unhandledrejection", function (ev) {
+    pushConsole("error", ["unhandledrejection", String(ev.reason)]);
+  });
+
+  function parseMaybeJson(v) {
+    if (v == null) return null;
+    if (typeof v !== "string") return v;
+    try {
+      return JSON.parse(v);
+    } catch (e) {
+      return v;
+    }
+  }
+
+  function normalizeResult(method, res) {
+    if (method === "storage.get") {
+      var raw =
+        res && typeof res === "object" && "value" in res ? res.value : res;
+      return parseMaybeJson(raw);
+    }
+    if (method === "timer.now") {
+      var iso =
+        (res && (res.iso || res.now || res.time)) || new Date().toISOString();
+      var ts = res && res.ts != null ? res.ts : Date.parse(iso);
+      return { iso: iso, ts: ts, now: iso };
+    }
+    if (method === "storage.list") {
+      return res && res.keys ? res.keys : Array.isArray(res) ? res : [];
+    }
+    return res;
+  }
+
+  function normalizeArgs(method, args) {
+    args = args || {};
+    if (
+      method === "storage.set" &&
+      args &&
+      "value" in args &&
+      typeof args.value !== "string"
+    ) {
+      try {
+        args = Object.assign({}, args, { value: JSON.stringify(args.value) });
+      } catch (e) {
+        args = Object.assign({}, args, { value: String(args.value) });
+      }
+    }
+    return args;
+  }
+
+  window.callai.invoke = function (method, args) {
+    return new Promise(function (resolve, reject) {
+      var reqId = Math.random().toString(36).slice(2);
+      function onMsg(ev) {
+        var d = ev.data || {};
+        if (d && d.__callai_plugin_result && d.reqId === reqId) {
+          window.removeEventListener("message", onMsg);
+          if (d.ok) resolve(normalizeResult(method, d.value));
+          else reject(new Error(d.error || "plugin_invoke failed"));
+        }
+      }
+      window.addEventListener("message", onMsg);
+      try {
+        var target =
+          window.parent && window.parent !== window ? window.parent : window;
+        target.postMessage(
+          {
+            __callai_plugin_invoke: true,
+            reqId: reqId,
+            pluginId: PLUGIN_ID,
+            method: method,
+            args: normalizeArgs(method, args),
+          },
+          "*",
+        );
+      } catch (e) {
+        window.removeEventListener("message", onMsg);
+        reject(e);
+        return;
+      }
+      setTimeout(function () {
+        window.removeEventListener("message", onMsg);
+        reject(new Error("plugin_invoke timeout"));
+      }, 30000);
+    });
+  };
+
+  window.callai.storage = {
+    get: function (key) {
+      return window.callai.invoke("storage.get", { key: key }).then(function (res) {
+        var raw =
+          res && typeof res === "object" && "value" in res ? res.value : res;
+        return parseMaybeJson(raw);
+      });
+    },
+    set: function (key, value) {
+      var payload =
+        typeof value === "string"
+          ? value
+          : JSON.stringify(value == null ? null : value);
+      return window.callai.invoke("storage.set", { key: key, value: payload });
+    },
+    delete: function (key) {
+      return window.callai.invoke("storage.delete", { key: key });
+    },
+    list: function (prefix) {
+      return window.callai
+        .invoke("storage.list", prefix ? { prefix: prefix } : {})
+        .then(function (res) {
+          return res && res.keys ? res.keys : Array.isArray(res) ? res : [];
+        });
+    },
+  };
+  window.callai.timer = {
+    now: function () {
+      return window.callai.invoke("timer.now").then(function (res) {
+        var iso =
+          (res && (res.iso || res.now || res.time)) || new Date().toISOString();
+        var ts = res && res.ts != null ? res.ts : Date.parse(iso);
+        return { iso: iso, ts: ts, now: iso };
+      });
+    },
+  };
+  window.callai.notification = {
+    show: function (titleOrOpts, body) {
+      var opts =
+        titleOrOpts && typeof titleOrOpts === "object"
+          ? titleOrOpts
+          : {
+              title: String(titleOrOpts || "callai"),
+              body: String(body || ""),
+            };
+      return window.callai.invoke("notification.show", opts);
+    },
+  };
+  window.callai.history = {
+    list: function (limit) {
+      return window.callai.invoke("history.list", { limit: limit || 50 });
+    },
+  };
+  window.callai.getConsole = function () {
+    return __consoleBuf.slice();
+  };
+  window.callai.ping = function () {
+    return window.callai.invoke("ping", {});
+  };
+  window.callai.ready = true;
+})();
+</script>

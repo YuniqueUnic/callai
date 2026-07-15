@@ -1,0 +1,27 @@
+/* Injected into plugin host document: hide scrollbars, keep scroll if needed via pan */
+html, body {
+  margin: 0 !important;
+  overflow: hidden !important;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* legacy Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
+}
+/* Prefer page-level non-scroll shell; plugin UI should layout inside viewport */
+#root {
+  max-height: 100vh;
+  overflow: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+#root::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}

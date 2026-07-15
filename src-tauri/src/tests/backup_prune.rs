@@ -16,16 +16,16 @@ fn temp_paths() -> (tempfile::TempDir, AppPaths) {
 fn prune_keeps_at_most_ten() {
     let (_dir, paths) = temp_paths();
     // seed config
-    fs::write(&paths.config_file, "settings = {}\nalarms = []\n").unwrap();
+    fs::write(paths.config_file(), "settings = {}\nalarms = []\n").unwrap();
     let backup = TomlConfigBackup::new(AppPaths::from_dirs(
-        paths.config_dir.clone(),
-        paths.data_dir.clone(),
+        paths.config_dir().to_path_buf(),
+        paths.data_dir().to_path_buf(),
     ));
 
     // create 12 fake backups with sortable names
     for i in 1..=12 {
         let name = format!("config.toml.2026-07-12_04-{:02}-00.bak", i);
-        fs::write(paths.backups_dir.join(&name), b"x").unwrap();
+        fs::write(paths.backups_dir().join(&name), b"x").unwrap();
     }
     // trigger prune via backup_now (copies current config + prunes)
     let _ = backup.backup_now().unwrap();
@@ -37,14 +37,14 @@ fn prune_keeps_at_most_ten() {
 #[test]
 fn delete_backup_removes_file() {
     let (_dir, paths) = temp_paths();
-    fs::write(&paths.config_file, "ok").unwrap();
+    fs::write(paths.config_file(), "ok").unwrap();
     let backup = TomlConfigBackup::new(AppPaths::from_dirs(
-        paths.config_dir.clone(),
-        paths.data_dir.clone(),
+        paths.config_dir().to_path_buf(),
+        paths.data_dir().to_path_buf(),
     ));
     let name = backup.backup_now().unwrap();
     assert!(!name.is_empty());
-    let bak_path = paths.backups_dir.join(&name);
+    let bak_path = paths.backups_dir().join(&name);
     assert!(bak_path.exists());
     backup.delete_backup(&name).unwrap();
     assert!(!bak_path.exists());

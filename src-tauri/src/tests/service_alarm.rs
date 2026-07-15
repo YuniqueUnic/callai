@@ -101,6 +101,7 @@ fn draft() -> AlarmDraft {
         retry: RetryPolicy::default(),
         timeout_secs: 20,
         notification: Default::default(),
+        plugin: None,
     }
 }
 
@@ -223,9 +224,9 @@ fn delete_log_works() {
 fn settings_roundtrip() {
     let svc = service_with(vec![]);
     let mut s = svc.get_settings().unwrap();
-    s.log_retention_days = 7;
+    s.runtime.log_retention_days = 7;
     let saved = svc.save_settings(s).unwrap();
-    assert_eq!(saved.log_retention_days, 7);
+    assert_eq!(saved.runtime.log_retention_days, 7);
 }
 
 #[test]
@@ -303,7 +304,7 @@ fn migrate_adds_sound_enabled_on_legacy_db() {
     }
     let store = SqliteStore::open(&path).expect("migrate legacy db");
     let s = store.get_settings().unwrap();
-    assert!(s.sound_enabled);
+    assert!(s.sound_enabled());
 }
 
 #[test]

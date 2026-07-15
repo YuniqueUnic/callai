@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import "animal-island-ui/style";
 import "./i18n";
 import "./theme/global.css";
+import "./theme/ai-chat.css";
 import App from "./App";
 import { isTauri } from "./infra/tauriApi";
 

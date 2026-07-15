@@ -1,0 +1,132 @@
+/* model-autocomplete.css: AI settings model autocomplete */
+
+/* ── Model autocomplete (AI settings) ───────────────── */
+.model-ac {
+  width: 100%;
+  min-width: 0;
+}
+
+.model-ac-head {
+  margin-bottom: 6px;
+}
+
+.model-ac-input-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.model-ac-hint,
+.model-ac-meta {
+  margin: 6px 0 0;
+  line-height: 1.35;
+}
+
+.model-ac-dropdown {
+  max-height: 220px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px;
+  border-radius: 14px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-surface);
+  box-shadow: var(--callai-card-shadow);
+}
+
+.model-ac-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--callai-ink);
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-ac-option:hover,
+.model-ac-option.active {
+  background: color-mix(in srgb, var(--callai-primary) 16%, transparent);
+  color: var(--callai-ink);
+}
+
+[data-theme="dark"] .model-ac-dropdown {
+  background: rgba(40, 36, 30, 0.96);
+  border-color: rgba(255, 249, 230, 0.14);
+}
+
+[data-theme="dark"] .model-ac-option {
+  color: #fff9e6;
+}
+
+[data-theme="dark"] .model-ac-option:hover,
+[data-theme="dark"] .model-ac-option.active {
+  background: rgba(25, 200, 185, 0.22);
+}
+
+.model-ac.is-compact .model-ac-head,
+.model-ac.is-compact .model-ac-hint,
+.model-ac.is-compact .model-ac-meta {
+  display: none;
+}
+
+.model-ac.is-compact .model-ac-compact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+
+.model-ac.is-compact .model-ac-compact-label {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--callai-ink-soft, var(--callai-ink));
+}
+
+
+
+.model-ac.is-compact .model-ac-input-wrap {
+  min-width: 0;
+  width: 100%;
+}
+
+.model-ac-empty {
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--callai-ink) 70%, transparent);
+}
+
+/* Portal to body. Never set inset/top/left — inline style owns placement. */
+.model-ac-dropdown.model-ac-dropdown-portal,
+body > .model-ac-dropdown-portal {
+  position: fixed !important;
+  margin: 0 !important;
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  z-index: 40000 !important;
+  min-width: 160px;
+  min-height: 44px;
+  max-height: 220px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: var(--callai-surface) !important;
+  border: 2px solid var(--callai-border) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28) !important;
+}
+
+[data-theme="dark"] .model-ac-dropdown.model-ac-dropdown-portal,
+[data-theme="dark"] body > .model-ac-dropdown-portal {
+  background: rgba(40, 36, 30, 0.98) !important;
+  border-color: rgba(255, 249, 230, 0.18) !important;
+}

@@ -1,0 +1,136 @@
+/* forms.css: Form fields / inputs (from global.css L566-700) */
+
+/* ── Forms ──────────────────────────────────────────── */
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.form-stack > .animal-card,
+.form-stack > [class*="animal-card"],
+.form-panel {
+  width: 100%;
+  background: var(--callai-surface) !important;
+  color: var(--callai-ink) !important;
+  border: 2px solid var(--callai-border) !important;
+  border-radius: var(--callai-radius) !important;
+  box-shadow: var(--callai-card-shadow);
+  padding: 14px 16px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.panel-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--callai-ink);
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.field label,
+.field .label {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: var(--callai-ink);
+  font-size: 0.92rem;
+}
+
+.field .hint {
+  color: var(--callai-ink-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.row.spread {
+  justify-content: space-between;
+}
+
+.times-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.time-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--callai-bg-soft);
+  border: 2px solid var(--callai-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-weight: 800;
+  color: var(--callai-ink);
+}
+
+.time-chip button {
+  border: none;
+  background: transparent;
+  color: var(--callai-danger);
+  cursor: pointer;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+textarea.raw {
+  width: 100%;
+  min-height: 110px;
+  border-radius: 16px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-bg-soft);
+  color: var(--callai-ink);
+  padding: 10px 12px;
+  resize: vertical;
+  font-weight: 600;
+}
+
+textarea.raw:focus {
+  outline: 2px solid var(--callai-focus);
+  outline-offset: 1px;
+}
+
+.preview-box {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.84rem;
+  background: #2a2118;
+  color: #f0e2cc;
+  border-radius: 14px;
+  padding: 12px 14px;
+  word-break: break-all;
+  border: 1px solid #3d3024;
+}
+
+[data-theme="dark"] .preview-box {
+  background: #121a16;
+  color: #d8ecdf;
+  border-color: #2a3a32;
+}

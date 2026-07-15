@@ -41,9 +41,12 @@ interface Props {
   onCreate: () => void;
   onEdit: (id: string) => void;
   onLogs: (alarmId?: string) => void;
+  onAi: () => void;
+  /** Body-portaled FAB; hide on immersive overlays (AI / edit). */
+  fabVisible?: boolean;
 }
 
-export function HomePage({ onCreate, onEdit, onLogs }: Props) {
+export function HomePage({ onCreate, onEdit, onLogs, onAi, fabVisible = true }: Props) {
   const { t, i18n } = useTranslation(["alarms", "common"]);
   const [alarms, setAlarms] = useState<Alarm[]>(() => peekAlarms() ?? []);
   const [loading, setLoading] = useState(() => peekAlarms() == null);
@@ -465,16 +468,33 @@ export function HomePage({ onCreate, onEdit, onLogs }: Props) {
         )}
       </div>
 
-      {typeof document !== "undefined"
+      {typeof document !== "undefined" && fabVisible
         ? createPortal(
-            <button
-              className="fab"
-              type="button"
-              aria-label={t("alarms:create")}
-              onClick={() => { playSound("confirm"); onCreate(); }}
-            >
-              <IconPlus size={28} />
-            </button>,
+            <div className="fab-cluster">
+              <button
+                className="fab-ai"
+                type="button"
+                aria-label={t("alarms:aiCreate")}
+                title={t("alarms:aiCreate")}
+                onClick={() => {
+                  playSound("confirm");
+                  onAi();
+                }}
+              >
+                <IconEdit size={18} aria-hidden />
+              </button>
+              <button
+                className="fab"
+                type="button"
+                aria-label={t("alarms:create")}
+                onClick={() => {
+                  playSound("confirm");
+                  onCreate();
+                }}
+              >
+                <IconPlus size={28} />
+              </button>
+            </div>,
             document.body,
           )
         : null}

@@ -1,0 +1,6 @@
+/* AI assistant styles (split for size gate) */
+@import "./ai-chat-layout.css";
+@import "./ai-chat-bubbles.css";
+@import "./ai-chat-composer.css";
+@import "./ai-chat-message.css";
+@import "./ai-chat-markdown.css";

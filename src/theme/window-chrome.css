@@ -1,0 +1,135 @@
+/* window-chrome.css: Transparent window shell + rounded frame (from global.css L126-260) */
+
+/* ── Window chrome: rounded undeco frame ── */
+html,
+body {
+  background: transparent !important;
+}
+
+html.tauri,
+body.tauri,
+body.tauri #root {
+  background: transparent !important;
+}
+
+#root {
+  background: transparent !important;
+  height: 100%;
+}
+
+/* Outer shell is the visible rounded window surface */
+.app-shell.has-titlebar {
+  border-radius: var(--callai-window-radius, 16px);
+  overflow: hidden;
+  background: var(--callai-bg);
+  border: 1.5px solid color-mix(in srgb, var(--callai-border) 75%, transparent);
+  /* Browser preview may keep soft outer shadow; Tauri overrides to none (see FINAL). */
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  /* fill transparent window */
+  height: 100% !important;
+  max-height: 100dvh !important;
+  min-height: 100% !important;
+}
+
+/* When maximized, drop radius so edges meet monitors cleanly */
+.app-shell.has-titlebar.is-maximized {
+  border-radius: 0;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Titlebar follows top window corners */
+.app-shell.has-titlebar > .titlebar {
+  border-top-left-radius: calc(var(--callai-window-radius, 16px) - 2px);
+  border-top-right-radius: calc(var(--callai-window-radius, 16px) - 2px);
+  /* overlay HUD: no painted plate; radius only for hit-area alignment */
+}
+.app-shell.has-titlebar.is-maximized > .titlebar {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* Browser preview (no transparent host): keep soft radius for design parity */
+body:not(.tauri) .app-shell.has-titlebar {
+  border-radius: var(--callai-window-radius, 16px);
+}
+
+
+body {
+  font-family: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+  /* opaque page fill is on .app-shell only — keep host transparent for rounded window */
+  background: transparent;
+  color: var(--callai-ink);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+body:not(.tauri) {
+  background: var(--callai-bg);
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent;
+}
+
+[class^="animal-"],
+[class*=" animal-"] {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+
+/* Full-height chain so footer pins to window bottom */
+html,
+body,
+#root {
+  height: 100%;
+  max-height: 100%;
+}
+
+.cursor-root {
+  display: block;
+  height: 100%;
+  max-height: 100dvh;
+  min-height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+/* animal Cursor may wrap children — force fill */
+.cursor-root,
+.cursor-root > .app-shell,
+[class*="animal-cursor"] {
+  height: 100%;
+  max-height: 100dvh;
+}
+
+[class*="animal-cursor"] {
+  display: block !important;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.app-shell {
+  position: relative;
+  height: 100% !important;
+  max-height: 100dvh !important;
+  min-height: 100% !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--callai-ink);
+}

@@ -1,0 +1,509 @@
+/* plugins.css: Plugins management page (from global.css L4814-5076) */
+
+/* Plugins */
+.plugins-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 24px;
+}
+
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plugin-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.plugin-desc {
+  margin: 8px 0;
+  opacity: 0.85;
+}
+
+.plugin-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.plugin-frame {
+  width: 100%;
+  min-height: 320px;
+  border: 2px solid rgba(61, 52, 40, 0.12);
+  border-radius: 12px;
+  background: #fffdf6;
+  margin: 10px 0;
+}
+
+.plugin-runtime {
+  margin-top: 8px;
+}
+
+/* Settings AI / MCP */
+.settings-section-title {
+  margin-top: 18px;
+  margin-bottom: 4px;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.settings-section-hint {
+  margin-bottom: 10px;
+}
+
+.secret-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, auto);
+  gap: 6px;
+  align-items: center;
+}
+
+.settings-cli-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.settings-cli-label {
+  margin: 4px 0 0 !important;
+  line-height: 1.4;
+}
+
+.settings-code {
+  display: block;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--callai-border) 75%, transparent);
+  background: color-mix(in srgb, var(--callai-ink) 6%, var(--callai-surface));
+  color: var(--callai-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .settings-code {
+  background: color-mix(in srgb, #000 28%, var(--callai-surface));
+  border-color: color-mix(in srgb, var(--callai-border) 70%, transparent);
+  color: var(--callai-ink);
+}
+
+
+/* Plugins under keep-alive tab panes (not animal-tabContentInner) */
+.tab-pane .plugins-page > .plugins-hero.soft-header,
+.plugins-page > header.plugins-hero {
+  margin-top: 52px;
+  margin-left: 12px;
+  margin-right: 12px;
+  margin-bottom: 8px;
+  padding-top: 8px !important;
+}
+.plugins-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.plugins-hero h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--callai-ink);
+}
+
+.plugins-page .empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 28px 16px;
+}
+
+.plugins-page .plugin-card {
+  border-radius: 16px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* ── Plugins management layout ─────────────────────── */
+.plugins-page {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.plugins-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 96px;
+}
+
+.plugins-tabs {
+  width: 100%;
+  max-width: 100%;
+}
+
+.plugins-hero {
+  min-width: 0;
+}
+
+.plugins-hero-brand {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.plugins-hero .soft-header-copy,
+.plugins-hero-brand > div {
+  min-width: 0;
+}
+
+.plugins-hero h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.plugins-hero-actions {
+  flex: 0 0 auto;
+}
+
+.plugin-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.plugin-card-meta {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.plugin-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  font-weight: 800;
+  color: var(--callai-ink);
+}
+
+.plugin-id-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.plugin-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(100%, 220px);
+}
+
+.plugin-card-actions {
+  flex: 0 0 auto;
+}
+
+.plugin-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 6px;
+}
+
+.plugin-runtime-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-frame {
+  width: 100%;
+  max-width: 100%;
+  min-height: min(48vh, 360px);
+  height: min(52vh, 420px);
+  border: 2px solid rgba(61, 52, 40, 0.12);
+  border-radius: 12px;
+  background: #fffdf6;
+  margin: 10px 0;
+}
+
+.plugin-history-wrap,
+.mcp-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 8px;
+}
+
+.plugin-history-wrap table,
+.mcp-table-wrap table {
+  min-width: 420px;
+}
+
+.mcp-log-panel {
+  min-width: 0;
+}
+
+
+/* ── Independent plugin host window ─────────────────── */
+html.tauri:has(.plugin-win-shell),
+html.tauri:has(.plugin-win-shell) body {
+  background: transparent !important;
+  overflow: hidden;
+  margin: 0;
+  height: 100%;
+}
+
+.plugin-win-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: var(--callai-bg, #f8f8f0);
+  border: 1.5px solid color-mix(in srgb, var(--callai-border, #c4b89e) 80%, transparent);
+  box-shadow: 0 10px 28px color-mix(in srgb, #000 12%, transparent);
+}
+
+.plugin-win-shell.is-maximized,
+.plugin-win-shell.is-compact {
+  border-radius: 12px;
+}
+
+.plugin-win-shell.is-compact {
+  height: 100vh;
+  min-height: 0;
+}
+
+/* Reuse main titlebar; plugin host is not a floating HUD over tabs */
+.plugin-win-shell > .titlebar {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  flex: 0 0 auto;
+  opacity: 1 !important;
+  z-index: 20;
+  pointer-events: auto !important;
+}
+
+.plugin-win-shell > .titlebar.is-plugin-compact {
+  min-height: 40px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.plugin-win-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  background: var(--callai-bg, #f8f8f0);
+}
+
+.plugin-win-shell.is-compact .plugin-win-body {
+  display: none !important;
+}
+
+.plugin-win-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fffdf6;
+  display: block;
+}
+
+.plugin-win-status {
+  margin: 24px 16px;
+  font-weight: 700;
+  color: var(--callai-ink-soft, #8a7b66);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.plugin-win-status.is-error {
+  color: var(--callai-error, #c94444);
+}
+
+.plugin-win-status .meta {
+  margin-top: 8px;
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
+/* plugin window still needs edge grips above iframe */
+.plugin-win-shell > .window-resize-layer {
+  z-index: 50;
+}
+
+
+/* Compact strip: only east/west resize */
+.window-resize-layer.is-compact-grips .grip-n,
+.window-resize-layer.is-compact-grips .grip-s,
+.window-resize-layer.is-compact-grips .grip-ne,
+.window-resize-layer.is-compact-grips .grip-nw,
+.window-resize-layer.is-compact-grips .grip-se,
+.window-resize-layer.is-compact-grips .grip-sw {
+  display: none !important;
+}
+
+/* Never flatten plugin compact strip to square OS rect */
+html.tauri:has(.plugin-win-shell.is-compact) {
+  /* keep transparent host */
+}
+html.tauri:has(.plugin-win-shell.is-compact) .plugin-win-shell {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+html.tauri:has(.plugin-win-shell.is-compact) .plugin-win-shell > .titlebar {
+  border-top-left-radius: 14px !important;
+  border-top-right-radius: 14px !important;
+  border-bottom-left-radius: 14px !important;
+  border-bottom-right-radius: 14px !important;
+}
+
+/* Plugin titlebar is in-flow, not overlay HUD */
+.plugin-win-shell > .titlebar.is-plugin-titlebar {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  flex: 0 0 auto;
+  margin: 0 !important;
+}
+
+.plugin-win-shell.is-compact .plugin-win-body,
+.plugin-win-shell.is-compact .plugin-win-frame {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+
+/* ── Plugin window: no visible scrollbars ───────────── */
+/* plugin-win no-scrollbar */
+html.tauri:has(.plugin-win-shell),
+html.tauri:has(.plugin-win-shell) body,
+html.tauri:has(.plugin-win-shell) #root {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+html.tauri:has(.plugin-win-shell)::-webkit-scrollbar,
+html.tauri:has(.plugin-win-shell) body::-webkit-scrollbar,
+html.tauri:has(.plugin-win-shell) #root::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+.plugin-win-shell,
+.plugin-win-body,
+.plugin-win-frame {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.plugin-win-shell::-webkit-scrollbar,
+.plugin-win-body::-webkit-scrollbar,
+.plugin-win-frame::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+/* iframe content scrollbars are handled by injected host_chrome.css */
+.plugin-win-frame {
+  /* clip any residual chrome */
+  background: #fffdf6;
+}
+
+
+/* Plugin logs drawer reuses .logs-panel / .log-card from toast-drawer + logs-empty */
+.plugin-logs-panel .plugin-logs-toolbar {
+  flex-wrap: wrap;
+}
+
+.plugin-logs-toolbar-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.plugin-logs-toolbar-meta strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--callai-ink);
+}
+
+.plugin-logs-toolbar-meta .plugin-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.plugin-log-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.plugin-logs-panel .log-card {
+  cursor: pointer;
+}

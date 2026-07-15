@@ -126,7 +126,7 @@ export function IconButton({
               top: coords.top,
               left: coords.left,
               transform,
-              zIndex: 20000,
+              zIndex: 30100,
             }}
             onMouseEnter={show}
             onMouseLeave={hide}

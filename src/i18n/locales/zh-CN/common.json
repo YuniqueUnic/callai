@@ -37,5 +37,7 @@
   "windowFullscreen": "全屏",
   "windowExitFullscreen": "退出全屏",
   "windowPinnedBadge": "置顶中",
-  "windowFullscreenBadge": "全屏"
+  "windowFullscreenBadge": "全屏",
+  "tabPlugins": "插件",
+  "tabAi": "AI"
 }

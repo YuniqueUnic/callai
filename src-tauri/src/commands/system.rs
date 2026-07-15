@@ -1,123 +1,13 @@
 #![allow(dead_code)]
-use std::sync::Arc;
-
-use serde::Serialize;
 use tauri::State;
 
-use crate::app::AlarmService;
 use crate::domain::{
-    draft_from_template, Alarm, AlarmDraft, AppSettings, BuiltinSoundId, DomainError, ExecutionLog,
-    LogFilter, TEMPLATES,
+    draft_from_template, AlarmDraft, AppSettings, BuiltinSoundId, ExecutionLog, LogFilter,
+    TEMPLATES,
 };
 use crate::infra::alarm_sound;
-use crate::infra::AlarmScheduler;
 
-#[derive(Debug, Serialize)]
-pub struct TemplateDto {
-    pub id: String,
-    pub name_zh: String,
-    pub name_en: String,
-    pub binary: String,
-    pub args: Vec<String>,
-}
-
-fn map_err(err: DomainError) -> String {
-    serde_json::to_string(&err).unwrap_or(err.message)
-}
-
-#[tauri::command]
-pub fn list_alarms(state: State<'_, AppState>) -> Result<Vec<Alarm>, String> {
-    state.service.list_alarms().map_err(map_err)
-}
-
-#[tauri::command]
-pub fn get_alarm(state: State<'_, AppState>, id: String) -> Result<Alarm, String> {
-    state.service.get_alarm(&id).map_err(map_err)
-}
-
-#[tauri::command]
-pub fn create_alarm(state: State<'_, AppState>, draft: AlarmDraft) -> Result<Alarm, String> {
-    state.service.create_alarm(draft).map_err(map_err)
-}
-
-#[tauri::command]
-pub fn update_alarm(
-    state: State<'_, AppState>,
-    id: String,
-    draft: AlarmDraft,
-) -> Result<Alarm, String> {
-    state.service.update_alarm(&id, draft).map_err(map_err)
-}
-
-#[tauri::command]
-pub fn delete_alarm(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    state.service.delete_alarm(&id).map_err(map_err)
-}
-
-#[tauri::command]
-pub fn set_alarm_enabled(
-    state: State<'_, AppState>,
-    id: String,
-    enabled: bool,
-) -> Result<Alarm, String> {
-    state.service.set_enabled(&id, enabled).map_err(map_err)
-}
-
-#[tauri::command]
-pub fn set_all_enabled(state: State<'_, AppState>, enabled: bool) -> Result<Vec<Alarm>, String> {
-    state.service.set_enabled_all(enabled).map_err(map_err)
-}
-
-#[tauri::command]
-pub async fn run_alarm_now(
-    app: tauri::AppHandle,
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<ExecutionLog, String> {
-    let service = Arc::clone(&state.service);
-    let run_id = id.clone();
-    let result = tauri::async_runtime::spawn_blocking(move || service.run_alarm_once(&run_id))
-        .await
-        .map_err(|e| format!("join error: {e}"))?;
-
-    match result {
-        Ok(log) => {
-            if !matches!(log.status, crate::domain::ExecutionStatus::Success) {
-                maybe_notify_failure(&app, &state, &log.alarm_name);
-            }
-            Ok(log)
-        }
-        Err(err) => {
-            let name = state
-                .service
-                .get_alarm(&id)
-                .map(|a| a.name)
-                .unwrap_or_else(|_| id.clone());
-            maybe_notify_failure(&app, &state, &name);
-            Err(map_err(err))
-        }
-    }
-}
-
-fn maybe_notify_failure(app: &tauri::AppHandle, state: &AppState, name: &str) {
-    use tauri_plugin_notification::NotificationExt;
-    let Ok(settings) = state.service.get_settings() else {
-        return;
-    };
-    if !settings.notify_on_failure {
-        return;
-    }
-    let (title, body) = match settings.locale {
-        crate::domain::LocaleCode::En => ("Task failed".to_string(), format!("{name} failed")),
-        crate::domain::LocaleCode::ZhCn => ("任务失败".to_string(), format!("「{name}」未完成")),
-    };
-    let _ = app.notification().builder().title(title).body(body).show();
-}
-
-#[tauri::command]
-pub fn cancel_alarm_run(state: State<'_, AppState>, id: String) -> Result<bool, String> {
-    state.service.cancel_alarm_run(&id).map_err(map_err)
-}
+use super::{map_err, AppState, TemplateDto};
 
 #[tauri::command]
 pub fn list_logs(
@@ -149,8 +39,17 @@ pub fn save_settings(
     settings: AppSettings,
 ) -> Result<AppSettings, String> {
     let saved = state.service.save_settings(settings).map_err(map_err)?;
-    let _ = rebuild_tray_menu(&app, saved.locale);
+    let _ = rebuild_tray_menu(&app, saved.locale());
+    // Start/stop/restart in-app MCP HTTP with settings.
+    state.mcp_http.apply(&saved.mcp);
     Ok(saved)
+}
+
+#[tauri::command]
+pub fn mcp_http_status(
+    state: State<'_, AppState>,
+) -> Result<crate::infra::mcp::McpHttpStatus, String> {
+    Ok(state.mcp_http.status())
 }
 
 #[tauri::command]
@@ -159,8 +58,9 @@ pub fn check_binary(state: State<'_, AppState>, binary: String) -> Result<Option
 }
 
 #[tauri::command]
-pub fn list_templates() -> Result<Vec<TemplateDto>, String> {
-    Ok(TEMPLATES
+pub fn list_templates(state: State<'_, AppState>) -> Result<Vec<TemplateDto>, String> {
+    use crate::domain::{AlarmPluginConfig, BUILTIN_PLUGIN_BINARY};
+    let mut out: Vec<TemplateDto> = TEMPLATES
         .iter()
         .map(|t| TemplateDto {
             id: t.id.into(),
@@ -168,12 +68,60 @@ pub fn list_templates() -> Result<Vec<TemplateDto>, String> {
             name_en: t.name_en.into(),
             binary: t.binary.into(),
             args: t.args.iter().map(|s| (*s).to_string()).collect(),
+            kind: "builtin".into(),
+            plugin: None,
         })
-        .collect())
+        .collect();
+    // Installed plugins as templates (display name unique already at install).
+    if let Ok(plugins) = state.plugins.list() {
+        for p in plugins {
+            out.push(TemplateDto {
+                id: format!("plugin:{}", p.id),
+                name_zh: format!("插件 · {}", p.name),
+                name_en: format!("Plugin · {}", p.name),
+                binary: BUILTIN_PLUGIN_BINARY.into(),
+                args: vec![p.id.clone()],
+                kind: "plugin".into(),
+                plugin: Some(AlarmPluginConfig {
+                    plugin_id: p.id,
+                    popup: true,
+                    suppress_when_fullscreen: true,
+                    params: serde_json::Map::new(),
+                }),
+            });
+        }
+    }
+    Ok(out)
 }
 
 #[tauri::command]
-pub fn template_draft(id: String) -> Result<Option<AlarmDraft>, String> {
+pub fn template_draft(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<Option<AlarmDraft>, String> {
+    use crate::domain::{AlarmPluginConfig, BUILTIN_PLUGIN_BINARY, DEFAULT_TIMEOUT_SECS};
+    if let Some(rest) = id.strip_prefix("plugin:") {
+        let summary = state.plugins.get_summary(rest).map_err(map_err)?;
+        return Ok(Some(AlarmDraft {
+            name: format!("{} 定时", summary.name),
+            enabled: true,
+            schedule: crate::domain::ScheduleSpec::Daily {
+                times: vec!["16:50".into()],
+            },
+            binary: BUILTIN_PLUGIN_BINARY.into(),
+            args: vec![summary.id.clone()],
+            env_vars: vec![],
+            retry: Default::default(),
+            timeout_secs: DEFAULT_TIMEOUT_SECS,
+            notification: Default::default(),
+            plugin: Some(AlarmPluginConfig {
+                plugin_id: summary.id,
+                popup: true,
+                suppress_when_fullscreen: true,
+                params: serde_json::Map::new(),
+            }),
+        }));
+    }
     Ok(draft_from_template(&id))
 }
 
@@ -228,12 +176,32 @@ pub fn get_app_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 
+#[tauri::command]
+pub fn get_ai_runtime_context(
+    state: State<'_, AppState>,
+) -> Result<crate::domain::AiRuntimeContext, String> {
+    let settings = state.service.get_settings().map_err(map_err)?;
+    let paths = crate::infra::AppPaths::resolve().map_err(map_err)?;
+    paths.ensure().map_err(map_err)?;
+    Ok(crate::domain::AiRuntimeContext::collect(
+        &settings,
+        paths.config_dir().display().to_string(),
+        paths.data_dir().display().to_string(),
+    ))
+}
+
+#[tauri::command]
+pub fn get_ai_runtime_context_prompt(state: State<'_, AppState>) -> Result<String, String> {
+    let ctx = get_ai_runtime_context(state)?;
+    Ok(ctx.to_prompt_block())
+}
+
 /// Returns the backups directory path (for display / diagnostics).
 #[tauri::command]
 pub fn get_backups_dir() -> Result<String, String> {
     let paths = crate::infra::AppPaths::resolve().map_err(map_err)?;
     paths.ensure().map_err(map_err)?;
-    Ok(paths.backups_dir.display().to_string())
+    Ok(paths.backups_dir().display().to_string())
 }
 
 /// Open the backups directory in the OS file manager.
@@ -242,7 +210,7 @@ pub fn get_backups_dir() -> Result<String, String> {
 pub fn open_backups_dir() -> Result<String, String> {
     let paths = crate::infra::AppPaths::resolve().map_err(map_err)?;
     paths.ensure().map_err(map_err)?;
-    let dir = paths.backups_dir;
+    let dir = paths.backups_dir().to_path_buf();
     tauri_plugin_opener::open_path(&dir, None::<&str>).map_err(|e| e.to_string())?;
     Ok(dir.display().to_string())
 }
@@ -252,7 +220,7 @@ pub fn refresh_tray_menu(app: tauri::AppHandle, state: State<'_, AppState>) -> R
     let locale = state
         .service
         .get_settings()
-        .map(|s| s.locale)
+        .map(|s| s.locale())
         .map_err(map_err)?;
     rebuild_tray_menu(&app, locale).map_err(|e| e.to_string())
 }
@@ -270,11 +238,6 @@ fn rebuild_tray_menu(
         let _ = tray.set_tooltip(Some(copy.tooltip.to_string()));
     }
     Ok(())
-}
-
-pub struct AppState {
-    pub service: Arc<AlarmService>,
-    pub scheduler: Arc<AlarmScheduler>,
 }
 
 #[tauri::command]
