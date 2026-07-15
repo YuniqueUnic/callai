@@ -1075,3 +1075,119 @@
 [data-theme="dark"] .ai-think {
   background: color-mix(in srgb, #000 22%, var(--callai-surface));
 }
+
+
+/* ── Streamdown / AI markdown ───────────────────────── */
+.ai-md {
+  min-width: 0;
+  max-width: 100%;
+  color: inherit;
+  font: inherit;
+  font-weight: 650;
+  line-height: 1.55;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.ai-md :where(p, ul, ol, pre, blockquote, table) {
+  margin: 0 0 0.55em;
+}
+
+.ai-md :where(p:last-child, ul:last-child, ol:last-child, pre:last-child) {
+  margin-bottom: 0;
+}
+
+.ai-md :where(h1, h2, h3, h4) {
+  margin: 0.4em 0 0.35em;
+  font-weight: 900;
+  line-height: 1.25;
+  color: var(--callai-ink);
+}
+
+.ai-md :where(h1) { font-size: 1.15em; }
+.ai-md :where(h2) { font-size: 1.08em; }
+.ai-md :where(h3, h4) { font-size: 1.02em; }
+
+.ai-md :where(ul, ol) {
+  padding-left: 1.25em;
+}
+
+.ai-md :where(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  font-weight: 700;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--callai-ink) 8%, transparent);
+}
+
+.ai-md :where(pre) {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--callai-border) 80%, transparent);
+  background: color-mix(in srgb, var(--callai-surface) 92%, #000);
+  font-size: 0.86em;
+  line-height: 1.45;
+}
+
+.ai-md :where(pre code) {
+  padding: 0;
+  background: transparent;
+  font-size: inherit;
+  font-weight: 650;
+}
+
+.ai-md :where(a) {
+  color: var(--callai-primary, #19c8b9);
+  font-weight: 800;
+  text-underline-offset: 2px;
+}
+
+.ai-md :where(blockquote) {
+  margin-left: 0;
+  padding: 4px 0 4px 12px;
+  border-left: 3px solid color-mix(in srgb, var(--callai-accent, #3d9b84) 55%, transparent);
+  color: color-mix(in srgb, var(--callai-ink) 78%, transparent);
+}
+
+.ai-md :where(table) {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.92em;
+}
+
+.ai-md :where(th, td) {
+  border: 1px solid color-mix(in srgb, var(--callai-border) 75%, transparent);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.ai-think-body .ai-md {
+  font-size: 0.92em;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--callai-ink) 82%, transparent);
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+}
+
+.ai-stream-preview {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ai-stream-preview .ai-md {
+  white-space: normal;
+}
+
+.ai-think-dots {
+  margin-left: 6px;
+  transform: scale(0.85);
+}
+
+.ai-think-preview {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

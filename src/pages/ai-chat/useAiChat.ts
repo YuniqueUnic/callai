@@ -22,7 +22,7 @@ import { useAiChatSend } from "./useAiChatSend";
 
 export function useAiChat(opts: {
   onAlarmCreated: () => void;
-  onPluginCreated: () => void;
+  onPluginCreated: (pluginId: string) => void;
 }) {
   const [ai, setAi] = useState<AiSettings>(DEFAULT_AI_SETTINGS);
   const [input, setInput] = useState("");

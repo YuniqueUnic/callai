@@ -9,7 +9,7 @@ import {
   Tag,
 } from "animal-island-ui";
 import { toast } from "../ui/toast";
-import type { AlarmDraft, NotificationType, RetryInterval, TemplateDto } from "../domain/types";
+import type { AlarmDraft, AlarmPluginConfig, NotificationType, RetryInterval, TemplateDto } from "../domain/types";
 import { BUILTIN_SOUNDS, DEFAULT_NOTIFICATION } from "../domain/types";
 import {
   commandPreview,
@@ -64,6 +64,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           retry: a.retry,
           timeout_secs: a.timeout_secs ?? 20,
           notification: a.notification ?? { ...DEFAULT_NOTIFICATION },
+          plugin: a.plugin ?? null,
         };
         setDraft(d);
         setArgsText(a.args.join("\n"));
@@ -83,6 +84,35 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
     () => commandPreview(draft.binary, argsText.split("\n").map((s) => s.trim()).filter(Boolean)),
     [draft.binary, argsText],
   );
+
+  const isPluginAlarm =
+    draft.binary.trim() === "__callai_plugin__" ||
+    draft.binary.trim().toLowerCase() === "callai-plugin" ||
+    Boolean(draft.plugin?.plugin_id);
+
+  function patchPlugin(partial: Partial<AlarmPluginConfig>) {
+    setDraft((d) => {
+      const base: AlarmPluginConfig = d.plugin ?? {
+        plugin_id: d.args[0] || "",
+        popup: true,
+        suppress_when_fullscreen: true,
+        params: {},
+      };
+      const next = { ...base, ...partial };
+      // keep args[0] = plugin_id for runners without plugin field
+      const args = [...(d.args || [])];
+      if (next.plugin_id) {
+        if (args.length === 0) args.push(next.plugin_id);
+        else args[0] = next.plugin_id;
+      }
+      return {
+        ...d,
+        binary: "__callai_plugin__",
+        args,
+        plugin: next,
+      };
+    });
+  }
 
   function updateScheduleTimes(times: string[]) {
     setDraft((d) => {
@@ -573,6 +603,47 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
         </Card>
 
         
+
+        {isPluginAlarm ? (
+          <Card color="default" className="form-panel">
+            <div className="panel-head">
+              <h3>{t("alarms:pluginRun", { defaultValue: "插件运行" })}</h3>
+            </div>
+            <p className="meta" style={{ marginTop: 0 }}>
+              {t("alarms:pluginRunHint", {
+                defaultValue:
+                  "只负责触发时机与是否弹窗；业务参数请在插件窗口内配置。",
+              })}
+            </p>
+            <div className="field" style={{ marginTop: 10 }}>
+              <label>plugin_id</label>
+              <Input
+                value={draft.plugin?.plugin_id || draft.args[0] || ""}
+                onChange={(e) => patchPlugin({ plugin_id: e.target.value })}
+              />
+            </div>
+            <div className="field field-row" style={{ marginTop: 12 }}>
+              <label>
+                {t("alarms:pluginPopup", { defaultValue: "弹出插件窗口" })}
+              </label>
+              <Switch
+                checked={draft.plugin?.popup !== false}
+                onChange={(v) => patchPlugin({ popup: v })}
+              />
+            </div>
+            <div className="field field-row" style={{ marginTop: 12 }}>
+              <label>
+                {t("alarms:pluginSuppressFs", {
+                  defaultValue: "全屏时不弹窗（仅通知）",
+                })}
+              </label>
+              <Switch
+                checked={draft.plugin?.suppress_when_fullscreen !== false}
+                onChange={(v) => patchPlugin({ suppress_when_fullscreen: v })}
+              />
+            </div>
+          </Card>
+        ) : null}
 
         <Card color="default" className="form-panel">
           <div className="panel-head">

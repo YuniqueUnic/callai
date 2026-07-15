@@ -28,9 +28,11 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^17.0.9",
+    "streamdown": "^2.5.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@babel/standalone": "^8.0.4",
     "@tauri-apps/cli": "^2",
     "@types/node": "^26.1.1",
     "@types/react": "^19.1.8",

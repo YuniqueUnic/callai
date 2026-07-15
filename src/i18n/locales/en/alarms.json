@@ -105,5 +105,10 @@
   "soundWarmRise": "Warm rise",
   "soundGentlePing": "Gentle ping",
   "aiCreate": "AI create",
-  "createSuccess": "Alarm created"
+  "createSuccess": "Alarm created",
+  "pluginRun": "Plugin run",
+  "pluginRunHint": "Host only schedules fire time and popup policy; configure business params inside the plugin UI.",
+  "pluginPopup": "Open plugin window",
+  "pluginSuppressFs": "No popup while fullscreen (notify only)",
+  "pluginParams": "Plugin params (one key=value per line)"
 }

@@ -72,6 +72,7 @@ export interface PromptBundle {
   plugin: string;
   ai2ui: string;
   islandStyle: string;
+  pluginSdk: string;
 }
 
 export type StreamPhase =
@@ -346,7 +347,7 @@ export async function completeTextWithContinue(
 }
 
 export async function loadPromptBundle(): Promise<PromptBundle> {
-  const [system, capabilities, outputContract, alarm, plugin, ai2ui, islandStyle] =
+  const [system, capabilities, outputContract, alarm, plugin, ai2ui, islandStyle, pluginSdk] =
     await Promise.all([
       client.getPrompt("system"),
       client.getPrompt("capabilities"),
@@ -355,6 +356,7 @@ export async function loadPromptBundle(): Promise<PromptBundle> {
       client.getPrompt("plugin_generate"),
       client.getPrompt("ai2ui"),
       client.getPrompt("animal_island_style"),
+      client.getPrompt("plugin_sdk"),
     ]);
   return {
     system,
@@ -364,6 +366,7 @@ export async function loadPromptBundle(): Promise<PromptBundle> {
     plugin,
     ai2ui,
     islandStyle,
+    pluginSdk,
   };
 }
 
@@ -393,6 +396,7 @@ export function composeSystemPrompt(
       bundle.system,
       runtime,
       bundle.capabilities,
+      bundle.pluginSdk,
       bundle.plugin,
       bundle.islandStyle,
       bundle.ai2ui,

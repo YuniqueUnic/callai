@@ -18,5 +18,22 @@
   "clearMcp": "Clear",
   "subtitle": "Isolated interactive tasks with own storage.",
   "tabList": "Plugins",
-  "tabMcp": "MCP logs"
+  "tabMcp": "MCP logs",
+  "logs": "Logs",
+  "fixWithAi": "AI fix",
+  "refreshLogs": "Refresh",
+  "clearConsole": "Clear console",
+  "consoleCleared": "Console cleared",
+  "invokeHistory": "Invoke history",
+  "console": "Console",
+  "noHistory": "No invoke history yet",
+  "noConsole": "No console yet (open the plugin window first)",
+  "logsEmpty": "No logs yet",
+  "logsEmptyHint": "Open the plugin to produce invokes or console output.",
+  "filterAll": "All",
+  "filterInvoke": "Invoke",
+  "filterConsole": "Console",
+  "filterErrors": "Errors {{count}}",
+  "args": "Args",
+  "result": "Result"
 }

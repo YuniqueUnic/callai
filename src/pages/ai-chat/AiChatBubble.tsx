@@ -16,6 +16,7 @@ import {
 } from "../../ui/icons";
 import { AiAlarmDraftCard } from "../../ui/AiAlarmDraftCard";
 import { AiPluginDraftCard } from "../../ui/AiPluginDraftCard";
+import { AiMarkdown } from "../../ui/AiMarkdown";
 
 interface Props {
   msg: ChatMsg;
@@ -57,37 +58,52 @@ function bubbleClass(
 function AiThinkBlock({
   thinking,
   defaultOpen,
+  streaming,
 }: {
   thinking: string;
   defaultOpen?: boolean;
+  streaming?: boolean;
 }) {
   const { t } = useTranslation(["ai"]);
   const [open, setOpen] = useState(Boolean(defaultOpen));
-  if (!thinking.trim()) return null;
+  const text = thinking.trim();
+  if (!text) return null;
+  // While streaming with content, keep expanded so users see progress.
+  const expanded = streaming ? true : open;
   return (
-    <div className={`ai-think${open ? " is-open" : ""}`}>
+    <div className={`ai-think${expanded ? " is-open" : ""}`}>
       <button
         type="button"
         className="ai-think-toggle"
-        aria-expanded={open}
+        aria-expanded={expanded}
         onClick={(ev) => {
           ev.stopPropagation();
-          setOpen((v) => !v);
+          if (!streaming) setOpen((v) => !v);
         }}
         onPointerDown={(ev) => ev.stopPropagation()}
       >
         <span className="ai-think-label">{t("ai:thinkingLabel")}</span>
-        <IconChevronDown
-          size={14}
-          className={open ? "ai-chevron" : "ai-chevron is-collapsed"}
-        />
+        {!streaming ? (
+          <IconChevronDown
+            size={14}
+            className={expanded ? "ai-chevron" : "ai-chevron is-collapsed"}
+          />
+        ) : (
+          <span className="ai-busy-dots ai-think-dots" aria-hidden>
+            <i />
+            <i />
+            <i />
+          </span>
+        )}
       </button>
-      {open ? (
-        <div className="ai-think-body">{thinking.trim()}</div>
+      {expanded ? (
+        <div className="ai-think-body">
+          <AiMarkdown streaming={Boolean(streaming)}>{text}</AiMarkdown>
+        </div>
       ) : (
         <p className="meta ai-think-preview">
-          {thinking.trim().slice(0, 72)}
-          {thinking.trim().length > 72 ? "…" : ""}
+          {text.slice(0, 120)}
+          {text.length > 120 ? "…" : ""}
         </p>
       )}
     </div>
@@ -131,15 +147,30 @@ export function AiChatBubble({
 
   const main = (() => {
     if (m.role === "user") {
-      return <div className="ai-bubble-body">{m.content}</div>;
+      return (
+        <div className="ai-bubble-body">
+          <AiMarkdown streaming={false}>{m.content}</AiMarkdown>
+        </div>
+      );
     }
     if (m.kind === "generating") {
       const secs = m.progress
         ? Math.floor((m.progress.elapsedMs || 0) / 1000)
         : 0;
-      const split = splitStreamingOutput(m.streamText || "");
-      const thinking = m.thinking || split.thinking;
-      const bodyPreview = split.body || (!thinking ? m.streamText : "");
+      const stream = m.streamText || "";
+      const split = splitStreamingOutput(stream);
+      // Prefer live split; fall back to stored thinking then whole stream as body.
+      const thinking = (split.thinking || m.thinking || "").trim();
+      let bodyPreview = (split.body || "").trim();
+      if (!bodyPreview && !thinking) bodyPreview = stream.trim();
+      // If split left almost nothing but stream is long, show stream as body.
+      if (
+        !bodyPreview &&
+        !thinking &&
+        stream.trim().length > 0
+      ) {
+        bodyPreview = stream.trim();
+      }
       return (
         <div className="ai-bubble-body ai-generating-block">
           <div className="ai-generating-head">
@@ -152,17 +183,19 @@ export function AiChatBubble({
           </div>
           <p className="meta ai-generating-meta">
             {t("ai:generatingProgress", {
-              chars: m.progress?.chars ?? 0,
+              chars: m.progress?.chars ?? stream.length,
               secs,
             })}
           </p>
           {thinking ? (
-            <AiThinkBlock thinking={thinking} defaultOpen={!split.hasJson} />
+            <AiThinkBlock thinking={thinking} streaming defaultOpen />
           ) : null}
           {bodyPreview ? (
             <div className="ai-answer-block">
               <div className="ai-answer-label">{t("ai:answerLabel")}</div>
-              <pre className="ai-stream-preview">{bodyPreview}</pre>
+              <div className="ai-stream-preview">
+                <AiMarkdown streaming>{bodyPreview}</AiMarkdown>
+              </div>
             </div>
           ) : !thinking ? (
             <p className="meta ai-generating-hint">{t("ai:generatingHint")}</p>
@@ -178,7 +211,7 @@ export function AiChatBubble({
           ) : null}
           <div className="ai-answer-block">
             <div className="ai-answer-label">{t("ai:answerLabel")}</div>
-            <div className="ai-bubble-body">{m.content}</div>
+            <div className="ai-bubble-body"><AiMarkdown streaming={false}>{m.content}</AiMarkdown></div>
           </div>
         </>
       );
@@ -191,7 +224,7 @@ export function AiChatBubble({
           ) : null}
           <div className="ai-answer-block">
             <div className="ai-answer-label">{t("ai:answerLabel")}</div>
-            <div className="ai-bubble-body">{m.content}</div>
+            <div className="ai-bubble-body"><AiMarkdown streaming={false}>{m.content}</AiMarkdown></div>
           </div>
           <AiAlarmDraftCard
             draft={m.draft}
@@ -211,7 +244,7 @@ export function AiChatBubble({
           ) : null}
           <div className="ai-answer-block">
             <div className="ai-answer-label">{t("ai:answerLabel")}</div>
-            <div className="ai-bubble-body">{m.content}</div>
+            <div className="ai-bubble-body"><AiMarkdown streaming={false}>{m.content}</AiMarkdown></div>
           </div>
           <AiPluginDraftCard
             draft={m.draft}
@@ -232,7 +265,7 @@ export function AiChatBubble({
           {m.role === "assistant" && m.kind === "text" ? (
             <div className="ai-answer-label">{t("ai:answerLabel")}</div>
           ) : null}
-          <div className="ai-bubble-body">{m.content}</div>
+          <div className="ai-bubble-body"><AiMarkdown streaming={false}>{m.content}</AiMarkdown></div>
         </div>
       </>
     );

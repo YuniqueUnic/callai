@@ -101,6 +101,7 @@ fn draft() -> AlarmDraft {
         retry: RetryPolicy::default(),
         timeout_secs: 20,
         notification: Default::default(),
+        plugin: None,
     }
 }
 

@@ -13,6 +13,7 @@ const bundle: PromptBundle = {
   plugin: "PLUGIN_TASK",
   ai2ui: "AI2UI",
   islandStyle: "ISLAND",
+  pluginSdk: "SDK",
 };
 
 describe("joinPromptLayers", () => {
@@ -31,6 +32,7 @@ describe("composeSystemPrompt", () => {
 
   it("includes style packs for plugin", () => {
     const s = composeSystemPrompt(bundle, "RUNTIME", "plugin");
+    expect(s).toContain("SDK");
     expect(s).toContain("ISLAND");
     expect(s).toContain("AI2UI");
     expect(s.endsWith("CONTRACT")).toBe(true);

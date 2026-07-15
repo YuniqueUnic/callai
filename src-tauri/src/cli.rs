@@ -452,6 +452,7 @@ fn validate(config_path: Option<&std::path::Path>) -> DomainResult<()> {
             retry: RetryPolicy::default(),
             timeout_secs: 20,
             notification: Default::default(),
+            plugin: None,
         },
     );
     Ok(())

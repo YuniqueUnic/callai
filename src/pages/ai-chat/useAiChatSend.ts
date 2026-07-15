@@ -63,7 +63,7 @@ export function useAiChatSend(opts: {
   intent: AiIntent;
   stickToBottom: () => void;
   onAlarmCreated: () => void;
-  onPluginCreated: () => void;
+  onPluginCreated: (pluginId: string) => void;
 }) {
   const { t } = useTranslation(["ai", "alarms"]);
 
@@ -322,7 +322,14 @@ export function useAiChatSend(opts: {
     if (opts.busy) return;
     opts.setBusy(true);
     try {
-      await client.installPlugin(draft);
+      // Fix flow: if plugin already exists, overwrite ui.html (keep id).
+      const existing = await client.listPlugins().catch(() => []);
+      const hit = existing.find((p) => p.id === draft.manifest.id);
+      if (hit && typeof client.pluginSetSource === "function") {
+        await client.pluginSetSource(draft.manifest.id, draft.ui_html);
+      } else {
+        await client.installPlugin(draft);
+      }
       opts.setMessages((m) =>
         m.map((msg) =>
           msg.id === msgId &&
@@ -339,7 +346,12 @@ export function useAiChatSend(opts: {
       }
       toast.success({ message: t("ai:pluginInstalled") });
       playSound("confirm");
-      opts.onPluginCreated();
+      window.dispatchEvent(
+        new CustomEvent("callai:plugins-changed", {
+          detail: { id: draft.manifest.id },
+        }),
+      );
+      opts.onPluginCreated(draft.manifest.id);
     } catch (e) {
       toast.error({
         message: String((e as { message?: string })?.message ?? e),

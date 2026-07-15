@@ -157,6 +157,7 @@ export const mockApi = {
     return binary ? `/usr/bin/${binary}` : null;
   },
   async listTemplates(): Promise<TemplateDto[]> {
+    // mock builtins only
     return [
       {
         id: "cozy_alarm",
@@ -268,6 +269,31 @@ export const mockApi = {
   async pluginInvoke(_pluginId: string, method: string, _args: unknown) {
     if (method === "ping") return { pong: true };
     return {};
+  },
+  _console: {} as Record<string, { level: string; args: string[]; t: number }[]>,
+  async pluginGetSource(id: string) {
+    return `<html><body>mock ${id}</body></html>`;
+  },
+  async pluginSetSource(_id: string, _html: string) {},
+  async pluginAppendConsole(id: string, entries: { level: string; args: string[]; t: number }[]) {
+    this._console[id] = [...(this._console[id] || []), ...entries].slice(-300);
+  },
+  async pluginGetConsole(id: string, limit?: number) {
+    return (this._console[id] || []).slice(-(limit ?? 100));
+  },
+  async pluginClearConsole(id: string) {
+    delete this._console[id];
+  },
+  async openPluginWindow(id: string) {
+    // Browser mock: open a blank preview tab with the composed HTML if possible.
+    console.info("[mock] openPluginWindow", id);
+    const html = await this.pluginUiHtml(id);
+    const w = window.open("", `plugin-${id}`, "width=440,height=720");
+    if (w) {
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+    }
   },
   async pluginUiHtml(_id: string) {
     return "<html><body>mock plugin</body></html>";

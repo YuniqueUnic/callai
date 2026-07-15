@@ -42,9 +42,14 @@ You may also use a plain line marker `ui.html` before the fence. Do not put the 
 
 ## UI rules
 - **Visual source of truth** = `animal_island_style` + `ai2ui` style packs in context
-- Host bridge: `window.callai.invoke(method, args)` → Promise
-  Methods: `storage.get|set|list|delete`, `history.list`, `timer.now`, `notification.show`, `ping`
+- **SDK (mandatory contract)** = `plugin_sdk` prompt in context. Prefer:
+  - `await window.callai.storage.get(key)` / `.set(key, value)` (objects OK)
+  - `await window.callai.timer.now()` → `{ iso, ts, now }`
+  - `await window.callai.notification.show({ title, body })`
+  Raw `window.callai.invoke("storage.get", { key })` is normalized to the **value itself**.
+- Do **not** use `localStorage` for durable data (lost / not host-backed).
 - Prefer self-contained HTML; CDN only as style pack allows (React/Babel/unpkg + Google Fonts)
+- Babel: `data-presets="react-classic"` only (no typescript)
 - Compact but complete: one screen of island UI; core CRUD first; avoid multi-page monsters
 - Prefer a short `<style>` or the island component set over thousands of lines of CSS
 
@@ -52,3 +57,9 @@ You may also use a plain line marker `ui.html` before the fence. Do not put the 
 - JSON object must close fully before the HTML part
 - HTML must include matching open/close tags and a usable root UI
 - Prefer finishing a smaller complete UI over an incomplete huge one
+
+
+## Schedule (host) vs params (plugin)
+After install, callai can schedule this plugin via alarm binary `__callai_plugin__`.
+Host only opens/notifies on schedule (popup / suppress-when-fullscreen).
+**All business parameters and settings UI live inside this plugin** (use `callai.storage`).

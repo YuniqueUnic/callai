@@ -13,7 +13,7 @@ pub mod sqlite;
 pub use autostart::AutoStart;
 pub use backup::*;
 pub use paths::*;
-pub use plugin::{McpLogStore, PluginManager};
+pub use plugin::{McpLogStore, PluginConsoleStore, PluginManager};
 pub use process::*;
 pub use scheduler::*;
 pub use sqlite::*;

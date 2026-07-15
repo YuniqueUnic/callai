@@ -55,6 +55,13 @@ export interface RetryPolicy {
   max_attempts: number;
 }
 
+export interface AlarmPluginConfig {
+  plugin_id: string;
+  popup: boolean;
+  suppress_when_fullscreen: boolean;
+  params: Record<string, string | number | boolean | null>;
+}
+
 export interface Alarm {
   id: string;
   name: string;
@@ -66,6 +73,7 @@ export interface Alarm {
   retry: RetryPolicy;
   timeout_secs: number;
   notification: AlarmNotificationSettings;
+  plugin?: AlarmPluginConfig | null;
   lifecycle: AlarmLifecycle | { Retrying: { attempt: number } } | string;
   created_at: string;
   updated_at: string;
@@ -81,6 +89,7 @@ export interface AlarmDraft {
   retry: RetryPolicy;
   timeout_secs: number;
   notification?: AlarmNotificationSettings;
+  plugin?: AlarmPluginConfig | null;
 }
 
 export type ExecutionStatus = "running" | "success" | "failed" | "retrying" | "canceled" | "timeout";
@@ -273,6 +282,8 @@ export interface TemplateDto {
   name_en: string;
   binary: string;
   args: string[];
+  kind?: "builtin" | "plugin" | string;
+  plugin?: AlarmPluginConfig | null;
 }
 
 

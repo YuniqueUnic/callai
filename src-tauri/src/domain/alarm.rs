@@ -10,6 +10,9 @@ pub const DEFAULT_TIMEOUT_SECS: u32 = 20;
 /// Portable built-in alarm binary id (resolved at run time by infra).
 pub const BUILTIN_ALARM_BINARY: &str = "__callai_alarm__";
 pub const BUILTIN_ALARM_ALIAS: &str = "callai-alarm";
+/// Built-in: schedule-open / notify an installed plugin.
+pub const BUILTIN_PLUGIN_BINARY: &str = "__callai_plugin__";
+pub const BUILTIN_PLUGIN_ALIAS: &str = "callai-plugin";
 
 pub const MIN_TIMEOUT_SECS: u32 = 1;
 pub const MAX_TIMEOUT_SECS: u32 = 3600;
@@ -110,13 +113,43 @@ pub enum AlarmLifecycle {
     Retrying { attempt: u32 },
 }
 
+/// Schedule config when binary is `__callai_plugin__`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AlarmPluginConfig {
+    pub plugin_id: String,
+    /// Open independent plugin window when the alarm fires.
+    #[serde(default = "plugin_cfg_true")]
+    pub popup: bool,
+    /// If any window is fullscreen, skip popup and only notify.
+    #[serde(default = "plugin_cfg_true")]
+    pub suppress_when_fullscreen: bool,
+    /// Free-form params for the plugin (JSON object, string values preferred).
+    #[serde(default)]
+    pub params: serde_json::Map<String, serde_json::Value>,
+}
+
+fn plugin_cfg_true() -> bool {
+    true
+}
+
+impl Default for AlarmPluginConfig {
+    fn default() -> Self {
+        Self {
+            plugin_id: String::new(),
+            popup: true,
+            suppress_when_fullscreen: true,
+            params: serde_json::Map::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EnvVar {
     pub key: String,
     pub value: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Alarm {
     pub id: String,
     pub name: String,
@@ -130,6 +163,9 @@ pub struct Alarm {
     pub timeout_secs: u32,
     /// Per-alarm desktop notification / sound when triggered.
     pub notification: AlarmNotificationSettings,
+    /// When binary is `__callai_plugin__`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub plugin: Option<AlarmPluginConfig>,
     pub lifecycle: AlarmLifecycle,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -147,6 +183,8 @@ pub struct AlarmDraft {
     pub timeout_secs: u32,
     #[serde(default)]
     pub notification: AlarmNotificationSettings,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub plugin: Option<AlarmPluginConfig>,
 }
 
 impl AlarmDraft {
@@ -179,6 +217,21 @@ impl AlarmDraft {
                 "timeout must be between 1 and 3600 seconds",
             ));
         }
+        let bin = self.binary.trim();
+        if bin == BUILTIN_PLUGIN_BINARY || bin.eq_ignore_ascii_case(BUILTIN_PLUGIN_ALIAS) {
+            let pid = self
+                .plugin
+                .as_ref()
+                .map(|p| p.plugin_id.trim())
+                .filter(|s| !s.is_empty())
+                .or_else(|| self.args.first().map(|s| s.trim()).filter(|s| !s.is_empty()));
+            if pid.is_none() {
+                return Err(DomainError::new(
+                    ErrorCode::InvalidArgs,
+                    "plugin alarm requires plugin_id (plugin.plugin_id or args[0])",
+                ));
+            }
+        }
         Ok(())
     }
 }
@@ -198,6 +251,7 @@ impl Alarm {
             retry: draft.retry,
             timeout_secs: draft.timeout_secs,
             notification: draft.notification,
+            plugin: draft.plugin,
             lifecycle: AlarmLifecycle::Idle,
             created_at: now,
             updated_at: now,
@@ -224,6 +278,7 @@ impl Alarm {
         self.retry = draft.retry;
         self.timeout_secs = draft.timeout_secs;
         self.notification = draft.notification;
+        self.plugin = draft.plugin;
         self.updated_at = Utc::now();
         Ok(())
     }

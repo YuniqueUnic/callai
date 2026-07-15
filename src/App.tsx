@@ -9,6 +9,7 @@ import { LogsPanel } from "./pages/LogsPanel";
 import { SettingsPage } from "./pages/SettingsPage";
 import { PluginsPage } from "./pages/PluginsPage";
 import { AiChatPage } from "./pages/AiChatPage";
+import { buildPluginFixSeed } from "./ai/pluginFixContext";
 import { applyTheme, readStoredTheme } from "./theme/theme";
 import { SeaMarquee } from "./ui/SeaMarquee";
 import { TitleBar } from "./ui/TitleBar";
@@ -22,6 +23,7 @@ export default function App() {
   const { t, i18n } = useTranslation(["common", "alarms", "logs"]);
   const [page, setPage] = useState<PageId>("home");
   const [aiReturnPage, setAiReturnPage] = useState<"home" | "plugins">("home");
+  const [aiFixSeed, setAiFixSeed] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [logAlarmId, setLogAlarmId] = useState<string | null>(null);
   const [logsOpen, setLogsOpen] = useState(false);
@@ -170,8 +172,21 @@ export default function App() {
               aria-hidden={tabKey !== "plugins"}
             >
               <PluginsPage
+                tabActive={tabKey === "plugins"}
                 onOpenAi={() => {
                   setAiReturnPage("plugins");
+                  setAiFixSeed(null);
+                  setPage("ai");
+                }}
+                onFixPlugin={(brief) => {
+                  // Latest console errors (≤10). If oversized, split ~10k tokens
+                  // proportionally by each error's size so the model still sees all of them.
+                  const seed = buildPluginFixSeed(brief, {
+                    maxErrors: 10,
+                    errorBudgetTokens: 10_000,
+                  });
+                  setAiReturnPage("plugins");
+                  setAiFixSeed(seed);
                   setPage("ai");
                 }}
               />
@@ -208,15 +223,23 @@ export default function App() {
         {page === "ai" ? (
           <div className="edit-overlay">
             <AiChatPage
+              fixSeed={aiFixSeed}
+              onFixSeedConsumed={() => setAiFixSeed(null)}
               onBack={() => setPage(aiReturnPage)}
               onAlarmCreated={() => {
                 // Stay on AI chat so the draft card can show "added"; home list refreshes via cache.
                 invalidateAlarmsCache();
                 window.dispatchEvent(new Event("callai:alarms-changed"));
               }}
-              onPluginCreated={() => {
+              onPluginCreated={(pluginId) => {
                 setAiReturnPage("plugins");
-                // stay on AI; list refresh happens when user returns
+                // Jump to Plugins tab so the new install is visible (keep-alive list refreshes via event).
+                setPage("plugins");
+                window.dispatchEvent(
+                  new CustomEvent("callai:plugins-changed", {
+                    detail: { id: pluginId, open: true },
+                  }),
+                );
               }}
             />
           </div>

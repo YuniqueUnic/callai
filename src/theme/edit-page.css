@@ -213,7 +213,8 @@
 /* Portaled callai tooltips (body) */
 .callai-tooltip {
   position: fixed;
-  z-index: 20000 !important;
+  /* Above animal-island Drawer panels (logs ~20050) when portaled to body */
+  z-index: 30100 !important;
   max-width: 220px;
   padding: 6px 12px;
   border-radius: 14px;

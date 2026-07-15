@@ -1,410 +1,30 @@
-//! SQLite adapter. SQL lives only in this module (constants + helpers);
-//! call sites must not embed ad-hoc SQL strings.
+//! Alarm / log / settings store methods.
 #![allow(dead_code, clippy::too_many_arguments, clippy::type_complexity)]
-use std::sync::Mutex;
-
-use chrono::{DateTime, TimeZone, Utc};
-use rusqlite::{params, Connection, OptionalExtension};
-
+use chrono::Utc;
+use rusqlite::{params, OptionalExtension};
 use crate::app::AlarmStore;
 use crate::domain::{
-    Alarm, AlarmLifecycle, AlarmNotificationSettings, AppSettings, DomainError, DomainResult,
-    EnvVar, ErrorCode, ExecutionLog, ExecutionStatus, LocaleCode, LogFilter, RetryInterval,
-    RetryPolicy, ScheduleSpec, ThemeMode,
+    Alarm, AppSettings, DomainError, DomainResult, ErrorCode, ExecutionLog, LocaleCode, LogFilter,
+    ThemeMode,
 };
+use super::helpers::{alarm_from_row, dt_to_str, map_log_row, map_logs, status_str};
+use super::SqliteStore;
 
 const SQL_LIST_ALARMS: &str = concat!(
     "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json, ",
-    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json ",
+    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json, ",
+    "COALESCE(plugin_json, '') ",
     "FROM alarms ORDER BY created_at DESC"
 );
 const SQL_GET_ALARM: &str = concat!(
     "SELECT id, name, enabled, schedule_json, binary_path, args_json, env_json, ",
-    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json ",
+    "retry_interval, timeout_secs, lifecycle_json, created_at, updated_at, notification_json, ",
+    "COALESCE(plugin_json, '') ",
     "FROM alarms WHERE id = ?1"
 );
 const SQL_DELETE_LOG: &str = "DELETE FROM execution_logs WHERE id = ?1";
 const SQL_DELETE_LOGS_BY_ALARM: &str = "DELETE FROM execution_logs WHERE alarm_id = ?1";
 const SQL_DELETE_ALARM: &str = "DELETE FROM alarms WHERE id = ?1";
-
-pub struct SqliteStore {
-    conn: Mutex<Connection>,
-}
-
-impl SqliteStore {
-    pub fn open(path: &std::path::Path) -> DomainResult<Self> {
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| {
-                DomainError::new(ErrorCode::StorageFailed, format!("mkdir db: {e}"))
-            })?;
-        }
-        let conn = Connection::open(path)
-            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("open db: {e}")))?;
-        let store = Self {
-            conn: Mutex::new(conn),
-        };
-        store.migrate()?;
-        Ok(store)
-    }
-
-    pub fn open_in_memory() -> DomainResult<Self> {
-        let conn = Connection::open_in_memory()
-            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("open mem db: {e}")))?;
-        let store = Self {
-            conn: Mutex::new(conn),
-        };
-        store.migrate()?;
-        Ok(store)
-    }
-
-    fn migrate(&self) -> DomainResult<()> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute_batch(
-            r#"
-            CREATE TABLE IF NOT EXISTS alarms (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                enabled INTEGER NOT NULL,
-                schedule_json TEXT NOT NULL,
-                binary_path TEXT NOT NULL,
-                args_json TEXT NOT NULL,
-                env_json TEXT NOT NULL,
-                retry_interval TEXT NOT NULL,
-                timeout_secs INTEGER NOT NULL DEFAULT 20,
-                lifecycle_json TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                notification_json TEXT NOT NULL DEFAULT '{"enabled":true,"notification_type":"with_sound"}'
-            );
-
-            CREATE TABLE IF NOT EXISTS execution_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                alarm_id TEXT NOT NULL,
-                alarm_name TEXT NOT NULL,
-                started_at TEXT NOT NULL,
-                finished_at TEXT,
-                status TEXT NOT NULL,
-                exit_code INTEGER,
-                duration_ms INTEGER,
-                retry_count INTEGER NOT NULL DEFAULT 0,
-                command_preview TEXT NOT NULL,
-                stdout TEXT NOT NULL DEFAULT '',
-                stderr TEXT NOT NULL DEFAULT ''
-            );
-
-            CREATE TABLE IF NOT EXISTS app_settings (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                theme TEXT NOT NULL,
-                locale TEXT NOT NULL,
-                launch_minimized INTEGER NOT NULL,
-                log_retention_days INTEGER NOT NULL,
-                notify_on_failure INTEGER NOT NULL,
-                sound_enabled INTEGER NOT NULL DEFAULT 1,
-                timezone TEXT NOT NULL DEFAULT 'system',
-                auto_backup_on_start INTEGER NOT NULL,
-                backup_keep_count INTEGER NOT NULL
-            );
-
-            -- Insert without sound_enabled so pre-migration DBs (missing the column)
-            -- still accept this statement; DEFAULT applies on fresh CREATE TABLE.
-            INSERT OR IGNORE INTO app_settings (
-                id, theme, locale, launch_minimized, log_retention_days,
-                notify_on_failure, auto_backup_on_start, backup_keep_count
-            ) VALUES (1, 'system', 'zh-CN', 0, 30, 0, 1, 10);
-            "#,
-        )
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("migrate: {e}")))?;
-        // Additive columns for existing installs (must run after CREATE/INSERT batch).
-        let _ = conn.execute(
-            "ALTER TABLE alarms ADD COLUMN timeout_secs INTEGER NOT NULL DEFAULT 20",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN sound_enabled INTEGER NOT NULL DEFAULT 1",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN timezone TEXT NOT NULL DEFAULT 'system'",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE alarms ADD COLUMN notification_json TEXT NOT NULL DEFAULT '{\"enabled\":true,\"notification_type\":\"with_sound\"}'",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN ai_base_url TEXT NOT NULL DEFAULT ''",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN ai_api_key TEXT NOT NULL DEFAULT ''",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN ai_model TEXT NOT NULL DEFAULT 'gpt-4o-mini'",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN ai_provider TEXT NOT NULL DEFAULT 'openai'",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN mcp_enabled INTEGER NOT NULL DEFAULT 0",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN mcp_listen_host TEXT NOT NULL DEFAULT '127.0.0.1'",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN mcp_port INTEGER NOT NULL DEFAULT 3927",
-            [],
-        );
-        let _ = conn.execute(
-            "ALTER TABLE app_settings ADD COLUMN mcp_auth_token TEXT NOT NULL DEFAULT ''",
-            [],
-        );
-        // One-shot bump of retired OpenAI defaults (idempotent; ignores missing column).
-        let _ = conn.execute(
-            "UPDATE app_settings SET ai_model = 'gpt-5.6-terra' WHERE ai_model IN ('gpt-4o-mini','gpt-4o','gpt-4.1-mini')",
-            [],
-        );
-        // AI assistant chat history (single thread, newest-first queries).
-        let _ = conn.execute_batch(
-            r#"
-            CREATE TABLE IF NOT EXISTS ai_chat_messages (
-                id TEXT PRIMARY KEY,
-                role TEXT NOT NULL,
-                kind TEXT NOT NULL,
-                content TEXT NOT NULL,
-                payload_json TEXT NOT NULL DEFAULT '',
-                created_at TEXT NOT NULL,
-                applied INTEGER NOT NULL DEFAULT 0
-            );
-            CREATE INDEX IF NOT EXISTS idx_ai_chat_created_at
-                ON ai_chat_messages(created_at DESC);
-            "#,
-        );
-        Ok(())
-    }
-
-    // ── AI chat history ─────────────────────────────────
-
-    pub fn upsert_ai_chat_message(
-        &self,
-        msg: &crate::domain::AiChatMessage,
-    ) -> DomainResult<()> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute(
-            r#"INSERT INTO ai_chat_messages
-                (id, role, kind, content, payload_json, created_at, applied)
-               VALUES (?1,?2,?3,?4,?5,?6,?7)
-               ON CONFLICT(id) DO UPDATE SET
-                 role=excluded.role,
-                 kind=excluded.kind,
-                 content=excluded.content,
-                 payload_json=excluded.payload_json,
-                 created_at=excluded.created_at,
-                 applied=excluded.applied"#,
-            params![
-                msg.id.as_str(),
-                ai_role_str(&msg.role),
-                ai_kind_str(&msg.kind),
-                msg.content.as_str(),
-                msg.payload_json.as_str(),
-                msg.created_at.as_str(),
-                if msg.applied { 1 } else { 0 },
-            ],
-        )
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-        Ok(())
-    }
-
-    /// If `before` is set, load messages older than that created_at (DESC page).
-    pub fn list_ai_chat_messages(
-        &self,
-        before: Option<&str>,
-        limit: u32,
-    ) -> DomainResult<crate::domain::AiChatPage> {
-        let limit = limit.clamp(1, 100) as i64;
-        let fetch = limit + 1;
-        let conn = self.conn.lock().unwrap();
-        let rows = if let Some(b) = before.filter(|s| !s.trim().is_empty()) {
-            let mut stmt = conn
-                .prepare(
-                    r#"SELECT id, role, kind, content, payload_json, created_at, applied
-                       FROM ai_chat_messages
-                       WHERE created_at < ?1
-                       ORDER BY created_at DESC
-                       LIMIT ?2"#,
-                )
-                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-            let mapped = stmt
-                .query_map(params![b, fetch], map_ai_chat_row)
-                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-            mapped
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?
-        } else {
-            let mut stmt = conn
-                .prepare(
-                    r#"SELECT id, role, kind, content, payload_json, created_at, applied
-                       FROM ai_chat_messages
-                       ORDER BY created_at DESC
-                       LIMIT ?1"#,
-                )
-                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-            let mapped = stmt
-                .query_map(params![fetch], map_ai_chat_row)
-                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-            mapped
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?
-        };
-
-        let has_more = (rows.len() as i64) > limit;
-        let mut messages: Vec<crate::domain::AiChatMessage> =
-            rows.into_iter().take(limit as usize).collect();
-        messages.reverse(); // chronological for UI
-        Ok(crate::domain::AiChatPage { messages, has_more })
-    }
-
-    pub fn delete_ai_chat_messages(&self, ids: &[String]) -> DomainResult<u64> {
-        if ids.is_empty() {
-            return Ok(0);
-        }
-        let conn = self.conn.lock().unwrap();
-        let mut n = 0u64;
-        for id in ids {
-            let c = conn
-                .execute("DELETE FROM ai_chat_messages WHERE id = ?1", params![id])
-                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-            n += c as u64;
-        }
-        Ok(n)
-    }
-
-    pub fn clear_ai_chat_messages(&self) -> DomainResult<u64> {
-        let conn = self.conn.lock().unwrap();
-        let n = conn
-            .execute("DELETE FROM ai_chat_messages", [])
-            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-        Ok(n as u64)
-    }
-
-    pub fn set_ai_chat_applied(&self, id: &str, applied: bool) -> DomainResult<()> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "UPDATE ai_chat_messages SET applied = ?1 WHERE id = ?2",
-            params![if applied { 1 } else { 0 }, id],
-        )
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-        Ok(())
-    }
-
-}
-
-fn ai_role_str(r: &crate::domain::AiChatRole) -> &'static str {
-    match r {
-        crate::domain::AiChatRole::User => "user",
-        crate::domain::AiChatRole::Assistant => "assistant",
-    }
-}
-
-fn ai_kind_str(k: &crate::domain::AiChatKind) -> &'static str {
-    match k {
-        crate::domain::AiChatKind::Text => "text",
-        crate::domain::AiChatKind::Error => "error",
-        crate::domain::AiChatKind::AlarmDraft => "alarm_draft",
-        crate::domain::AiChatKind::PluginDraft => "plugin_draft",
-    }
-}
-
-fn parse_ai_role(s: &str) -> crate::domain::AiChatRole {
-    match s {
-        "user" => crate::domain::AiChatRole::User,
-        _ => crate::domain::AiChatRole::Assistant,
-    }
-}
-
-fn parse_ai_kind(s: &str) -> crate::domain::AiChatKind {
-    match s {
-        "error" => crate::domain::AiChatKind::Error,
-        "alarm_draft" => crate::domain::AiChatKind::AlarmDraft,
-        "plugin_draft" => crate::domain::AiChatKind::PluginDraft,
-        _ => crate::domain::AiChatKind::Text,
-    }
-}
-
-fn map_ai_chat_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<crate::domain::AiChatMessage> {
-    let role: String = row.get(1)?;
-    let kind: String = row.get(2)?;
-    Ok(crate::domain::AiChatMessage {
-        id: row.get(0)?,
-        role: parse_ai_role(&role),
-        kind: parse_ai_kind(&kind),
-        content: row.get(3)?,
-        payload_json: row.get(4)?,
-        created_at: row.get(5)?,
-        applied: row.get::<_, i64>(6)? != 0,
-    })
-}
-
-
-
-fn dt_to_str(dt: DateTime<Utc>) -> String {
-    dt.to_rfc3339()
-}
-
-fn str_to_dt(s: &str) -> DomainResult<DateTime<Utc>> {
-    DateTime::parse_from_rfc3339(s)
-        .map(|d| d.with_timezone(&Utc))
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("bad datetime: {e}")))
-}
-
-fn alarm_from_row(
-    id: String,
-    name: String,
-    enabled: i64,
-    schedule_json: String,
-    binary_path: String,
-    args_json: String,
-    env_json: String,
-    retry_interval: String,
-    timeout_secs: i64,
-    lifecycle_json: String,
-    created_at: String,
-    updated_at: String,
-    notification_json: String,
-) -> DomainResult<Alarm> {
-    let schedule: ScheduleSpec = serde_json::from_str(&schedule_json)
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("schedule json: {e}")))?;
-    let args: Vec<String> = serde_json::from_str(&args_json)
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("args json: {e}")))?;
-    let env_vars: Vec<EnvVar> = serde_json::from_str(&env_json)
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("env json: {e}")))?;
-    let lifecycle: AlarmLifecycle = serde_json::from_str(&lifecycle_json)
-        .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("lifecycle json: {e}")))?;
-    let notification: AlarmNotificationSettings = if notification_json.trim().is_empty() {
-        AlarmNotificationSettings::default()
-    } else {
-        serde_json::from_str(&notification_json).unwrap_or_default()
-    };
-    Ok(Alarm {
-        id,
-        name,
-        enabled: enabled != 0,
-        schedule,
-        binary: binary_path,
-        args,
-        env_vars,
-        retry: RetryPolicy::new(RetryInterval::parse(&retry_interval)?),
-        timeout_secs: timeout_secs.clamp(1, 3600) as u32,
-        notification,
-        lifecycle,
-        created_at: str_to_dt(&created_at)?,
-        updated_at: str_to_dt(&updated_at)?,
-    })
-}
 
 impl AlarmStore for SqliteStore {
     fn list_alarms(&self) -> DomainResult<Vec<Alarm>> {
@@ -428,6 +48,7 @@ impl AlarmStore for SqliteStore {
                     row.get::<_, String>(10)?,
                     row.get::<_, String>(11)?,
                     row.get::<_, String>(12)?,
+                    row.get::<_, String>(13)?,
                 ))
             })
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
@@ -436,7 +57,7 @@ impl AlarmStore for SqliteStore {
         for r in rows {
             let t = r.map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
             out.push(alarm_from_row(
-                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12,
+                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12, t.13,
             )?);
         }
         Ok(out)
@@ -460,13 +81,14 @@ impl AlarmStore for SqliteStore {
                     row.get::<_, String>(10)?,
                     row.get::<_, String>(11)?,
                     row.get::<_, String>(12)?,
+                    row.get::<_, String>(13)?,
                 ))
             })
             .optional()
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         match row {
             Some(t) => Ok(Some(alarm_from_row(
-                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12,
+                t.0, t.1, t.2, t.3, t.4, t.5, t.6, t.7, t.8, t.9, t.10, t.11, t.12, t.13,
             )?)),
             None => Ok(None),
         }
@@ -484,12 +106,17 @@ impl AlarmStore for SqliteStore {
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         let notification_json = serde_json::to_string(&alarm.notification)
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
+        let plugin_json = match &alarm.plugin {
+            Some(p) => serde_json::to_string(p)
+                .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?,
+            None => String::new(),
+        };
         conn.execute(
             "INSERT INTO alarms (
                 id, name, enabled, schedule_json, binary_path, args_json, env_json,
                 retry_interval, timeout_secs, lifecycle_json, created_at, updated_at,
-                notification_json
-             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)
+                notification_json, plugin_json
+             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)
              ON CONFLICT(id) DO UPDATE SET
                 name=excluded.name,
                 enabled=excluded.enabled,
@@ -501,7 +128,8 @@ impl AlarmStore for SqliteStore {
                 timeout_secs=excluded.timeout_secs,
                 lifecycle_json=excluded.lifecycle_json,
                 updated_at=excluded.updated_at,
-                notification_json=excluded.notification_json",
+                notification_json=excluded.notification_json,
+                plugin_json=excluded.plugin_json",
             params![
                 alarm.id,
                 alarm.name,
@@ -516,6 +144,7 @@ impl AlarmStore for SqliteStore {
                 dt_to_str(alarm.created_at),
                 dt_to_str(alarm.updated_at),
                 notification_json,
+                plugin_json,
             ],
         )
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
@@ -824,106 +453,3 @@ impl AlarmStore for SqliteStore {
     }
 }
 
-fn status_str(s: ExecutionStatus) -> &'static str {
-    match s {
-        ExecutionStatus::Running => "running",
-        ExecutionStatus::Success => "success",
-        ExecutionStatus::Failed => "failed",
-        ExecutionStatus::Retrying => "retrying",
-        ExecutionStatus::Canceled => "canceled",
-        ExecutionStatus::Timeout => "timeout",
-    }
-}
-
-fn parse_status(s: &str) -> ExecutionStatus {
-    match s {
-        "success" => ExecutionStatus::Success,
-        "failed" => ExecutionStatus::Failed,
-        "retrying" => ExecutionStatus::Retrying,
-        "canceled" | "cancelled" => ExecutionStatus::Canceled,
-        "timeout" => ExecutionStatus::Timeout,
-        _ => ExecutionStatus::Running,
-    }
-}
-
-fn map_log_row(
-    row: &rusqlite::Row<'_>,
-) -> rusqlite::Result<(
-    i64,
-    String,
-    String,
-    String,
-    Option<String>,
-    String,
-    Option<i32>,
-    Option<i64>,
-    i64,
-    String,
-    String,
-    String,
-)> {
-    Ok((
-        row.get(0)?,
-        row.get(1)?,
-        row.get(2)?,
-        row.get(3)?,
-        row.get(4)?,
-        row.get(5)?,
-        row.get(6)?,
-        row.get(7)?,
-        row.get(8)?,
-        row.get(9)?,
-        row.get(10)?,
-        row.get(11)?,
-    ))
-}
-
-fn map_logs(
-    rows: impl Iterator<
-        Item = Result<
-            (
-                i64,
-                String,
-                String,
-                String,
-                Option<String>,
-                String,
-                Option<i32>,
-                Option<i64>,
-                i64,
-                String,
-                String,
-                String,
-            ),
-            rusqlite::Error,
-        >,
-    >,
-) -> DomainResult<Vec<ExecutionLog>> {
-    let mut out = Vec::new();
-    for r in rows {
-        let t = r.map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
-        out.push(ExecutionLog {
-            id: t.0,
-            alarm_id: t.1,
-            alarm_name: t.2,
-            started_at: str_to_dt(&t.3)?,
-            finished_at: match t.4 {
-                Some(s) => Some(str_to_dt(&s)?),
-                None => None,
-            },
-            status: parse_status(&t.5),
-            exit_code: t.6,
-            duration_ms: t.7,
-            retry_count: t.8 as u32,
-            command_preview: t.9,
-            stdout: t.10,
-            stderr: t.11,
-        });
-    }
-    Ok(out)
-}
-
-#[allow(dead_code)]
-fn _unused_tz() {
-    let _ = Utc.timestamp_opt(0, 0);
-}

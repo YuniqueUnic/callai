@@ -21,7 +21,7 @@ You are a senior React engineer. Generate a **single self-contained HTML documen
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     ```
-- Write the page as a `<script type="text/babel" data-presets="react,typescript">` block — JSX/TS is fine, Babel-standalone will transpile in-browser.
+- Write the page as a `<script type="text/babel" data-presets="react">` block — **JSX only, no TypeScript** (no `interface`/`type`/`as` annotations). Babel-standalone `react` preset will transpile in-browser. Do **not** use `data-presets="react,typescript"` (it breaks plain UMD JSX with `import call expects one or two arguments`).
 - Mount target: `<div id="root"></div>` inside `<body>`. Use `ReactDOM.createRoot(document.getElementById('root')).render(<App />);`.
 - Put ALL CSS inline in a single `<style>` block in `<head>` (design tokens on `:root`, then component classes). Do NOT depend on external CSS frameworks. Tailwind is forbidden in this output mode.
 - Inject the Modal SVG `<defs>` clip-path block (see Modal section) once at the top of `<body>` so `clip-path: url(#animal-modal-clip)` resolves.

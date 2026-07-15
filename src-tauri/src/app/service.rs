@@ -5,24 +5,22 @@ use std::sync::{Arc, Mutex};
 use chrono::Utc;
 
 use crate::domain::{
-    expand_arg_templates, resolve_process_argv, resolve_timezone, Alarm, AlarmDraft,
-    AlarmLifecycle, AppSettings, DomainError, DomainResult, ErrorCode, ExecutionLog,
-    ExecutionStatus, LogFilter,
+    resolve_timezone, Alarm, AlarmDraft, AlarmLifecycle, AppSettings, DomainError, DomainResult,
+    ErrorCode, ExecutionLog, LogFilter,
 };
 
 use super::{
-    AlarmStore, CancelFlag, Clock, ConfigBackup, OutputChunkFn, ProcessOutput, ProcessRunner,
-    Sleeper,
+    AlarmStore, CancelFlag, Clock, ConfigBackup, OutputChunkFn, ProcessRunner, Sleeper,
 };
 
 pub struct AlarmService {
-    store: Arc<dyn AlarmStore>,
-    runner: Arc<dyn ProcessRunner>,
-    clock: Arc<dyn Clock>,
-    backup: Arc<dyn ConfigBackup>,
-    sleeper: Arc<dyn Sleeper>,
+    pub(crate) store: Arc<dyn AlarmStore>,
+    pub(crate) runner: Arc<dyn ProcessRunner>,
+    pub(crate) clock: Arc<dyn Clock>,
+    pub(crate) backup: Arc<dyn ConfigBackup>,
+    pub(crate) sleeper: Arc<dyn Sleeper>,
     /// Active run cancel tokens keyed by alarm id.
-    active: Mutex<HashMap<String, Arc<CancelFlag>>>,
+    pub(crate) active: Mutex<HashMap<String, Arc<CancelFlag>>>,
 }
 
 impl AlarmService {
@@ -233,191 +231,6 @@ impl AlarmService {
         }
 
         result
-    }
-
-    fn execute_alarm_loop(
-        &self,
-        alarm: &mut Alarm,
-        cancel: Arc<CancelFlag>,
-        on_chunk: Option<&OutputChunkFn>,
-    ) -> DomainResult<ExecutionLog> {
-        alarm.mark_running();
-        self.store.upsert_alarm(alarm)?;
-
-        let started = self.clock.now_utc();
-        let templated = expand_arg_templates(&alarm.args, started);
-        let (resolved_binary, expanded_args) = resolve_process_argv(&alarm.binary, &templated)?;
-        let mut env: Vec<(String, String)> = alarm
-            .env_vars
-            .iter()
-            .map(|e| (e.key.clone(), e.value.clone()))
-            .collect();
-        // Pass per-alarm notification settings to built-in alarm runtime.
-        if let Ok(json) = serde_json::to_string(&alarm.notification) {
-            env.push(("CALLAI_NOTIFY".into(), json));
-        }
-
-        // Non-builtin tasks: optional trigger notification when execution starts.
-        if !crate::infra::builtin_alarm::is_builtin_alarm(&alarm.binary)
-            && alarm.notification.wants_notification()
-        {
-            let _ = crate::infra::builtin_alarm::notify_trigger(
-                &alarm.name,
-                &alarm.command_preview(),
-                &alarm.notification,
-            );
-        }
-
-        let mut log = ExecutionLog {
-            id: 0,
-            alarm_id: alarm.id.clone(),
-            alarm_name: alarm.name.clone(),
-            started_at: started,
-            finished_at: None,
-            status: ExecutionStatus::Running,
-            exit_code: None,
-            duration_ms: None,
-            retry_count: 0,
-            command_preview: crate::domain::preview_command(&resolved_binary, &expanded_args),
-            stdout: String::new(),
-            stderr: String::new(),
-        };
-        log.id = self.store.insert_log(&log)?;
-
-        let mut attempt: u32 = 0;
-        #[allow(unused_assignments)]
-        let mut last_output: Option<ProcessOutput> = None;
-        let mut success = false;
-        let mut canceled = false;
-        let mut timed_out = false;
-
-        loop {
-            if cancel.is_requested() {
-                canceled = true;
-                last_output = Some(ProcessOutput {
-                    exit_code: -1,
-                    stdout: String::new(),
-                    stderr: "execution canceled by user".into(),
-                    duration_ms: 0,
-                    canceled: true,
-                    timed_out: false,
-                });
-                break;
-            }
-
-            match self.runner.run(
-                &resolved_binary,
-                &expanded_args,
-                &env,
-                alarm.timeout_secs,
-                Some(Arc::clone(&cancel)),
-                on_chunk,
-            ) {
-                Ok(out) if out.exit_code == 0 && !out.canceled && !out.timed_out => {
-                    last_output = Some(out);
-                    success = true;
-                    break;
-                }
-                Ok(out) => {
-                    canceled = out.canceled;
-                    timed_out = out.timed_out;
-                    last_output = Some(out);
-                    // Cancel / timeout: do not retry.
-                    if canceled || timed_out {
-                        break;
-                    }
-                }
-                Err(err) => {
-                    last_output = Some(ProcessOutput {
-                        exit_code: -1,
-                        stdout: String::new(),
-                        stderr: err.message,
-                        duration_ms: 0,
-                        canceled: false,
-                        timed_out: false,
-                    });
-                }
-            }
-
-            if attempt + 1 >= alarm.retry.max_attempts {
-                break;
-            }
-            attempt += 1;
-            alarm.mark_retrying(attempt);
-            self.store.upsert_alarm(alarm)?;
-            log.status = ExecutionStatus::Retrying;
-            log.retry_count = attempt;
-            self.store.update_log(&log)?;
-
-            if let Some(secs) = alarm.retry.wait_seconds_for_attempt(attempt - 1) {
-                // Cooperative cancel during retry wait (poll, no long uninterruptible sleep).
-                let mut remaining = secs;
-                while remaining > 0 {
-                    if cancel.is_requested() {
-                        canceled = true;
-                        last_output = Some(ProcessOutput {
-                            exit_code: -1,
-                            stdout: last_output
-                                .as_ref()
-                                .map(|o| o.stdout.clone())
-                                .unwrap_or_default(),
-                            stderr: {
-                                let mut s = last_output
-                                    .as_ref()
-                                    .map(|o| o.stderr.clone())
-                                    .unwrap_or_default();
-                                if !s.is_empty() {
-                                    s.push('\n');
-                                }
-                                s.push_str("execution canceled by user");
-                                s
-                            },
-                            duration_ms: last_output.as_ref().map(|o| o.duration_ms).unwrap_or(0),
-                            canceled: true,
-                            timed_out: false,
-                        });
-                        break;
-                    }
-                    let step = remaining.min(1);
-                    self.sleeper.sleep_secs(step);
-                    remaining = remaining.saturating_sub(step);
-                }
-                if canceled {
-                    break;
-                }
-            }
-        }
-
-        let finished = self.clock.now_utc();
-        let out = last_output.unwrap_or(ProcessOutput {
-            exit_code: -1,
-            stdout: String::new(),
-            stderr: "no output".into(),
-            duration_ms: 0,
-            canceled: false,
-            timed_out: false,
-        });
-
-        log.finished_at = Some(finished);
-        log.exit_code = Some(out.exit_code);
-        log.duration_ms = Some((finished - started).num_milliseconds().max(out.duration_ms));
-        log.retry_count = attempt;
-        log.stdout = out.stdout;
-        log.stderr = out.stderr;
-        log.status = if success {
-            ExecutionStatus::Success
-        } else if canceled || out.canceled {
-            ExecutionStatus::Canceled
-        } else if timed_out || out.timed_out {
-            ExecutionStatus::Timeout
-        } else {
-            ExecutionStatus::Failed
-        };
-        self.store.update_log(&log)?;
-
-        alarm.mark_idle();
-        self.store.upsert_alarm(alarm)?;
-        Ok(log)
     }
 
     /// Import alarms from config.toml into SQLite (by name upsert semantics: create new drafts).

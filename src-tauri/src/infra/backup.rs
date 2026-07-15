@@ -351,6 +351,7 @@ impl ConfigBackup for TomlConfigBackup {
                     ),
                     timeout_secs: 20,
                     notification: Default::default(),
+                    plugin: None,
                 }
             })
             .collect();

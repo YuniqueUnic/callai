@@ -20,6 +20,7 @@ pub const OUTPUT_CONTRACT_PROMPT: &str = include_str!("../../prompts/output_cont
 pub const ALARM_GENERATE_PROMPT: &str = include_str!("../../prompts/alarm_generate.prompt");
 pub const PLUGIN_GENERATE_PROMPT: &str = include_str!("../../prompts/plugin_generate.prompt");
 pub const AI2UI_PROMPT: &str = include_str!("../../prompts/ai2ui.prompt");
+pub const PLUGIN_SDK_PROMPT: &str = include_str!("../../prompts/plugin_sdk.prompt");
 /// Authoritative animal-island-ui visual/system design for AI-generated UIs.
 pub const ANIMAL_ISLAND_STYLE_PROMPT: &str =
     include_str!("../../prompts/animal-island-style.prompt");
@@ -104,7 +105,7 @@ pub fn render_prompt_id_with(id: PromptId, extra: &BTreeMap<String, String>) -> 
 }
 
 fn cached_body(id: PromptId) -> &'static str {
-    static CACHE: OnceLock<[String; 9]> = OnceLock::new();
+    static CACHE: OnceLock<[String; 10]> = OnceLock::new();
     let all = CACHE.get_or_init(|| {
         [
             render_prompt_template(SYSTEM_PROMPT),
@@ -114,6 +115,7 @@ fn cached_body(id: PromptId) -> &'static str {
             render_prompt_template(PLUGIN_GENERATE_PROMPT),
             render_prompt_template(AI2UI_PROMPT),
             render_prompt_template(ANIMAL_ISLAND_STYLE_PROMPT),
+            render_prompt_template(PLUGIN_SDK_PROMPT),
             render_prompt_template(CONTINUE_SYSTEM_PROMPT),
             // continue_user still has {{ incomplete_tail }} etc.; product-only render
             // leaves those for render_prompt_id_with. Cache product-rendered shell.
@@ -136,8 +138,9 @@ fn cached_body(id: PromptId) -> &'static str {
         PromptId::PluginGenerate => all[4].as_str(),
         PromptId::Ai2Ui => all[5].as_str(),
         PromptId::AnimalIslandStyle => all[6].as_str(),
-        PromptId::ContinueSystem => all[7].as_str(),
-        PromptId::ContinueUser => all[8].as_str(),
+        PromptId::PluginSdk => all[7].as_str(),
+        PromptId::ContinueSystem => all[8].as_str(),
+        PromptId::ContinueUser => all[9].as_str(),
     }
 }
 
@@ -150,6 +153,7 @@ pub enum PromptId {
     PluginGenerate,
     Ai2Ui,
     AnimalIslandStyle,
+    PluginSdk,
     ContinueSystem,
     ContinueUser,
 }
@@ -164,6 +168,7 @@ impl PromptId {
             Self::PluginGenerate => "plugin_generate",
             Self::Ai2Ui => "ai2ui",
             Self::AnimalIslandStyle => "animal_island_style",
+            Self::PluginSdk => "plugin_sdk",
             Self::ContinueSystem => "continue_system",
             Self::ContinueUser => "continue_user",
         }
@@ -179,6 +184,7 @@ impl PromptId {
             "alarm_generate" | "alarm" => Some(Self::AlarmGenerate),
             "plugin_generate" | "plugin" => Some(Self::PluginGenerate),
             "ai2ui" | "ui" => Some(Self::Ai2Ui),
+            "plugin_sdk" | "plugin-sdk" | "sdk" => Some(Self::PluginSdk),
             "animal_island_style"
             | "animal-island-style"
             | "island_style"
@@ -213,12 +219,13 @@ impl PromptId {
             Self::PluginGenerate => PLUGIN_GENERATE_PROMPT,
             Self::Ai2Ui => AI2UI_PROMPT,
             Self::AnimalIslandStyle => ANIMAL_ISLAND_STYLE_PROMPT,
+            Self::PluginSdk => PLUGIN_SDK_PROMPT,
             Self::ContinueSystem => CONTINUE_SYSTEM_PROMPT,
             Self::ContinueUser => CONTINUE_USER_PROMPT,
         }
     }
 
-    pub fn all() -> [Self; 9] {
+    pub fn all() -> [Self; 10] {
         [
             Self::System,
             Self::Capabilities,
@@ -227,6 +234,7 @@ impl PromptId {
             Self::PluginGenerate,
             Self::Ai2Ui,
             Self::AnimalIslandStyle,
+            Self::PluginSdk,
             Self::ContinueSystem,
             Self::ContinueUser,
         ]

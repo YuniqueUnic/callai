@@ -11,6 +11,7 @@ fn prompt_ids_include_composition_layers() {
     assert!(PromptId::parse("alarm_generate").is_some());
     assert!(PromptId::parse("plugin_generate").is_some());
     assert!(PromptId::parse("ai2ui").is_some());
+    assert!(PromptId::parse("plugin_sdk").is_some());
     assert!(PromptId::parse("continue_system").is_some());
     assert!(PromptId::parse("continue_user").is_some());
 
@@ -41,7 +42,7 @@ fn prompt_ids_include_composition_layers() {
     assert!(cont.body().contains("missing suffix") || cont.body().contains("Continuation"));
 
     let all = PromptId::all();
-    assert_eq!(all.len(), 9);
+    assert_eq!(all.len(), 10);
     assert!(all.iter().any(|p| matches!(p, PromptId::Capabilities)));
     assert!(all.iter().any(|p| matches!(p, PromptId::OutputContract)));
     assert!(all.iter().any(|p| matches!(p, PromptId::AnimalIslandStyle)));

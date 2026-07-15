@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, Modal, Table, Tag } from "animal-island-ui";
+import { Card, Drawer, Modal, Table, Tag } from "animal-island-ui";
 import { ElementImage } from "../ui/ElementImage";
 import type { McpLogEntry, PluginHistoryEntry, PluginSummary } from "../domain/types";
 import { client } from "../infra/client";
+import { isTauri } from "../infra/tauriApi";
 import { toast } from "../ui/toast";
 import { playSound } from "../ui/sounds";
 import { IconButton } from "../ui/IconButton";
@@ -16,14 +17,25 @@ import {
   IconRefresh,
   IconTrash,
 } from "../ui/icons";
+import { PluginLogsPanel } from "./PluginLogsPanel";
 
 interface Props {
   onOpenAi: () => void;
+  /** Open AI assistant with a prefilled fix brief for a plugin. */
+  onFixPlugin?: (brief: {
+    pluginId: string;
+    pluginName: string;
+    source: string;
+    history: PluginHistoryEntry[];
+    consoleLines: { level: string; args: string[]; t: number }[];
+  }) => void;
+  /** When keep-alive tab becomes active, parent sets true so we re-fetch. */
+  tabActive?: boolean;
 }
 
 type PluginsTab = "list" | "mcp";
 
-export function PluginsPage({ onOpenAi }: Props) {
+export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) {
   const { t } = useTranslation(["plugins", "common"]);
   const [plugins, setPlugins] = useState<PluginSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +46,25 @@ export function PluginsPage({ onOpenAi }: Props) {
   const [mcpLogs, setMcpLogs] = useState<McpLogEntry[]>([]);
   const [mcpLoading, setMcpLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<PluginSummary | null>(null);
+  const [logTarget, setLogTarget] = useState<PluginSummary | null>(null);
+  const [consoleLines, setConsoleLines] = useState<
+    { level: string; args: string[]; t: number }[]
+  >([]);
+  /** Logs drawer history (isolated from in-page runtime table). */
+  const [logHistory, setLogHistory] = useState<PluginHistoryEntry[]>([]);
+  const [logLoading, setLogLoading] = useState(false);
+
+
+  // Same rounded-window chrome fix as main logs / AI detail drawers.
+  useEffect(() => {
+    const open = logTarget != null;
+    document.body.classList.toggle("callai-drawer-open", open);
+    document.body.classList.toggle("callai-logs-open", open);
+    return () => {
+      document.body.classList.remove("callai-drawer-open");
+      document.body.classList.remove("callai-logs-open");
+    };
+  }, [logTarget]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -61,8 +92,29 @@ export function PluginsPage({ onOpenAi }: Props) {
     }
   }, []);
 
+  const [pendingOpenId, setPendingOpenId] = useState<string | null>(null);
+
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  // Keep-alive tab: re-fetch when this pane becomes active again.
+  useEffect(() => {
+    if (tabActive) void refresh();
+  }, [tabActive, refresh]);
+
+  useEffect(() => {
+    function onPluginsChanged(ev: Event) {
+      const detail = (ev as CustomEvent<{ id?: string; open?: boolean }>).detail;
+      void refresh();
+      setTab("list");
+      if (detail?.id && detail.open !== false) {
+        setPendingOpenId(detail.id);
+      }
+    }
+    window.addEventListener("callai:plugins-changed", onPluginsChanged);
+    return () =>
+      window.removeEventListener("callai:plugins-changed", onPluginsChanged);
   }, [refresh]);
 
   useEffect(() => {
@@ -103,10 +155,76 @@ export function PluginsPage({ onOpenAi }: Props) {
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
+
+  async function showPluginLogs(p: PluginSummary) {
+    setLogTarget(p);
+    setLogLoading(true);
+    try {
+      const [hist, cons] = await Promise.all([
+        client.pluginListHistory(p.id, 80),
+        typeof client.pluginGetConsole === "function"
+          ? client.pluginGetConsole(p.id, 200)
+          : Promise.resolve([]),
+      ]);
+      setLogHistory(hist);
+      setConsoleLines(cons);
+      playSound("soft");
+    } catch (e) {
+      toast.error({
+        message: String((e as { message?: string })?.message ?? e),
+      });
+    } finally {
+      setLogLoading(false);
+    }
+  }
+
+  async function fixPluginWithAi(p: PluginSummary) {
+    if (!onFixPlugin) {
+      onOpenAi();
+      return;
+    }
+    try {
+      const [source, hist, cons] = await Promise.all([
+        typeof client.pluginGetSource === "function"
+          ? client.pluginGetSource(p.id)
+          : client.pluginUiHtml(p.id),
+        client.pluginListHistory(p.id, 40),
+        typeof client.pluginGetConsole === "function"
+          ? client.pluginGetConsole(p.id, 200)
+          : Promise.resolve([]),
+      ]);
+      playSound("confirm");
+      onFixPlugin({
+        pluginId: p.id,
+        pluginName: p.name,
+        source,
+        history: hist,
+        consoleLines: cons,
+      });
+    } catch (e) {
+      toast.error({
+        message: String((e as { message?: string })?.message ?? e),
+      });
+    }
+  }
+
   async function openPlugin(p: PluginSummary) {
-    setActive(p);
     setTab("list");
     try {
+      // Prefer independent OS window (generic HTML host). Fall back to in-page iframe.
+      if (isTauri() && typeof client.openPluginWindow === "function") {
+        await client.openPluginWindow(p.id);
+        playSound("soft");
+        // still refresh history meta in list
+        try {
+          await client.pluginMarkRun(p.id);
+          await refresh();
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      setActive(p);
       const [hist, html] = await Promise.all([
         client.pluginListHistory(p.id, 50),
         client.pluginUiHtml(p.id),
@@ -122,6 +240,14 @@ export function PluginsPage({ onOpenAi }: Props) {
     }
   }
 
+  useEffect(() => {
+    if (!pendingOpenId || loading) return;
+    const hit = plugins.find((p) => p.id === pendingOpenId);
+    if (!hit) return;
+    setPendingOpenId(null);
+    void openPlugin(hit);
+  }, [pendingOpenId, plugins, loading]);
+
   async function remove(p: PluginSummary) {
     try {
       await client.deletePlugin(p.id);
@@ -131,6 +257,7 @@ export function PluginsPage({ onOpenAi }: Props) {
         setUiHtml(null);
       }
       await refresh();
+      window.dispatchEvent(new CustomEvent("callai:plugins-changed"));
       playSound("warn");
       toast.success({ message: t("plugins:deleted") });
     } catch (e) {
@@ -243,6 +370,18 @@ export function PluginsPage({ onOpenAi }: Props) {
                           onClick={() => void openPlugin(p)}
                         />
                         <IconButton
+                          label={t("plugins:logs", { defaultValue: "日志" })}
+                          icon={<IconLogs size={16} />}
+                          sfx="soft"
+                          onClick={() => void showPluginLogs(p)}
+                        />
+                        <IconButton
+                          label={t("plugins:fixWithAi", { defaultValue: "AI 修复" })}
+                          icon={<IconChat size={16} />}
+                          sfx="confirm"
+                          onClick={() => void fixPluginWithAi(p)}
+                        />
+                        <IconButton
                           label={t("common:delete")}
                           icon={<IconTrash size={16} />}
                           variant="danger"
@@ -295,7 +434,7 @@ export function PluginsPage({ onOpenAi }: Props) {
                 <iframe
                   className="plugin-frame"
                   title={active.name}
-                  sandbox="allow-scripts"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
                   srcDoc={uiHtml}
                 />
                 {history.length > 0 ? (
@@ -383,6 +522,48 @@ export function PluginsPage({ onOpenAi }: Props) {
           </Card>
         )}
       </div>
+
+      
+      <Drawer
+        open={logTarget != null}
+        title={
+          logTarget
+            ? `${t("plugins:logs")} · ${logTarget.name}`
+            : t("plugins:logs")
+        }
+        placement="right"
+        width="min(420px, 92vw)"
+        /* Same as main logs drawer: avoid pushBackground square-corner bug. */
+        pushBackground={false}
+        onClose={() => setLogTarget(null)}
+        className="logs-drawer plugin-logs-drawer"
+      >
+        {logTarget ? (
+          <PluginLogsPanel
+            plugin={logTarget}
+            history={logHistory}
+            consoleLines={consoleLines}
+            loading={logLoading}
+            onRefresh={() => void showPluginLogs(logTarget)}
+            onClearConsole={() => {
+              void (async () => {
+                try {
+                  if (typeof client.pluginClearConsole === "function") {
+                    await client.pluginClearConsole(logTarget.id);
+                  }
+                  setConsoleLines([]);
+                  playSound("soft");
+                  toast.success({ message: t("plugins:consoleCleared") });
+                } catch (e) {
+                  toast.error({
+                    message: String((e as { message?: string })?.message ?? e),
+                  });
+                }
+              })();
+            }}
+          />
+        ) : null}
+      </Drawer>
 
       <Modal
         open={!!confirmDelete}

@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
 
+use super::templates;
 use crate::domain::{
     methods, permission_for_method, DomainError, DomainResult, ErrorCode, PluginDraft,
     PluginHistoryEntry, PluginManifest, PluginSummary,
@@ -15,6 +16,8 @@ use crate::infra::paths::AppPaths;
 use super::storage::PluginDb;
 
 pub struct PluginManager {
+    /// id -> (mtime_secs, composed_html)
+    compose_cache: std::sync::Mutex<std::collections::HashMap<String, (u64, String)>>,
     root: PathBuf,
     dbs: Mutex<HashMap<String, PluginDb>>,
 }
@@ -27,6 +30,7 @@ impl PluginManager {
         })?;
         Ok(Self {
             root,
+            compose_cache: std::sync::Mutex::new(HashMap::new()),
             dbs: Mutex::new(HashMap::new()),
         })
     }
@@ -38,6 +42,7 @@ impl PluginManager {
         })?;
         Ok(Self {
             root,
+            compose_cache: std::sync::Mutex::new(HashMap::new()),
             dbs: Mutex::new(HashMap::new()),
         })
     }
@@ -75,8 +80,46 @@ impl PluginManager {
         Ok(manifest)
     }
 
-    pub fn install(&self, draft: PluginDraft) -> DomainResult<PluginSummary> {
+
+    fn unique_display_name(&self, desired: &str) -> String {
+        let base = desired.trim();
+        let base = if base.is_empty() { "plugin" } else { base };
+        let existing: Vec<String> = self
+            .list()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|p| p.name)
+            .collect();
+        if !existing.iter().any(|n| n == base) {
+            return base.to_string();
+        }
+        for i in 1..1000 {
+            let candidate = format!("{base}（{i}）");
+            if !existing.iter().any(|n| n == &candidate) {
+                return candidate;
+            }
+        }
+        format!("{base}（{}）", uuid::Uuid::new_v4())
+    }
+
+    fn unique_plugin_id(&self, desired: &str) -> String {
+        let base = desired.trim();
+        let base = if base.is_empty() { "plugin" } else { base };
+        if self.get_summary(base).is_err() {
+            return base.to_string();
+        }
+        for i in 1..1000 {
+            let candidate = format!("{base}-{i}");
+            if self.get_summary(&candidate).is_err() {
+                return candidate;
+            }
+        }
+        format!("{base}-{}", &uuid::Uuid::new_v4().to_string()[..8])
+    }
+    pub fn install(&self, mut draft: PluginDraft) -> DomainResult<PluginSummary> {
         draft.validate()?;
+        draft.manifest.name = self.unique_display_name(&draft.manifest.name);
+        draft.manifest.id = self.unique_plugin_id(&draft.manifest.id);
         let id = draft.manifest.id.clone();
         let dir = self.plugin_dir(&id);
         std::fs::create_dir_all(&dir).map_err(|e| {
@@ -185,58 +228,133 @@ impl PluginManager {
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("read ui.html: {e}")))
     }
 
-    /// Compose host HTML that injects a safe `plugin_invoke` bridge via postMessage parent,
-    /// or when running as standalone webview, uses a marker for host injection.
+    pub fn write_ui_html(&self, id: &str, html: &str) -> DomainResult<()> {
+        crate::domain::validate_plugin_id(id)?;
+        if html.trim().is_empty() {
+            return Err(DomainError::new(
+                ErrorCode::InvalidArgs,
+                "ui html is empty",
+            ));
+        }
+        if html.len() > 1024 * 1024 {
+            return Err(DomainError::new(
+                ErrorCode::InvalidArgs,
+                "ui html too large (max 1MiB)",
+            ));
+        }
+        let manifest = self.read_manifest(id)?;
+        let path = self.plugin_dir(id).join(&manifest.ui);
+        let sanitized = Self::sanitize_plugin_html(html);
+        std::fs::write(&path, sanitized)
+            .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("write ui.html: {e}")))?;
+        if let Ok(mut cache) = self.compose_cache.lock() {
+            cache.remove(id);
+        }
+        Ok(())
+    }
+
+    /// Compose host HTML that injects the callai bridge + host chrome CSS.
+    /// Snippets live under `src-tauri/templates/plugin/` and are rendered via minijinja.
     pub fn compose_host_html(&self, id: &str) -> DomainResult<String> {
-        let body = self.read_ui_html(id)?;
-        let bridge = r#"
-<script>
-(function(){
-  const PLUGIN_ID = __PLUGIN_ID__;
-  window.callai = window.callai || {};
-  window.callai.pluginId = PLUGIN_ID;
-  window.callai.invoke = function(method, args) {
-    return new Promise(function(resolve, reject) {
-      const reqId = Math.random().toString(36).slice(2);
-      function onMsg(ev) {
-        const d = ev.data || {};
-        if (d && d.__callai_plugin_result && d.reqId === reqId) {
-          window.removeEventListener('message', onMsg);
-          if (d.ok) resolve(d.value);
-          else reject(new Error(d.error || 'plugin_invoke failed'));
+        let ui_path = {
+            let manifest = self.read_manifest(id)?;
+            self.plugin_dir(id).join(&manifest.ui)
+        };
+        let mtime = std::fs::metadata(&ui_path)
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        if let Ok(cache) = self.compose_cache.lock() {
+            if let Some((mt, html)) = cache.get(id) {
+                if *mt == mtime {
+                    return Ok(html.clone());
+                }
+            }
         }
-      }
-      window.addEventListener('message', onMsg);
-      parent.postMessage({
-        __callai_plugin_invoke: true,
-        reqId: reqId,
-        pluginId: PLUGIN_ID,
-        method: method,
-        args: args || {}
-      }, '*');
-      setTimeout(function(){
-        window.removeEventListener('message', onMsg);
-        reject(new Error('plugin_invoke timeout'));
-      }, 30000);
-    });
-  };
-})();
-</script>
-"#;
-        let bridge = bridge.replace("__PLUGIN_ID__", &format!("\"{id}\""));
-        // Prefer injecting before </head> or at start of document.
-        if body.to_lowercase().contains("</head>") {
-            Ok(body.replacen("</head>", &format!("{bridge}</head>"), 1))
-        } else if body.to_lowercase().contains("<body") {
-            Ok(format!("{bridge}{body}"))
+
+        let body = Self::sanitize_plugin_html(&self.read_ui_html(id)?);
+        let bridge = templates::render_bridge(id);
+        let chrome = templates::host_chrome_style_tag();
+
+        // Prefer injecting chrome + bridge before </head> so CSP/fonts stay intact.
+        let lower = body.to_lowercase();
+        let out = if lower.contains("</head>") {
+            let injected = format!("{chrome}{bridge}");
+            body.replacen("</head>", &format!("{injected}</head>"), 1)
+        } else if lower.contains("<body") {
+            format!("{chrome}{body}{bridge}")
         } else {
-            Ok(format!(
-                "<!DOCTYPE html><html><head><meta charset=\"utf-8\">{csp}</head><body>{body}{bridge}</body></html>",
-                csp = r#"<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src data:; connect-src 'none';">"#,
-                body = body,
-                bridge = bridge
-            ))
+            templates::wrap_bare_document(&body, &bridge)
+        };
+        if let Ok(mut cache) = self.compose_cache.lock() {
+            cache.insert(id.to_string(), (mtime, out.clone()));
         }
+        Ok(out)
+    }
+
+    /// Fix common model-output HTML issues before sandbox execution.
+    ///
+    /// Critical: modern `@babel/standalone` defaults React JSX to **automatic**
+    /// runtime (`import { jsx } from "react/jsx-runtime"`). That cannot run in a
+    /// classic `<script>` / UMD page. We inject `babel_boot.html` which registers
+    /// `react-classic` (`runtime: "classic"` → `React.createElement`).
+    fn sanitize_plugin_html(html: &str) -> String {
+        let mut s = html.to_string();
+
+        for old in [
+            r#"data-presets="react,typescript""#,
+            r#"data-presets="typescript,react""#,
+            r#"data-presets="react""#,
+            "data-presets='react,typescript'",
+            "data-presets='react'",
+        ] {
+            s = s.replace(old, r#"data-presets="react-classic""#);
+        }
+
+        let babel_boot = templates::babel_boot_html();
+        if s.contains("registerPreset(\"react-classic\"")
+            || s.contains("registerPreset('react-classic'")
+        {
+            // already bootstrapped (e.g. re-saved source)
+            return s;
+        }
+
+        let babel_markers = [
+            r#"@babel/standalone/babel.min.js"></script>"#,
+            r#"babel.min.js"></script>"#,
+            r#"babel.js"></script>"#,
+        ];
+        let mut injected = false;
+        for m in babel_markers {
+            if let Some(idx) = s.find(m) {
+                let at = idx + m.len();
+                s.insert_str(at, babel_boot);
+                injected = true;
+                break;
+            }
+        }
+        if !injected {
+            if let Some(idx) = s.find(r#"type="text/babel""#) {
+                let head = s[..idx].rfind("<script").unwrap_or(idx);
+                s.insert_str(head, babel_boot);
+            } else if let Some(idx) = s.to_lowercase().find("</head>") {
+                s.insert_str(idx, babel_boot);
+            }
+        }
+
+        // Ensure host chrome CSS is present once (hide scrollbars, tight shell).
+        let chrome = templates::host_chrome_style_tag();
+        if !s.contains("/* Injected into plugin host document") {
+            if let Some(idx) = s.to_lowercase().find("</head>") {
+                s.insert_str(idx, &chrome);
+            } else {
+                s = format!("{chrome}{s}");
+            }
+        }
+
+        s
     }
 
     pub fn mark_run(&self, id: &str) -> DomainResult<()> {
@@ -313,12 +431,11 @@ impl PluginManager {
                     .ok_or_else(|| DomainError::new(ErrorCode::InvalidArgs, "key required"))?;
                 let value = args
                     .get("value")
-                    .map(|v| {
-                        if let Some(s) = v.as_str() {
-                            s.to_string()
-                        } else {
-                            v.to_string()
-                        }
+                    .map(|v| match v {
+                        // Already a string: store as-is (may be JSON text or plain).
+                        serde_json::Value::String(s) => s.clone(),
+                        // Objects/arrays/numbers: canonical JSON text.
+                        other => other.to_string(),
                     })
                     .ok_or_else(|| DomainError::new(ErrorCode::InvalidArgs, "value required"))?;
                 let db = self.open_db(plugin_id)?;
@@ -353,7 +470,15 @@ impl PluginManager {
                 let id = db.append_history("history.append", note, "ok", true)?;
                 Ok(json!({ "id": id }))
             }
-            methods::TIMER_NOW => Ok(json!({ "now": Utc::now().to_rfc3339() })),
+            methods::TIMER_NOW => {
+                let now = Utc::now();
+                let iso = now.to_rfc3339();
+                Ok(json!({
+                    "now": iso,
+                    "iso": iso,
+                    "ts": now.timestamp_millis(),
+                }))
+            }
             methods::NOTIFY => {
                 // Actual OS notification is host-owned; return payload for host to show.
                 let title = args

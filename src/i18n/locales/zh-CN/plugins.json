@@ -18,5 +18,22 @@
   "clearMcp": "清空",
   "subtitle": "独立交互任务，带隔离存储。",
   "tabList": "插件",
-  "tabMcp": "MCP 日志"
+  "tabMcp": "MCP 日志",
+  "logs": "日志",
+  "fixWithAi": "AI 修复",
+  "refreshLogs": "刷新",
+  "clearConsole": "清空 Console",
+  "consoleCleared": "Console 已清空",
+  "invokeHistory": "调用历史",
+  "console": "Console",
+  "noHistory": "暂无调用记录",
+  "noConsole": "暂无 console（打开插件窗口后产生）",
+  "logsEmpty": "暂无日志",
+  "logsEmptyHint": "先打开插件产生调用或 console，再回来查看。",
+  "filterAll": "全部",
+  "filterInvoke": "调用",
+  "filterConsole": "Console",
+  "filterErrors": "错误 {{count}}",
+  "args": "参数",
+  "result": "结果"
 }

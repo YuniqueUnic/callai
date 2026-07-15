@@ -73,3 +73,49 @@ fn rejects_bad_plugin_id() {
     };
     assert!(mgr.install(draft).is_err());
 }
+
+#[test]
+fn compose_host_forces_react_classic_jsx_runtime() {
+    let dir = tempfile::tempdir().unwrap();
+    let mgr = PluginManager::from_root(dir.path().join("plugins")).unwrap();
+    let draft = PluginDraft {
+        manifest: PluginManifest {
+            id: "babel-demo".into(),
+            name: "Babel".into(),
+            version: "0.1.0".into(),
+            description: String::new(),
+            permissions: vec![],
+            ui: "ui.html".into(),
+        },
+        ui_html: r#"<!DOCTYPE html><html><head>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head><body>
+<script type="text/babel" data-presets="react,typescript">
+const App = () => <div style={{x:1}}>hi</div>;
+</script>
+</body></html>"#
+            .into(),
+    };
+    mgr.install(draft).unwrap();
+    let host = mgr.compose_host_html("babel-demo").unwrap();
+    assert!(
+        host.contains("react-classic"),
+        "expected react-classic preset, got snippet missing it"
+    );
+    assert!(
+        host.contains("registerPreset"),
+        "expected Babel registerPreset bootstrap"
+    );
+    assert!(
+        !host.contains(r#"data-presets="react,typescript""#),
+        "typescript preset must be stripped"
+    );
+    assert!(
+        host.contains("callai.storage") || host.contains("window.callai"),
+        "bridge SDK from templates/plugin/bridge.js.j2 must be injected"
+    );
+    assert!(
+        host.contains("scrollbar-width") || host.contains("::-webkit-scrollbar"),
+        "host chrome CSS (hide scrollbars) must be injected"
+    );
+}

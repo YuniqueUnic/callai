@@ -1,0 +1,104 @@
+# callai Plugin Runtime SDK (authoritative)
+
+Plugins run as sandboxed HTML. Talk to the host **only** through `window.callai`.
+Prefer the high-level helpers. Raw `invoke` is still supported with the contracts below.
+
+## Always available
+```js
+window.callai.pluginId          // string
+window.callai.ready             // true when bridge injected
+window.callai.ping()            // -> { pong: true, plugin_id }
+window.callai.getConsole()      // recent console capture (host Fix-with-AI)
+```
+
+## Preferred high-level API
+
+### Storage (needs permission `"storage"`)
+```js
+// get: returns parsed JSON when value is JSON text, else string/null
+const data = await window.callai.storage.get("my-key");
+// set: objects/arrays are JSON.stringified automatically
+await window.callai.storage.set("my-key", { hello: 1 });
+await window.callai.storage.delete("my-key");
+const keys = await window.callai.storage.list("prefix-"); // string[]
+```
+
+### Timer (needs `"timer"`)
+```js
+const { iso, ts, now } = await window.callai.timer.now();
+// iso / now = RFC3339 string, ts = epoch millis
+```
+
+### Notification (needs `"notification"`)
+```js
+await window.callai.notification.show({
+  title: "小岛提醒",
+  body: "写一点 TODO 吧～",
+});
+// or: await window.callai.notification.show("标题", "正文");
+```
+
+### History (needs `"history"`)
+```js
+const rows = await window.callai.history.list(50);
+```
+
+## Raw invoke contracts (if you use invoke only)
+
+```js
+await window.callai.invoke(method, args)
+```
+
+| method | args | result (after host normalize) |
+|---|---|---|
+| `storage.get` | `{ key }` | **value itself** (JSON-parsed when possible), not `{value}` |
+| `storage.set` | `{ key, value }` | `{ ok: true }` — `value` string or object |
+| `storage.delete` | `{ key }` | `{ deleted: bool }` |
+| `storage.list` | `{ prefix? }` | `string[]` keys |
+| `timer.now` | `{}` | `{ iso, ts, now }` |
+| `notification.show` | `{ title, body }` | `{ queued: true, ... }` (+ OS toast) |
+| `history.list` | `{ limit? }` | history rows |
+| `ping` | `{}` | `{ pong: true, plugin_id }` |
+
+### ❌ Wrong patterns (will look like “storage broken”)
+```js
+// BAD: treating host envelope as your document
+const data = await callai.invoke("storage.get", { key });
+setState(data); // if you forget normalize, data might be { value: "..." }
+
+// GOOD:
+const data = await callai.storage.get(key);
+setState(data ?? {});
+```
+
+```js
+// BAD: inventing APIs
+localStorage.setItem(...)          // wiped / isolated; not shared with host
+fetch("/api/...")                  // no network unless permission + future host
+window.callai.save(...)            // does not exist
+```
+
+## Persistence checklist
+1. Manifest includes `"storage"` when saving user data.
+2. Load on mount: `const v = await callai.storage.get(KEY); setState(v ?? initial);`
+3. Save on every mutation: `await callai.storage.set(KEY, state);`
+4. Keys are plain strings scoped **per plugin id** (isolated SQLite).
+5. Store JSON-serializable data only.
+
+## UI constraints
+- Babel script: `data-presets="react-classic"` (host rewrites unsafe presets).
+- UMD React 18 + classic JSX only (no TypeScript, no `import`).
+- Keep one screen; core CRUD first.
+
+## Debugging for Fix-with-AI
+Host captures `console.*` and runtime errors. Prefer:
+```js
+console.info("[todo] saved", count);
+console.error("[todo] persist failed", err);
+```
+
+## Host vs plugin responsibilities
+- **Host / alarm editor**: schedule time, enable, popup window yes/no, suppress when fullscreen.
+- **Plugin UI**: all business settings, user data forms, CRUD, and param controls.
+- Do **not** expect the alarm editor to collect plugin business params.
+- Persist settings with `callai.storage.set("settings", …)` inside the plugin.

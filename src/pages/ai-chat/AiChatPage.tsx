@@ -15,7 +15,10 @@ import { useAiChat } from "./useAiChat";
 interface Props {
   onBack: () => void;
   onAlarmCreated: () => void;
-  onPluginCreated: () => void;
+  onPluginCreated: (pluginId: string) => void;
+  /** Prefill composer for plugin Fix-with-AI flow. */
+  fixSeed?: string | null;
+  onFixSeedConsumed?: () => void;
 }
 
 interface DetailState {
@@ -58,10 +61,25 @@ function detailFromMsg(m: ChatMsg, fallbackTitle: string): DetailState {
   return { title: fallbackTitle, summary: text, body: text };
 }
 
-export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
+export function AiChatPage({
+  onBack,
+  onAlarmCreated,
+  onPluginCreated,
+  fixSeed,
+  onFixSeedConsumed,
+}: Props) {
   const { t } = useTranslation(["ai", "common"]);
   const chat = useAiChat({ onAlarmCreated, onPluginCreated });
   const [detail, setDetail] = useState<DetailState | null>(null);
+
+  useEffect(() => {
+    if (!fixSeed?.trim()) return;
+    chat.setIntent("plugin");
+    chat.setInput(fixSeed);
+    onFixSeedConsumed?.();
+    // focus composer after paint
+    requestAnimationFrame(() => chat.taRef.current?.focus());
+  }, [fixSeed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Preserve rounded tauri chrome (same fix path as logs drawer).
   useEffect(() => {

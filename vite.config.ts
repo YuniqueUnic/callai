@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import path from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -20,6 +21,14 @@ export default defineConfig({
     include: ["src/**/*.test.ts", "src/tests/**/*.test.ts"],
   },
 
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        plugin: path.resolve(__dirname, "plugin.html"),
+      },
+    },
+  },
   clearScreen: false,
   server: {
     port: 1420,

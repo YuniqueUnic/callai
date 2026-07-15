@@ -110,6 +110,20 @@ export const api = {
   pluginInvoke: (plugin_id: string, method: string, args: unknown) =>
     call<unknown>("plugin_invoke", { pluginId: plugin_id, method, args }),
   pluginUiHtml: (id: string) => call<string>("plugin_ui_html", { id }),
+  openPluginWindow: (id: string) => call<void>("open_plugin_window", { id }),
+  pluginGetSource: (id: string) => call<string>("plugin_get_source", { id }),
+  pluginSetSource: (id: string, html: string) =>
+    call<void>("plugin_set_source", { id, html }),
+  pluginAppendConsole: (
+    id: string,
+    entries: { level: string; args: string[]; t: number }[],
+  ) => call<void>("plugin_append_console", { id, entries }),
+  pluginGetConsole: (id: string, limit?: number) =>
+    call<{ level: string; args: string[]; t: number }[]>(
+      "plugin_get_console",
+      { id, limit: limit ?? 100 },
+    ),
+  pluginClearConsole: (id: string) => call<void>("plugin_clear_console", { id }),
   pluginMarkRun: (id: string) => call<void>("plugin_mark_run", { id }),
   pluginListHistory: (id: string, limit?: number) =>
     call<PluginHistoryEntry[]>("plugin_list_history", { id, limit }),
