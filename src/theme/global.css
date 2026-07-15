@@ -5769,3 +5769,222 @@ body.callai-logs-open .fab-cluster {
 [data-theme="dark"] .model-ac-option.active {
   background: rgba(25, 200, 185, 0.22);
 }
+
+
+/* ── AI chat contrast + composer textarea / send menu ─ */
+.ai-stream-card {
+  background: color-mix(in srgb, var(--callai-surface) 96%, #fff) !important;
+  border: 2px solid color-mix(in srgb, var(--callai-border) 70%, transparent) !important;
+}
+
+.ai-chat-stream {
+  gap: 12px;
+}
+
+.ai-welcome {
+  color: var(--callai-ink) !important;
+  font-weight: 750;
+  opacity: 1;
+}
+
+.ai-bubble {
+  background: #fffdf8 !important;
+  border: 2px solid color-mix(in srgb, var(--callai-border) 75%, #8a734f) !important;
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--callai-border) 45%, transparent) !important;
+  color: var(--callai-ink);
+}
+
+.ai-bubble .meta {
+  color: var(--callai-ink-soft) !important;
+  font-weight: 800;
+  opacity: 1;
+}
+
+.ai-bubble-body {
+  color: var(--callai-ink) !important;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.ai-bubble.is-user {
+  background: color-mix(in srgb, var(--callai-fab) 22%, #fffef8) !important;
+  border-color: color-mix(in srgb, var(--callai-fab) 55%, var(--callai-border)) !important;
+}
+
+.ai-bubble.is-bot {
+  background: color-mix(in srgb, var(--callai-surface) 88%, #f3ebe0) !important;
+}
+
+.ai-bubble.is-error {
+  background: color-mix(in srgb, var(--callai-danger) 12%, #fff8f4) !important;
+  border-color: color-mix(in srgb, var(--callai-danger) 45%, var(--callai-border)) !important;
+}
+
+.ai-error-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+[data-theme="dark"] .ai-stream-card {
+  background: color-mix(in srgb, var(--callai-surface) 92%, #0c1210) !important;
+  border-color: color-mix(in srgb, var(--callai-border) 80%, #fff) !important;
+}
+
+[data-theme="dark"] .ai-welcome {
+  color: var(--callai-ink) !important;
+}
+
+[data-theme="dark"] .ai-bubble {
+  background: color-mix(in srgb, var(--callai-surface) 78%, #1a221e) !important;
+  border-color: color-mix(in srgb, var(--callai-border) 70%, #fff9e6) !important;
+  color: var(--callai-ink) !important;
+}
+
+[data-theme="dark"] .ai-bubble .meta {
+  color: var(--callai-ink-soft) !important;
+}
+
+[data-theme="dark"] .ai-bubble-body {
+  color: var(--callai-ink) !important;
+}
+
+[data-theme="dark"] .ai-bubble.is-user {
+  background: color-mix(in srgb, var(--callai-fab) 28%, #1c2823) !important;
+}
+
+[data-theme="dark"] .ai-bubble.is-error {
+  background: color-mix(in srgb, var(--callai-danger) 22%, #2a1c18) !important;
+}
+
+.ai-composer-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.ai-composer-textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 160px;
+  resize: none;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-surface);
+  color: var(--callai-ink);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.4;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 40%, transparent);
+}
+
+.ai-composer-textarea:focus {
+  outline: 2px solid color-mix(in srgb, var(--callai-primary) 55%, transparent);
+  outline-offset: 1px;
+  border-color: var(--callai-primary);
+}
+
+.ai-composer-textarea::placeholder {
+  color: var(--callai-ink-muted);
+  font-weight: 650;
+  opacity: 0.9;
+}
+
+[data-theme="dark"] .ai-composer-textarea {
+  background: rgba(255, 249, 230, 0.94);
+  color: #2a1c0e;
+  border-color: #a8c0b4;
+  -webkit-text-fill-color: #2a1c0e;
+}
+
+[data-theme="dark"] .ai-composer-textarea::placeholder {
+  color: #7a6548;
+  -webkit-text-fill-color: #7a6548;
+}
+
+.ai-send-cluster {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  flex: 0 0 auto;
+}
+
+.ai-send-cluster .icon-btn-wrap {
+  /* primary send */
+}
+
+.ai-send-caret {
+  width: 28px;
+  min-width: 28px;
+  margin-left: 4px;
+  border-radius: 12px;
+  border: 2px solid var(--callai-border);
+  background: color-mix(in srgb, var(--callai-surface) 90%, var(--callai-primary));
+  color: var(--callai-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--callai-border) 50%, transparent);
+}
+
+.ai-send-caret:hover {
+  filter: brightness(1.04);
+}
+
+.ai-send-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 40;
+  min-width: 220px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-surface);
+  box-shadow: var(--callai-card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-send-menu button[role="menuitemradio"] {
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--callai-ink);
+  font-weight: 800;
+  font-size: 0.88rem;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.ai-send-menu button[role="menuitemradio"]:hover,
+.ai-send-menu button[role="menuitemradio"].active {
+  background: color-mix(in srgb, var(--callai-primary) 18%, transparent);
+}
+
+.ai-send-menu-hint,
+.ai-composer-key-hint {
+  margin: 4px 2px 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--callai-ink-soft) !important;
+}
+
+[data-theme="dark"] .ai-send-menu {
+  background: rgba(36, 40, 36, 0.98);
+  border-color: rgba(255, 249, 230, 0.16);
+}
+
+[data-theme="dark"] .ai-send-menu button[role="menuitemradio"] {
+  color: #fff9e6;
+}
+

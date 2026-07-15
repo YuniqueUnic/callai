@@ -295,9 +295,7 @@ fn run_mcp(
         } else {
             token
         };
-        eprintln!(
-            "callai mcp-server --http  (shared DB; host={host} port={port})"
-        );
+        eprintln!("callai mcp-server --http  (shared DB; host={host} port={port})");
         crate::infra::mcp::run_mcp_http_server(svc, plugins, logs, &host, port, &token)
             .map_err(|e| DomainError::new(ErrorCode::Internal, e))?;
     } else {

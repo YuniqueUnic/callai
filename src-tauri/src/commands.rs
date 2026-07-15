@@ -245,13 +245,10 @@ pub fn get_ai_runtime_context(
 }
 
 #[tauri::command]
-pub fn get_ai_runtime_context_prompt(
-    state: State<'_, AppState>,
-) -> Result<String, String> {
+pub fn get_ai_runtime_context_prompt(state: State<'_, AppState>) -> Result<String, String> {
     let ctx = get_ai_runtime_context(state)?;
     Ok(ctx.to_prompt_block())
 }
-
 
 /// Returns the backups directory path (for display / diagnostics).
 #[tauri::command]

@@ -5,10 +5,10 @@ pub mod log_entry;
 pub mod plugin;
 pub mod prompts;
 pub mod retry;
-pub mod schedule;
-pub mod settings;
-mod secret;
 mod runtime_context;
+pub mod schedule;
+mod secret;
+pub mod settings;
 pub mod templates;
 
 pub use alarm::*;
@@ -22,5 +22,5 @@ pub use schedule::*;
 pub use settings::*;
 pub use templates::*;
 
-pub use secret::generate_secret_token;
 pub use runtime_context::AiRuntimeContext;
+pub use secret::generate_secret_token;

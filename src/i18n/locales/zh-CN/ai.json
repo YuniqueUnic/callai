@@ -15,5 +15,12 @@
   "createAlarm": "创建闹钟",
   "installPlugin": "安装插件",
   "pluginInstalled": "插件已安装",
-  "intentLabel": "生成类型"
+  "intentLabel": "生成类型",
+  "retry": "重试生成",
+  "parseFail": "生成结果无法解析：{{msg}}。可改写需求后重试。",
+  "sendKeyMenu": "发送快捷键",
+  "sendKeyEnter": "Enter 发送",
+  "sendKeyModEnter": "{{mod}}+Enter 发送",
+  "sendKeyEnterHint": "Enter 发送 · Shift+Enter 换行",
+  "sendKeyModEnterHint": "{{mod}}+Enter 发送 · Enter 换行"
 }

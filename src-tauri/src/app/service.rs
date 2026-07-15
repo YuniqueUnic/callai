@@ -457,9 +457,18 @@ impl AlarmService {
 
     pub fn bootstrap(&self) -> DomainResult<()> {
         let mut settings = self.store.get_settings()?;
+        let mut dirty = false;
         // MCP bearer: always have a system-generated token (stdio ignores it).
         if settings.mcp.auth_token.trim().is_empty() {
             settings.mcp.auth_token = crate::domain::generate_secret_token();
+            dirty = true;
+        }
+        // Bump retired default model ids to current provider default.
+        if crate::domain::is_legacy_ai_model(&settings.ai.model) {
+            settings.ai.model = settings.ai.provider.default_model().into();
+            dirty = true;
+        }
+        if dirty {
             self.store.save_settings(&settings)?;
             let _ = self.sync_export();
         }

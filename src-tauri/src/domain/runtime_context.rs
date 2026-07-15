@@ -57,11 +57,7 @@ impl AiRuntimeContext {
         let tz_setting = settings.timezone().to_string();
         let tz_resolved = crate::domain::resolve_timezone(settings.timezone())
             .map(|tz| tz.name().to_string())
-            .unwrap_or_else(|_| {
-                crate::domain::detect_system_timezone()
-                    .name()
-                    .to_string()
-            });
+            .unwrap_or_else(|_| crate::domain::detect_system_timezone().name().to_string());
 
         let now_utc = chrono::Utc::now();
         let now_local = crate::domain::resolve_timezone(settings.timezone())
@@ -100,13 +96,9 @@ impl AiRuntimeContext {
             "Respond in the user's locale when writing names/copy.".into(),
         ];
         if os_family == "macos" {
-            notes.push(
-                "macOS: prefer `say`, `osascript`, `open`; avoid Windows-only cmds.".into(),
-            );
+            notes.push("macOS: prefer `say`, `osascript`, `open`; avoid Windows-only cmds.".into());
         } else if os_family == "windows" {
-            notes.push(
-                "Windows: prefer `powershell` / `pwsh`; avoid bash-only one-liners.".into(),
-            );
+            notes.push("Windows: prefer `powershell` / `pwsh`; avoid bash-only one-liners.".into());
         } else if os_family == "linux" {
             notes.push("Linux: prefer portable shell; check binary exists before using.".into());
         }

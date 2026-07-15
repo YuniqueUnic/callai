@@ -163,6 +163,11 @@ impl SqliteStore {
             "ALTER TABLE app_settings ADD COLUMN mcp_auth_token TEXT NOT NULL DEFAULT ''",
             [],
         );
+        // One-shot bump of retired OpenAI defaults (idempotent; ignores missing column).
+        let _ = conn.execute(
+            "UPDATE app_settings SET ai_model = 'gpt-5.6-terra' WHERE ai_model IN ('gpt-4o-mini','gpt-4o','gpt-4.1-mini')",
+            [],
+        );
         Ok(())
     }
 }

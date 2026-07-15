@@ -65,14 +65,14 @@
   "aiModel": "模型",
   "aiApiKey": "API Key",
   "mcpSection": "MCP",
-  "mcpHint": "把 callai 工具暴露给 Claude / Codex / Cursor。本地推荐 stdio。",
-  "mcpEnabled": "HTTP MCP 服务",
+  "mcpHint": "stdio 始终可用：callai mcp-server（由 Claude/Codex 拉起）。HTTP 常驻不会随 App 自动启动，需本机执行 callai mcp-server --http。开关仅记录意图并展示端点。",
+  "mcpEnabled": "标记使用 HTTP MCP",
   "mcpHost": "监听地址",
   "mcpPort": "端口",
   "mcpToken": "授权 Token",
   "mcpTokenPlaceholder": "HTTP 客户端 Bearer Token",
   "mcpEndpoint": "HTTP 端点",
-  "mcpStdioHint": "stdio 模式（本地 Agent 推荐）：",
+  "mcpStdioHint": "桌面 Agent 推荐 stdio（无需开关）：",
   "mcpTokenGenerated": "已生成 Token",
   "mask": "隐藏",
   "unmask": "显示",
@@ -88,5 +88,6 @@
   "aiModelsFail": "拉取模型失败：{{msg}}",
   "aiModelsSeeded": "建议模型（离线）: {{count}}",
   "mcpTokenAutoHint": "首次启动会自动生成；点刷新可轮换。",
-  "mcpHttpDaemonHint": "常驻 HTTP MCP（前台 daemon，Ctrl+C 结束）："
+  "mcpHttpDaemonHint": "在终端启动 HTTP daemon（前台常驻，Ctrl+C 结束）：",
+  "mcpEnabledNote": "开启不会在 App 内绑定端口；请用 CLI 启动 HTTP daemon。"
 }

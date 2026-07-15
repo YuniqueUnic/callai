@@ -313,6 +313,7 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
             }}
           />
         </div>
+        <p className="meta settings-section-hint">{t("settings:mcpEnabledNote")}</p>
 
         <div className="field">
           <label className="label">{t("settings:mcpHost")}</label>

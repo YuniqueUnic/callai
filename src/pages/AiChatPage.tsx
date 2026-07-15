@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, Input, Loading, Typewriter } from "animal-island-ui";
+import { Card, Loading, Typewriter } from "animal-island-ui";
 import type { AiSettings, AlarmDraft, PluginDraft } from "../domain/types";
 import { DEFAULT_AI_SETTINGS } from "../domain/types";
 import { client } from "../infra/client";
@@ -12,11 +12,19 @@ import {
   guessIntent,
   type AiIntent,
 } from "../ai/generate";
+import {
+  isModEnter,
+  isPrimarySendKey,
+  loadSendKeyMode,
+  modKeyLabel,
+  saveSendKeyMode,
+  type SendKeyMode,
+} from "../ai/sendKeyMode";
 import { toast } from "../ui/toast";
 import { playSound } from "../ui/sounds";
 import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
-import { IconBack, IconSend } from "../ui/icons";
+import { IconBack, IconChevronDown, IconRefresh, IconSend } from "../ui/icons";
 
 interface Props {
   onBack: () => void;
@@ -24,7 +32,16 @@ interface Props {
   onPluginCreated: () => void;
 }
 
-type ChatMsg = { role: "user" | "assistant"; content: string };
+type ChatMsg =
+  | { role: "user" | "assistant"; content: string; kind?: "text" }
+  | {
+      role: "assistant";
+      content: string;
+      kind: "error";
+      /** Last user text for retry */
+      retryText: string;
+      retryIntent: AiIntent;
+    };
 
 export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
   const { t } = useTranslation(["ai", "common", "alarms"]);
@@ -35,57 +52,137 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [previewAlarm, setPreviewAlarm] = useState<AlarmDraft | null>(null);
   const [previewPlugin, setPreviewPlugin] = useState<PluginDraft | null>(null);
+  const [sendKeyMode, setSendKeyMode] = useState<SendKeyMode>(() =>
+    loadSendKeyMode(),
+  );
+  const [sendMenuOpen, setSendMenuOpen] = useState(false);
+  const sendMenuRef = useRef<HTMLDivElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  const streamRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     void getSettingsCached().then((s) => setAi(s.ai ?? DEFAULT_AI_SETTINGS));
   }, []);
+
+  useEffect(() => {
+    if (!sendMenuOpen) return;
+    const onDoc = (e: PointerEvent) => {
+      if (sendMenuRef.current?.contains(e.target as Node)) return;
+      setSendMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onDoc, true);
+    return () => document.removeEventListener("pointerdown", onDoc, true);
+  }, [sendMenuOpen]);
+
+  // Auto-grow textarea (capped by CSS max-height).
+  useEffect(() => {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const max = 160;
+    el.style.height = `${Math.min(max, el.scrollHeight)}px`;
+  }, [input]);
+
+  useEffect(() => {
+    const el = streamRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, busy]);
 
   const configured = useMemo(
     () => Boolean(ai.base_url?.trim() && ai.api_key?.trim()),
     [ai],
   );
 
-  async function send() {
-    const text = input.trim();
+  const modLabel = modKeyLabel();
+
+  async function runGenerate(
+    text: string,
+    resolved: AiIntent,
+    history: ChatMsg[],
+  ) {
+    if (resolved === "alarm") {
+      const draft = await generateAlarmDraft(ai, text);
+      setPreviewAlarm(draft);
+      setPreviewPlugin(null);
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: t("ai:alarmReady", { name: draft.name }) },
+      ]);
+    } else if (resolved === "plugin") {
+      const draft = await generatePluginDraft(ai, text);
+      setPreviewPlugin(draft);
+      setPreviewAlarm(null);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: t("ai:pluginReady", { name: draft.manifest.name }),
+        },
+      ]);
+    } else {
+      const hist = history
+        .filter((m) => m.kind !== "error")
+        .map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        }));
+      const reply = await chatReply(ai, text, hist);
+      setMessages((m) => [...m, { role: "assistant", content: reply }]);
+    }
+  }
+
+  function formatError(e: unknown): string {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "AI_NOT_CONFIGURED") return t("ai:needConfig");
+    if (/JSON|parse|Zod|schema|AI response/i.test(msg)) {
+      return t("ai:parseFail", { msg });
+    }
+    return msg;
+  }
+
+  async function send(overrideText?: string, overrideIntent?: AiIntent) {
+    const text = (overrideText ?? input).trim();
     if (!text || busy) return;
     if (!configured) {
       toast.warning({ message: t("ai:needConfig") });
       return;
     }
+    const resolvedIntent =
+      overrideIntent ?? (intent === "chat" ? guessIntent(text) : intent);
+    const isRetry = overrideText != null;
+
     setBusy(true);
-    setInput("");
-    setMessages((m) => [...m, { role: "user", content: text }]);
-    const resolved = intent === "chat" ? guessIntent(text) : intent;
+    if (!isRetry) {
+      setInput("");
+      setMessages((m) => [...m, { role: "user", content: text }]);
+    }
+
+    const historySnapshot = messages;
     try {
-      if (resolved === "alarm") {
-        const draft = await generateAlarmDraft(ai, text);
-        setPreviewAlarm(draft);
-        setPreviewPlugin(null);
-        setMessages((m) => [
-          ...m,
-          { role: "assistant", content: t("ai:alarmReady", { name: draft.name }) },
-        ]);
-      } else if (resolved === "plugin") {
-        const draft = await generatePluginDraft(ai, text);
-        setPreviewPlugin(draft);
-        setPreviewAlarm(null);
-        setMessages((m) => [
-          ...m,
-          {
-            role: "assistant",
-            content: t("ai:pluginReady", { name: draft.manifest.name }),
-          },
-        ]);
-      } else {
-        const reply = await chatReply(ai, text, messages);
-        setMessages((m) => [...m, { role: "assistant", content: reply }]);
-      }
+      await runGenerate(
+        text,
+        resolvedIntent,
+        isRetry
+          ? historySnapshot
+          : [...historySnapshot, { role: "user", content: text }],
+      );
       playSound("confirm");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error({
-        message: msg === "AI_NOT_CONFIGURED" ? t("ai:needConfig") : msg,
-      });
+      const errText = formatError(e);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          kind: "error",
+          content: errText,
+          retryText: text,
+          retryIntent: resolvedIntent,
+        },
+      ]);
+      // Restore composer text on first-send failure so user can edit.
+      if (!isRetry) setInput(text);
+      toast.error({ message: errText });
       playSound("warn");
     } finally {
       setBusy(false);
@@ -128,6 +225,32 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
     }
   }
 
+  function onComposerKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key !== "Enter") return;
+    if (e.nativeEvent.isComposing) return;
+
+    if (sendKeyMode === "enter") {
+      // Enter sends; Shift+Enter or Mod+Enter inserts newline.
+      if (e.shiftKey || isModEnter(e)) return;
+      e.preventDefault();
+      void send();
+      return;
+    }
+
+    // mod_enter: only Mod+Enter sends; plain Enter = newline
+    if (isPrimarySendKey(e, "mod_enter")) {
+      e.preventDefault();
+      void send();
+    }
+  }
+
+  function pickSendMode(mode: SendKeyMode) {
+    setSendKeyMode(mode);
+    saveSendKeyMode(mode);
+    setSendMenuOpen(false);
+    playSound("soft");
+  }
+
   return (
     <div className="edit-page ai-page">
       <header className="edit-hero ai-hero">
@@ -157,9 +280,8 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
         </div>
       </header>
 
-      {/* relative chat stage: scroll body + fixed bottom composer HUD */}
       <div className="ai-stage">
-        <div className="ai-scroll">
+        <div className="ai-scroll" ref={streamRef}>
           {!configured ? (
             <Card color="default" className="form-panel ai-config-hint">
               <div className="panel-head">
@@ -195,12 +317,28 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
                 messages.map((m, i) => (
                   <div
                     key={`${m.role}-${i}`}
-                    className={`ai-bubble ${m.role === "user" ? "is-user" : "is-bot"}`}
+                    className={`ai-bubble ${
+                      m.role === "user" ? "is-user" : "is-bot"
+                    } ${m.kind === "error" ? "is-error" : ""}`}
                   >
                     <div className="meta">
                       {m.role === "user" ? t("ai:you") : t("ai:assistant")}
                     </div>
                     <div className="ai-bubble-body">{m.content}</div>
+                    {m.kind === "error" ? (
+                      <div className="ai-error-actions">
+                        <IconButton
+                          label={t("ai:retry")}
+                          icon={<IconRefresh size={16} />}
+                          variant="primary"
+                          loading={busy}
+                          sfx="confirm"
+                          onClick={() =>
+                            void send(m.retryText, m.retryIntent)
+                          }
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 ))
               )}
@@ -312,27 +450,73 @@ export function AiChatPage({ onBack, onAlarmCreated, onPluginCreated }: Props) {
             </div>
 
             <div className="ai-composer-row">
-              <Input
+              <textarea
+                ref={taRef}
+                className="ai-composer-textarea"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                rows={1}
                 placeholder={t("ai:placeholder")}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void send();
-                  }
-                }}
+                disabled={busy}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onComposerKeyDown}
               />
-              <IconButton
-                label={t("ai:send")}
-                icon={<IconSend size={18} />}
-                variant="primary"
-                loading={busy}
-                disabled={!input.trim()}
-                sfx="confirm"
-                onClick={() => void send()}
-              />
+              <div className="ai-send-cluster" ref={sendMenuRef}>
+                <IconButton
+                  label={t("ai:send")}
+                  icon={<IconSend size={18} />}
+                  variant="primary"
+                  loading={busy}
+                  disabled={!input.trim()}
+                  sfx="confirm"
+                  onClick={() => void send()}
+                />
+                <button
+                  type="button"
+                  className="ai-send-caret"
+                  aria-label={t("ai:sendKeyMenu")}
+                  aria-expanded={sendMenuOpen}
+                  aria-haspopup="menu"
+                  onClick={() => {
+                    playSound("soft");
+                    setSendMenuOpen((v) => !v);
+                  }}
+                >
+                  <IconChevronDown size={14} />
+                </button>
+                {sendMenuOpen ? (
+                  <div className="ai-send-menu" role="menu">
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={sendKeyMode === "enter"}
+                      className={sendKeyMode === "enter" ? "active" : ""}
+                      onClick={() => pickSendMode("enter")}
+                    >
+                      {t("ai:sendKeyEnter")}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={sendKeyMode === "mod_enter"}
+                      className={sendKeyMode === "mod_enter" ? "active" : ""}
+                      onClick={() => pickSendMode("mod_enter")}
+                    >
+                      {t("ai:sendKeyModEnter", { mod: modLabel })}
+                    </button>
+                    <p className="meta ai-send-menu-hint">
+                      {sendKeyMode === "enter"
+                        ? t("ai:sendKeyEnterHint")
+                        : t("ai:sendKeyModEnterHint", { mod: modLabel })}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
             </div>
+            <p className="meta ai-composer-key-hint">
+              {sendKeyMode === "enter"
+                ? t("ai:sendKeyEnterHint")
+                : t("ai:sendKeyModEnterHint", { mod: modLabel })}
+            </p>
           </Card>
         </div>
       </div>

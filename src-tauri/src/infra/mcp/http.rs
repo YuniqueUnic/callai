@@ -2,16 +2,15 @@
 use std::sync::Arc;
 
 use axum::{
-    Router,
     extract::Request,
     http::{HeaderMap, StatusCode},
     middleware::{self, Next},
     response::Response,
     routing::get,
+    Router,
 };
 use rmcp::transport::streamable_http_server::{
-    StreamableHttpServerConfig, StreamableHttpService,
-    session::local::LocalSessionManager,
+    session::local::LocalSessionManager, StreamableHttpServerConfig, StreamableHttpService,
 };
 use tokio_util::sync::CancellationToken;
 
@@ -68,27 +67,32 @@ pub fn run_mcp_http_server(
             format!("{host}:{port}"),
         ];
 
-        let mcp: StreamableHttpService<CallaiMcp, LocalSessionManager> =
-            StreamableHttpService::new(
-                {
-                    let service = service.clone();
-                    let plugins = plugins.clone();
-                    let logs = logs.clone();
-                    move || Ok(CallaiMcp::new(service.clone(), plugins.clone(), logs.clone()))
-                },
-                Default::default(),
-                StreamableHttpServerConfig::default()
-                    .with_cancellation_token(cancel.child_token())
-                    .with_allowed_hosts(allowed_hosts),
-            );
+        let mcp: StreamableHttpService<CallaiMcp, LocalSessionManager> = StreamableHttpService::new(
+            {
+                let service = service.clone();
+                let plugins = plugins.clone();
+                let logs = logs.clone();
+                move || {
+                    Ok(CallaiMcp::new(
+                        service.clone(),
+                        plugins.clone(),
+                        logs.clone(),
+                    ))
+                }
+            },
+            Default::default(),
+            StreamableHttpServerConfig::default()
+                .with_cancellation_token(cancel.child_token())
+                .with_allowed_hosts(allowed_hosts),
+        );
 
         let expected_auth = expected.clone();
-        let mcp_router = Router::new().fallback_service(mcp).layer(
-            middleware::from_fn(move |req: Request, next: Next| {
+        let mcp_router = Router::new()
+            .fallback_service(mcp)
+            .layer(middleware::from_fn(move |req: Request, next: Next| {
                 let exp = expected_auth.clone();
                 async move { require_bearer(exp, req, next).await }
-            }),
-        );
+            }));
 
         let app = Router::new()
             .route("/health", get(|| async { "ok" }))

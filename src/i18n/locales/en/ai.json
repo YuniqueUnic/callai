@@ -15,5 +15,12 @@
   "createAlarm": "Create alarm",
   "installPlugin": "Install plugin",
   "pluginInstalled": "Plugin installed",
-  "intentLabel": "Create as"
+  "intentLabel": "Create as",
+  "retry": "Retry",
+  "parseFail": "Could not parse model output: {{msg}}. Edit and retry.",
+  "sendKeyMenu": "Send shortcut",
+  "sendKeyEnter": "Enter to send",
+  "sendKeyModEnter": "{{mod}}+Enter to send",
+  "sendKeyEnterHint": "Enter sends · Shift+Enter for newline",
+  "sendKeyModEnterHint": "{{mod}}+Enter sends · Enter for newline"
 }

@@ -10,3 +10,4 @@ mod process_timeout;
 mod prompts_embed;
 mod scheduler_queue;
 mod service_alarm;
+mod legacy_ai_model;

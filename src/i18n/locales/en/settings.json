@@ -65,14 +65,14 @@
   "aiModel": "Model",
   "aiApiKey": "API key",
   "mcpSection": "MCP",
-  "mcpHint": "Expose callai tools to Claude / Codex / Cursor. Stdio always works via CLI.",
-  "mcpEnabled": "HTTP MCP server",
+  "mcpHint": "stdio always works via `callai mcp-server` (spawned by Claude/Codex). HTTP is not auto-started by the app — run `callai mcp-server --http` in a terminal. This toggle only records intent and shows the endpoint.",
+  "mcpEnabled": "Prefer HTTP MCP",
   "mcpHost": "Listen host",
   "mcpPort": "Port",
   "mcpToken": "Authorization token",
   "mcpTokenPlaceholder": "Bearer token for HTTP clients",
   "mcpEndpoint": "HTTP endpoint",
-  "mcpStdioHint": "stdio mode (recommended for local agents):",
+  "mcpStdioHint": "Recommended for desktop agents (stdio, no toggle needed):",
   "mcpTokenGenerated": "Token generated",
   "mask": "Mask",
   "unmask": "Show",
@@ -88,5 +88,6 @@
   "aiModelsFail": "Could not list models: {{msg}}",
   "aiModelsSeeded": "Suggested models (offline): {{count}}",
   "mcpTokenAutoHint": "Generated automatically on first launch; rotate with the refresh button.",
-  "mcpHttpDaemonHint": "Long-running HTTP MCP (daemon-style, Ctrl+C to stop):"
+  "mcpHttpDaemonHint": "Start the HTTP daemon in a terminal (foreground until Ctrl+C):",
+  "mcpEnabledNote": "Enabling does not bind a port inside the app; start the CLI daemon yourself."
 }

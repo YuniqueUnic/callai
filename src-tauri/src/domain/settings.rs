@@ -161,6 +161,22 @@ pub struct AiSettings {
     pub model: String,
 }
 
+/// Retired / mock defaults that should be rewritten on bootstrap.
+pub fn is_legacy_ai_model(model: &str) -> bool {
+    matches!(
+        model.trim(),
+        "gpt-4o-mini"
+            | "gpt-4o"
+            | "gpt-4.1-mini"
+            | "gpt-4.1"
+            | "claude-sonnet-4-20250514"
+            | "claude-3-5-sonnet-latest"
+            | "gemini-2.0-flash"
+            | "gemini-1.5-flash"
+            | "deepseek-chat"
+    )
+}
+
 fn default_ai_model() -> String {
     AiProvider::Openai.default_model().into()
 }
