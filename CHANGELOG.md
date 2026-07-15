@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.8](https://github.com/YuniqueUnic/callai/compare/v0.2.7...v0.2.8) (2026-07-15)
+
+
+### Features
+
+* AI assistant, plugins, MCP tools, and in-app HTTP supervisor ([#43](https://github.com/YuniqueUnic/callai/issues/43)) ([aabe5c9](https://github.com/YuniqueUnic/callai/commit/aabe5c9e01515b5ebebd859ac6e37e801f040e10))
+* **chat:** add message collapsing and enhanced action toolbar ([aabe5c9](https://github.com/YuniqueUnic/callai/commit/aabe5c9e01515b5ebebd859ac6e37e801f040e10))
+
+
+### Bug Fixes
+
+* **config:** update default MCP port from 3927 to 33927 ([aabe5c9](https://github.com/YuniqueUnic/callai/commit/aabe5c9e01515b5ebebd859ac6e37e801f040e10))
+* **execute:** suppress unused assignment warning in alarm execution ([aabe5c9](https://github.com/YuniqueUnic/callai/commit/aabe5c9e01515b5ebebd859ac6e37e801f040e10))
+
+
+### Performance Improvements
+
+* **plugin:** optimize process pipe handling by removing mutable ([aabe5c9](https://github.com/YuniqueUnic/callai/commit/aabe5c9e01515b5ebebd859ac6e37e801f040e10))
+
 ## [0.2.7](https://github.com/YuniqueUnic/callai/compare/v0.2.6...v0.2.7) (2026-07-13)
 
 
