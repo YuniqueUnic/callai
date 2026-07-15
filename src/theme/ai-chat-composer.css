@@ -1,0 +1,426 @@
+/* split from ai-chat.css */
+/* --- drafts --- */
+.ai-draft-card {
+  margin-top: 8px;
+}
+
+.ai-draft-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-draft-title-row h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.ai-draft-cmd {
+  margin-top: 8px;
+  font-size: 0.82rem;
+}
+
+.ai-draft-cmd code {
+  display: block;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: color-mix(in srgb, var(--callai-surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--callai-border) 70%, transparent);
+}
+
+.ai-draft-cmd-label {
+  font-weight: 800;
+}
+
+.ai-draft-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-draft-card.is-applied {
+  opacity: 0.92;
+  outline: 2px solid color-mix(in srgb, var(--callai-success) 55%, transparent);
+}
+
+.ai-draft-applied {
+  font-weight: 800;
+  color: var(--callai-success) !important;
+}
+
+/* --- composer HUD: Overlay float (不占流 / 压在内容上) ---
+   Same model as top header: absolute bottom HUD, transparent chrome.
+   Scroll content uses --ai-composer-clearance padding so last lines stay readable.
+   Only interactive controls (textarea, segmented, buttons) keep their own fill. */
+.ai-composer-hud {
+  position: absolute !important;
+  left: var(--ai-page-gutter);
+  right: var(--ai-page-gutter);
+  bottom: max(6px, env(safe-area-inset-bottom, 0px));
+  z-index: 220 !important;
+  flex: none !important;
+  flex-shrink: 0 !important;
+  width: auto;
+  max-width: none;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  /* empty chrome does not steal scroll; children re-enable hits */
+  pointer-events: none;
+}
+
+.ai-composer-hud .ai-composer-card,
+.ai-composer-hud .ai-composer-toolbar,
+.ai-composer-hud .ai-composer-row,
+.ai-composer-hud .ai-composer-textarea,
+.ai-composer-hud .ai-send-cluster,
+.ai-composer-hud .segmented,
+.ai-composer-hud button,
+.ai-composer-hud .icon-btn-wrap,
+.ai-composer-hud .ai-composer-model-slot,
+.ai-composer-hud .ai-composer-key-hint,
+.ai-composer-hud .ai-send-menu {
+  pointer-events: auto;
+}
+
+/* outer HUD stays clear; INNER card keeps island surface */
+.ai-composer-hud > .form-panel,
+.ai-composer-hud > [class*="animal-card"],
+.ai-page .ai-composer-card,
+.ai-page .ai-composer-card.form-panel,
+.ai-composer-hud .ai-composer-card,
+.ai-composer-hud .form-panel.ai-composer-card,
+.edit-page.ai-page .ai-composer-card,
+.edit-page .ai-composer-hud .form-panel.ai-composer-card {
+  margin: 0 !important;
+  padding: 10px 12px 8px !important;
+  border-radius: var(--callai-radius, 18px) !important;
+  border: 2px solid var(--callai-border) !important;
+  background: var(--callai-surface) !important;
+  background-color: var(--callai-surface) !important;
+  /* allow island pattern if library paints one; surface is baseline */
+  box-shadow: var(--callai-card-shadow, 0 4px 14px color-mix(in srgb, #000 10%, transparent)) !important;
+  outline: none !important;
+  color: var(--callai-ink) !important;
+}
+
+.ai-composer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ai-composer-row > * {
+  min-width: 0;
+}
+
+.ai-composer-row .icon-btn-wrap {
+  flex-shrink: 0;
+}
+
+.ai-composer-textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 40px;
+  max-height: 160px;
+  resize: none;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--callai-border) 85%, transparent);
+  background: color-mix(in srgb, var(--callai-surface) 96%, transparent);
+  color: var(--callai-ink);
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 650;
+  line-height: 1.4;
+  writing-mode: horizontal-tb;
+}
+
+.ai-composer-textarea:focus {
+  outline: 2px solid color-mix(in srgb, var(--callai-accent, #3d9b84) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.ai-composer-textarea::placeholder {
+  color: color-mix(in srgb, var(--callai-ink) 42%, transparent);
+}
+
+.ai-send-cluster {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.ai-send-cluster .icon-btn-wrap {
+  flex-shrink: 0;
+}
+
+.ai-send-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--callai-border) 80%, transparent);
+  background: color-mix(in srgb, var(--callai-surface) 94%, transparent);
+  color: var(--callai-ink);
+  cursor: pointer;
+  padding: 0;
+}
+
+.ai-send-caret:hover {
+  background: color-mix(in srgb, var(--callai-accent, #3d9b84) 12%, var(--callai-surface));
+}
+
+.ai-send-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  min-width: 180px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--callai-border) 80%, transparent);
+  background: var(--callai-surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 14%, transparent);
+  z-index: 20;
+}
+
+.ai-send-menu button[role="menuitemradio"] {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--callai-ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.86rem;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ai-send-menu button[role="menuitemradio"]:hover,
+.ai-send-menu button[role="menuitemradio"].active {
+  background: color-mix(in srgb, var(--callai-accent, #3d9b84) 14%, transparent);
+}
+
+.ai-composer-key-hint,
+.ai-send-menu-hint {
+  margin: 6px 0 0;
+  background: transparent !important;
+  text-shadow: none;
+}
+
+.ai-config-hint .panel-head h3 {
+  margin: 0;
+}
+
+/* dark tweaks */
+[data-theme="dark"] .ai-bubble {
+  background: color-mix(in srgb, var(--callai-surface) 94%, #fff);
+}
+[data-theme="dark"] .ai-bubble.is-user {
+  background: color-mix(in srgb, var(--callai-accent, #3d9b84) 22%, var(--callai-surface));
+}
+[data-theme="dark"] .ai-composer-card,
+[data-theme="dark"] .ai-composer-card.form-panel,
+[data-theme="dark"] .ai-composer-hud > [class*="animal-card"] {
+  background: var(--callai-surface) !important;
+  background-color: var(--callai-surface) !important;
+  border-color: var(--callai-border) !important;
+}
+[data-theme="dark"] .ai-composer-textarea {
+  background: color-mix(in srgb, var(--callai-surface) 90%, #000);
+}
+[data-theme="dark"] .ai-send-menu {
+  background: var(--callai-surface);
+  box-shadow: 0 10px 28px color-mix(in srgb, #000 40%, transparent);
+}
+
+@media (max-width: 520px) {
+  .ai-page {
+    --ai-hero-clearance: 100px;
+    --ai-page-gutter: 12px;
+    --ai-select-toolbar-h: 56px;
+    --ai-composer-clearance: 180px;
+  }
+  .app-shell.has-titlebar .ai-page {
+    --ai-hero-clearance: calc(100px + var(--callai-titlebar-h, 42px) - 6px);
+  }
+  .ai-stage {
+    gap: 0;
+    padding-bottom: 0;
+  }
+  .ai-composer-hud {
+    bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  }
+  .ai-bubble.is-user,
+  .ai-bubble.is-bot {
+    max-width: 100%;
+  }
+}
+
+/* ── Compact composer card surface ───────────────────── */
+.ai-composer-card,
+.ai-composer-card.form-panel {
+  padding: 10px 12px 8px !important;
+}
+
+.ai-composer-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  min-width: 0;
+}
+
+.ai-composer-intent-seg.segmented {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  width: auto;
+  max-width: 55%;
+}
+
+.ai-composer-intent-seg.segmented button {
+  padding: 4px 10px !important;
+  font-size: 0.82rem !important;
+  min-height: 32px !important;
+  white-space: nowrap;
+}
+
+.ai-composer-model-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 48%;
+  margin-left: auto;
+}
+
+.ai-composer-model-slot .model-ac,
+.ai-composer-model-slot .model-ac.is-compact {
+  width: 100%;
+  min-width: 0;
+}
+
+.ai-composer-model-slot .model-ac-compact-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 4px !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.ai-composer-model-slot .model-ac-input-wrap {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.ai-composer-model-slot .model-ac-input-wrap input,
+.ai-composer-model-slot .model-ac-input-wrap [class*="animal-input"],
+.ai-composer-model-slot .model-ac-input-wrap [class*="animal-wrapper"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 32px !important;
+  height: 32px !important;
+  font-size: 0.82rem !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.ai-composer-row {
+  margin-top: 0;
+}
+
+.ai-composer-textarea {
+  min-height: 36px !important;
+  max-height: 120px !important;
+  padding: 8px 10px !important;
+  font-size: 0.9rem !important;
+}
+
+.ai-composer-key-hint {
+  margin: 4px 0 0 !important;
+  font-size: 0.72rem !important;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* detail drawer (error / payload inspection) */
+.ai-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+  padding: 4px 2px 12px;
+  box-sizing: border-box;
+}
+
+.ai-detail-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ai-detail-summary {
+  margin: 0;
+  font-weight: 750;
+  line-height: 1.4;
+  color: var(--callai-ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ai-detail-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--callai-border) 75%, transparent);
+  background: color-mix(in srgb, var(--callai-surface) 92%, transparent);
+  color: var(--callai-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  writing-mode: horizontal-tb !important;
+}
+
+@media (max-width: 560px) {
+  .ai-composer-toolbar {
+    flex-wrap: wrap;
+  }
+  .ai-composer-intent-seg.segmented {
+    max-width: 100%;
+    width: 100%;
+  }
+  .ai-composer-model-slot {
+    max-width: 100%;
+    width: 100%;
+    margin-left: 0;
+  }
+}

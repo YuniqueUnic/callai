@@ -11,7 +11,7 @@ fn mcp_log_ring_caps_at_500() {
                 &format!("args-{i}"),
                 &format!("ok-{i}"),
                 true,
-                "test",
+                "mcp",
             )
             .unwrap();
     }
@@ -26,7 +26,7 @@ fn mcp_log_ring_caps_at_500() {
 }
 
 #[test]
-fn mcp_log_clear_and_source() {
+fn mcp_log_only_lists_mcp_source() {
     let store = McpLogStore::open_in_memory().unwrap();
     store
         .append("list_alarms", "{}", "[]", true, "mcp")
@@ -34,11 +34,15 @@ fn mcp_log_clear_and_source() {
     store
         .append("plugin_invoke", "demo.ping", "err", false, "ui")
         .unwrap();
+    store
+        .append("install_plugin", "demo", "ok", true, "ui")
+        .unwrap();
     let rows = store.list(10).unwrap();
-    assert_eq!(rows.len(), 2);
-    assert_eq!(rows[0].source, "ui");
-    assert!(!rows[0].ok);
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].source, "mcp");
+    assert_eq!(rows[0].tool, "list_alarms");
     let n = store.clear().unwrap();
-    assert_eq!(n, 2);
+    // clear still wipes whole table (including legacy ui rows)
+    assert!(n >= 1);
     assert!(store.list(10).unwrap().is_empty());
 }

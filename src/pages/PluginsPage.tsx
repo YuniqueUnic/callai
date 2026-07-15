@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, Drawer, Modal, Table, Tag } from "animal-island-ui";
 import { ElementImage } from "../ui/ElementImage";
-import type { McpLogEntry, PluginHistoryEntry, PluginSummary } from "../domain/types";
+import type { PluginHistoryEntry, PluginSummary } from "../domain/types";
 import { client } from "../infra/client";
 import { isTauri } from "../infra/tauriApi";
 import { toast } from "../ui/toast";
@@ -11,10 +11,8 @@ import { IconButton } from "../ui/IconButton";
 import {
   IconBack,
   IconChat,
-  IconClear,
   IconLogs,
   IconOpen,
-  IconRefresh,
   IconTrash,
 } from "../ui/icons";
 import { PluginLogsPanel } from "./PluginLogsPanel";
@@ -33,18 +31,14 @@ interface Props {
   tabActive?: boolean;
 }
 
-type PluginsTab = "list" | "mcp";
 
 export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) {
   const { t } = useTranslation(["plugins", "common"]);
   const [plugins, setPlugins] = useState<PluginSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<PluginsTab>("list");
   const [active, setActive] = useState<PluginSummary | null>(null);
   const [history, setHistory] = useState<PluginHistoryEntry[]>([]);
   const [uiHtml, setUiHtml] = useState<string | null>(null);
-  const [mcpLogs, setMcpLogs] = useState<McpLogEntry[]>([]);
-  const [mcpLoading, setMcpLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<PluginSummary | null>(null);
   const [logTarget, setLogTarget] = useState<PluginSummary | null>(null);
   const [consoleLines, setConsoleLines] = useState<
@@ -79,18 +73,6 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
     }
   }, []);
 
-  const loadMcpLogs = useCallback(async () => {
-    setMcpLoading(true);
-    try {
-      setMcpLogs(await client.listMcpLogs(500));
-    } catch (e) {
-      toast.error({
-        message: String((e as { message?: string })?.message ?? e),
-      });
-    } finally {
-      setMcpLoading(false);
-    }
-  }, []);
 
   const [pendingOpenId, setPendingOpenId] = useState<string | null>(null);
 
@@ -107,8 +89,7 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
     function onPluginsChanged(ev: Event) {
       const detail = (ev as CustomEvent<{ id?: string; open?: boolean }>).detail;
       void refresh();
-      setTab("list");
-      if (detail?.id && detail.open !== false) {
+            if (detail?.id && detail.open !== false) {
         setPendingOpenId(detail.id);
       }
     }
@@ -117,9 +98,6 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
       window.removeEventListener("callai:plugins-changed", onPluginsChanged);
   }, [refresh]);
 
-  useEffect(() => {
-    if (tab === "mcp") void loadMcpLogs();
-  }, [tab, loadMcpLogs]);
 
   useEffect(() => {
     function onMessage(ev: MessageEvent) {
@@ -209,8 +187,7 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
   }
 
   async function openPlugin(p: PluginSummary) {
-    setTab("list");
-    try {
+        try {
       // Prefer independent OS window (generic HTML host). Fall back to in-page iframe.
       if (isTauri() && typeof client.openPluginWindow === "function") {
         await client.openPluginWindow(p.id);
@@ -279,17 +256,6 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
         </div>
         <div className="header-actions plugins-hero-actions">
           <IconButton
-            label={t("plugins:mcpLogs")}
-            icon={<IconLogs size={18} />}
-            tooltipPlacement="bottom"
-            sfx="soft"
-            onClick={() => {
-              setTab("mcp");
-              setActive(null);
-              setUiHtml(null);
-            }}
-          />
-          <IconButton
             label={t("plugins:createWithAi")}
             icon={<IconChat size={18} />}
             variant="primary"
@@ -301,37 +267,6 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
       </header>
 
       <div className="app-main plugins-main">
-        <div className="segmented plugins-tabs" role="tablist" aria-label={t("plugins:title")}>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "list"}
-            className={tab === "list" ? "active" : ""}
-            onClick={() => {
-              playSound("soft");
-              setTab("list");
-            }}
-          >
-            {t("plugins:tabList")}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "mcp"}
-            className={tab === "mcp" ? "active" : ""}
-            onClick={() => {
-              playSound("soft");
-              setTab("mcp");
-              setActive(null);
-              setUiHtml(null);
-            }}
-          >
-            {t("plugins:tabMcp")}
-          </button>
-        </div>
-
-        {tab === "list" ? (
-          <>
             {loading ? (
               <p className="meta">{t("common:loading")}</p>
             ) : plugins.length === 0 ? (
@@ -463,64 +398,6 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
                 ) : null}
               </Card>
             ) : null}
-          </>
-        ) : (
-          <Card className="form-panel mcp-log-panel">
-            <div className="plugin-card-head">
-              <div>
-                <strong>{t("plugins:mcpLogs")}</strong>
-                <p className="meta" style={{ margin: "4px 0 0" }}>
-                  {t("plugins:mcpCap")}
-                </p>
-              </div>
-              <div className="icon-actions">
-                <IconButton
-                  label={t("plugins:refreshMcp")}
-                  icon={<IconRefresh size={16} />}
-                  loading={mcpLoading}
-                  sfx="soft"
-                  onClick={() => void loadMcpLogs()}
-                />
-                <IconButton
-                  label={t("plugins:clearMcp")}
-                  icon={<IconClear size={16} />}
-                  variant="danger"
-                  sfx="warn"
-                  onClick={() => {
-                    void client.clearMcpLogs().then(() => void loadMcpLogs());
-                  }}
-                />
-              </div>
-            </div>
-            {mcpLoading ? (
-              <p className="meta">{t("common:loading")}</p>
-            ) : mcpLogs.length === 0 ? (
-              <p className="meta">{t("plugins:mcpEmpty")}</p>
-            ) : (
-              <div className="mcp-table-wrap">
-                <Table
-                  rowKey="id"
-                  columns={[
-                    { title: "Tool", dataIndex: "tool" },
-                    {
-                      title: "OK",
-                      dataIndex: "ok",
-                      render: (v) => (v ? "Y" : "N"),
-                    },
-                    { title: "Source", dataIndex: "source" },
-                    {
-                      title: t("plugins:when"),
-                      dataIndex: "created_at",
-                      render: (v) =>
-                        typeof v === "string" ? new Date(v).toLocaleString() : "",
-                    },
-                  ]}
-                  dataSource={mcpLogs as unknown as Record<string, unknown>[]}
-                />
-              </div>
-            )}
-          </Card>
-        )}
       </div>
 
       

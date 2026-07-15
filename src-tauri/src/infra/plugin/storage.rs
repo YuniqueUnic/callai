@@ -305,7 +305,9 @@ impl McpLogStore {
         let mut stmt = conn
             .prepare(
                 "SELECT id, tool, args_preview, result_preview, ok, source, created_at
-                 FROM mcp_logs ORDER BY id DESC LIMIT ?1",
+                 FROM mcp_logs
+                 WHERE source = 'mcp'
+                 ORDER BY id DESC LIMIT ?1",
             )
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         let rows = stmt

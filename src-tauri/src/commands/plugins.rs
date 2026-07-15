@@ -24,24 +24,12 @@ pub fn install_plugin(
     state: State<'_, AppState>,
     draft: PluginDraft,
 ) -> Result<PluginSummary, String> {
-    let summary = state.plugins.install(draft).map_err(map_err)?;
-    let _ = state.mcp_logs.append(
-        "install_plugin",
-        &summary.id,
-        &format!("{}@{}", summary.name, summary.version),
-        true,
-        "ui",
-    );
-    Ok(summary)
+    state.plugins.install(draft).map_err(map_err)
 }
 
 #[tauri::command]
 pub fn delete_plugin(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    state.plugins.delete(&id).map_err(map_err)?;
-    let _ = state
-        .mcp_logs
-        .append("delete_plugin", &id, "ok", true, "ui");
-    Ok(())
+    state.plugins.delete(&id).map_err(map_err)
 }
 
 #[tauri::command]
@@ -53,19 +41,8 @@ pub fn plugin_invoke(
     args: Value,
 ) -> Result<Value, String> {
     let res = state.plugins.invoke(&plugin_id, &method, args.clone());
-    let (ok, preview) = match &res {
-        Ok(v) => (true, v.to_string()),
-        Err(e) => (false, e.message.clone()),
-    };
-    let _ = state.mcp_logs.append(
-        "plugin_invoke",
-        &format!("{plugin_id}.{method}"),
-        &preview,
-        ok,
-        "ui",
-    );
-    // Host-owned OS notification for plugin notification.show
-    if ok && method.trim() == "notification.show" {
+    // Host-owned OS notification for plugin notification.show (plugin console/history owns diagnostics).
+    if res.is_ok() && method.trim() == "notification.show" {
         use tauri_plugin_notification::NotificationExt;
         let title = args
             .get("title")

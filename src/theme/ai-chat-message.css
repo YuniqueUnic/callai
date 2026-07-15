@@ -1,0 +1,182 @@
+/* split from ai-chat.css */
+
+/* Never let animal-island Loading fill the chat bubble (black full-height bar). */
+.ai-bubble .animal-wrapper-HLEzB,
+.ai-bubble [class*="animal-wrapper"][class*="HLEz"],
+.ai-bubble [class*="animal-container"] {
+  width: 0 !important;
+  height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  display: none !important;
+  background: transparent !important;
+}
+
+
+/* Message chrome: top info bar + bottom actions */
+.ai-msg-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 6px;
+  padding: 0 0 4px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--callai-border) 55%, transparent);
+}
+
+.ai-msg-role {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: color-mix(in srgb, var(--callai-ink) 72%, transparent);
+  flex: 0 0 auto;
+}
+
+.ai-msg-time {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--callai-ink) 55%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.ai-msg-info-spacer {
+  flex: 1 1 auto;
+  min-width: 4px;
+}
+
+.ai-msg-info .icon-btn-wrap button,
+.ai-msg-actions .icon-btn-wrap button {
+  min-width: 28px !important;
+  min-height: 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+}
+
+.ai-chevron {
+  transition: transform 0.15s ease;
+}
+.ai-chevron.is-collapsed {
+  transform: rotate(-90deg);
+}
+
+.ai-msg-main {
+  min-width: 0;
+}
+
+.ai-msg-collapsed-hint {
+  margin: 2px 0 4px !important;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.ai-msg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed color-mix(in srgb, var(--callai-border) 50%, transparent);
+}
+
+.ai-msg-action {
+  display: inline-flex;
+}
+
+/* legacy error actions (if any remain) */
+.ai-error-actions {
+  display: none;
+}
+
+.ai-bubble.is-collapsed {
+  opacity: 0.92;
+}
+
+/* Thinking vs final answer (o1/Claude-style collapsible thought) */
+.ai-think {
+  margin: 8px 0 10px;
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--callai-border) 70%, transparent);
+  background: color-mix(in srgb, var(--callai-ink) 4%, var(--callai-surface));
+  overflow: hidden;
+}
+
+.ai-think-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--callai-ink) 70%, transparent);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ai-think-toggle:hover {
+  color: var(--callai-ink);
+  background: color-mix(in srgb, var(--callai-primary, #0f9f92) 8%, transparent);
+}
+
+.ai-think-label {
+  letter-spacing: 0.02em;
+}
+
+.ai-think-preview {
+  margin: 0 10px 8px !important;
+  opacity: 0.72;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-think-body {
+  margin: 0;
+  padding: 0 12px 10px;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--callai-ink) 78%, transparent);
+  white-space: pre-wrap;
+  word-break: break-word;
+  writing-mode: horizontal-tb !important;
+}
+
+.ai-answer-block {
+  margin-top: 4px;
+  min-width: 0;
+}
+
+.ai-answer-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--callai-primary, #0f9f92) 85%, var(--callai-ink));
+  margin: 0 0 4px;
+}
+
+.ai-answer-block > .ai-bubble-body {
+  margin: 0;
+}
+
+.ai-answer-block > .ai-stream-preview {
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .ai-think {
+  background: color-mix(in srgb, #000 22%, var(--callai-surface));
+}
+
+

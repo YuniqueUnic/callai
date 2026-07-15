@@ -189,6 +189,7 @@ impl PromptId {
             | "animal-island-style"
             | "island_style"
             | "island"
+            | "style"
             | "animal_island" => Some(Self::AnimalIslandStyle),
             "continue_system" | "continue-system" | "cont_system" => Some(Self::ContinueSystem),
             "continue_user" | "continue-user" | "cont_user" | "continuation" => {
@@ -238,5 +239,37 @@ impl PromptId {
             Self::ContinueSystem,
             Self::ContinueUser,
         ]
+    }
+
+    /// One-line purpose for MCP `list_prompts` / agent discovery.
+    pub fn summary(self) -> &'static str {
+        match self {
+            Self::System => "Product voice + safety for 阔爱/callai",
+            Self::Capabilities => "What the app can run (alarms, plugins, schedule, notify)",
+            Self::OutputContract => "JSON/dual-part parse contract for AI replies",
+            Self::AlarmGenerate => "How to draft AlarmDraft JSON",
+            Self::PluginGenerate => "How to draft plugin manifest + ui.html",
+            Self::Ai2Ui => "AI2UI composition hints",
+            Self::AnimalIslandStyle => "animal-island-ui visual system for generated UI",
+            Self::PluginSdk => "window.callai bridge SDK (storage/timer/notification)",
+            Self::ContinueSystem => "System instructions for multi-turn continuation",
+            Self::ContinueUser => "User turn template for incomplete generations",
+        }
+    }
+
+    /// Recommended aliases for MCP get_prompt (human-friendly).
+    pub fn aliases(self) -> &'static [&'static str] {
+        match self {
+            Self::System => &["system"],
+            Self::Capabilities => &["capabilities", "caps"],
+            Self::OutputContract => &["output_contract", "contract"],
+            Self::AlarmGenerate => &["alarm_generate", "alarm"],
+            Self::PluginGenerate => &["plugin_generate", "plugin"],
+            Self::Ai2Ui => &["ai2ui", "ui"],
+            Self::AnimalIslandStyle => &["animal_island_style", "style", "island"],
+            Self::PluginSdk => &["plugin_sdk", "sdk"],
+            Self::ContinueSystem => &["continue_system"],
+            Self::ContinueUser => &["continue_user", "continuation"],
+        }
     }
 }

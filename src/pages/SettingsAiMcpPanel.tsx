@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input, Switch } from "animal-island-ui";
+import { Drawer, Input, Switch } from "animal-island-ui";
 import type { AiProvider, AiSettings, AppSettings, McpSettings } from "../domain/types";
 import {
   AI_PROVIDER_DEFAULTS,
@@ -13,9 +13,10 @@ import { toast } from "../ui/toast";
 import { playSound } from "../ui/sounds";
 import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
-import { IconCopy, IconEye, IconEyeOff, IconRefresh } from "../ui/icons";
+import { IconCopy, IconEye, IconEyeOff, IconLogs, IconRefresh } from "../ui/icons";
 import { ProviderPicker } from "../ui/ProviderPicker";
 import { ModelAutocomplete } from "../ui/ModelAutocomplete";
+import { McpLogsPanel } from "./McpLogsPanel";
 
 interface Props {
   settings: AppSettings;
@@ -36,6 +37,7 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
   const [showAiKey, setShowAiKey] = useState(false);
   const [showMcpToken, setShowMcpToken] = useState(false);
   const [busyToken, setBusyToken] = useState(false);
+  const [mcpLogsOpen, setMcpLogsOpen] = useState(false);
 
   // Local drafts for free-text fields (fast typing path).
   const [baseUrl, setBaseUrl] = useState(savedAi.base_url);
@@ -44,6 +46,15 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
   const [mcpHost, setMcpHost] = useState(savedMcp.listen_host);
   const [mcpPort, setMcpPort] = useState(String(savedMcp.port ?? 3927));
   const [mcpToken, setMcpToken] = useState(savedMcp.auth_token);
+
+  useEffect(() => {
+    document.body.classList.toggle("callai-drawer-open", mcpLogsOpen);
+    document.body.classList.toggle("callai-logs-open", mcpLogsOpen);
+    return () => {
+      document.body.classList.remove("callai-drawer-open");
+      document.body.classList.remove("callai-logs-open");
+    };
+  }, [mcpLogsOpen]);
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -299,7 +310,16 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
       <div className="field settings-block">
         <div className="panel-head">
           <label className="label">{t("settings:mcpSection")}</label>
-          <ElementImage id="multi-device" size={28} alt="" className="deco-mini" />
+          <span className="secret-tools">
+            <IconButton
+              label={t("settings:mcpLogs", { defaultValue: "MCP 日志" })}
+              icon={<IconLogs size={16} />}
+              sfx="soft"
+              tooltipPlacement="bottom"
+              onClick={() => setMcpLogsOpen(true)}
+            />
+            <ElementImage id="multi-device" size={28} alt="" className="deco-mini" />
+          </span>
         </div>
         <p className="meta settings-section-hint">{t("settings:mcpHint")}</p>
 
@@ -417,6 +437,18 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
           </div>
         </div>
       </div>
+
+      <Drawer
+        open={mcpLogsOpen}
+        title={t("settings:mcpLogs", { defaultValue: "MCP 日志" })}
+        placement="right"
+        width="min(420px, 92vw)"
+        pushBackground={false}
+        onClose={() => setMcpLogsOpen(false)}
+        className="logs-drawer mcp-logs-drawer"
+      >
+        {mcpLogsOpen ? <McpLogsPanel /> : null}
+      </Drawer>
     </>
   );
 }

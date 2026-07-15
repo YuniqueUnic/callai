@@ -1,0 +1,166 @@
+/* split from ai-chat.css */
+/* AI assistant page — layout, stream, composer, selection, drafts */
+
+/* --- Overlay header + content scrolls underneath ---
+   Header is a floating HUD (absolute). Stage fills the full page.
+   Scrollport uses padding-top so the first paint is readable, but
+   content can scroll up under the header (same idea as edit-main). */
+.edit-overlay > .ai-page,
+.edit-overlay > .ai-page.ai-page,
+.edit-overlay > .edit-page.ai-page {
+  display: block !important;
+  position: relative !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.edit-overlay > .ai-page > .ai-stage {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+}
+
+.edit-overlay > .ai-page .ai-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding-bottom: var(--ai-composer-clearance) !important;
+}
+
+.edit-overlay > .ai-page .ai-composer-hud {
+  position: absolute !important;
+  left: var(--ai-page-gutter) !important;
+  right: var(--ai-page-gutter) !important;
+  bottom: max(6px, env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 220 !important;
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+.edit-overlay > .ai-page .ai-scroll .ai-stream-card,
+.edit-overlay > .ai-page .ai-scroll [class*="animal-card"] {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+/* --- page chrome --- */
+.ai-page {
+  --ai-page-gutter: clamp(12px, 2.8vw, 18px);
+  /* initial readable offset under floating hero */
+  --ai-hero-clearance: 112px;
+  --ai-select-toolbar-h: 52px;
+  /* bottom composer is overlay HUD — scroll content pads under it */
+  --ai-composer-clearance: 168px;
+  position: relative;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.app-shell.has-titlebar .ai-page {
+  --ai-hero-clearance: calc(112px + var(--callai-titlebar-h, 42px) - 6px);
+}
+
+/* Overlay header HUD — content rolls underneath */
+.ai-page > .ai-hero.edit-hero,
+.ai-page .ai-hero.edit-hero {
+  position: absolute !important;
+  z-index: 300 !important;
+  flex: none !important;
+  /* let wheel/scroll pass through empty chrome; buttons stay clickable */
+  pointer-events: none !important;
+}
+
+.ai-page .ai-hero .edit-hero-tools,
+.ai-page .ai-hero .edit-hero-actions,
+.ai-page .ai-hero .header-actions,
+.ai-page .ai-hero .header-actions * {
+  pointer-events: auto !important;
+}
+
+.ai-page .ai-main,
+.ai-page .form-panel {
+  min-width: 0;
+}
+
+/* multi-select bar also overlays; does not push stage down */
+.ai-page > .ai-select-toolbar {
+  position: absolute;
+  top: calc(var(--ai-hero-clearance) - 6px);
+  left: var(--ai-page-gutter);
+  right: var(--ai-page-gutter);
+  z-index: 260;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.ai-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+  margin: 0;
+  /* horizontal gutter only; top/bottom chrome is overlay HUD */
+  padding: 0 var(--ai-page-gutter);
+  box-sizing: border-box;
+  z-index: 1;
+  /* stage is pure scroll host — composer is absolute HUD, not in flow */
+  pointer-events: none;
+}
+
+.ai-stage > .ai-scroll,
+.ai-stage > .ai-composer-hud {
+  pointer-events: auto;
+}
+
+/* scrollport fills stage; pads under overlay header + bottom HUD */
+.ai-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: var(--ai-hero-clearance);
+  padding-bottom: var(--ai-composer-clearance);
+  box-sizing: border-box;
+}
+
+/* extra top pad when multi-select toolbar is mounted */
+.ai-page:has(> .ai-select-toolbar) .ai-scroll {
+  padding-top: calc(var(--ai-hero-clearance) + var(--ai-select-toolbar-h));
+}
+
+.ai-scroll > .form-panel,
+.ai-scroll > [class*="animal-card"],
+.ai-scroll > .ai-config-hint {
+  margin-bottom: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.app-shell.has-titlebar .ai-page .ai-composer-hud {
+  bottom: max(6px, env(safe-area-inset-bottom, 0px));
+}
+

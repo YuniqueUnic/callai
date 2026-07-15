@@ -85,6 +85,7 @@ impl AlarmService {
         log: &mut ExecutionLog,
     ) -> (u32, Option<ProcessOutput>, bool, bool, bool) {
         let mut attempt: u32 = 0;
+        #[allow(unused_assignments)]
         let mut last_output: Option<ProcessOutput> = None;
         let mut success = false;
         let mut canceled = false;

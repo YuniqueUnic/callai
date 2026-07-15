@@ -109,11 +109,11 @@ fn attach_stdio_pipes(child: &mut Child) -> Receiver<(bool, Vec<u8>)> {
     let stderr = child.stderr.take();
     let (tx, rx) = mpsc::channel::<(bool, Vec<u8>)>();
 
-    if let Some(mut out) = stdout {
+    if let Some(out) = stdout {
         let tx = tx.clone();
         thread::spawn(move || pipe_reader(out, false, tx));
     }
-    if let Some(mut err) = stderr {
+    if let Some(err) = stderr {
         let tx = tx.clone();
         thread::spawn(move || pipe_reader(err, true, tx));
     }
