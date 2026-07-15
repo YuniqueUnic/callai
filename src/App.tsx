@@ -7,6 +7,8 @@ import { HomePage } from "./pages/HomePage";
 import { EditAlarmPage } from "./pages/EditAlarmPage";
 import { LogsPanel } from "./pages/LogsPanel";
 import { SettingsPage } from "./pages/SettingsPage";
+import { PluginsPage } from "./pages/PluginsPage";
+import { AiChatPage } from "./pages/AiChatPage";
 import { applyTheme, readStoredTheme } from "./theme/theme";
 import { SeaMarquee } from "./ui/SeaMarquee";
 import { TitleBar } from "./ui/TitleBar";
@@ -56,6 +58,13 @@ export default function App() {
     return () => document.body.classList.remove("callai-logs-open");
   }, [logsOpen]);
 
+  // Hide body-portaled FAB on edit / AI chat (Home stays mounted under overlay).
+  useEffect(() => {
+    const immersive = page === "edit" || page === "ai";
+    document.body.classList.toggle("callai-immersive", immersive);
+    return () => document.body.classList.remove("callai-immersive");
+  }, [page]);
+
   const onCreate = useCallback(() => {
     setEditId(null);
     setPage("edit");
@@ -92,13 +101,15 @@ export default function App() {
   const tabItems = useMemo(
     () => [
       { key: "home", label: t("common:tabAlarms"), children: null },
+      { key: "plugins", label: t("common:tabPlugins"), children: null },
       { key: "settings", label: t("common:tabSettings"), children: null },
     ],
     [t],
   );
 
-  const inTabs = page === "home" || page === "settings";
-  const tabKey = page === "settings" ? "settings" : "home";
+  const inTabs = page === "home" || page === "settings" || page === "plugins";
+  const tabKey =
+    page === "settings" ? "settings" : page === "plugins" ? "plugins" : "home";
 
   return (
     <Cursor
@@ -119,14 +130,16 @@ export default function App() {
             (listAlarms + N×nextTrigger + SeaMarquee restart). Edit overlays on top. */}
         <div
           className="app-body"
-          hidden={page === "edit"}
-          aria-hidden={page === "edit"}
+          hidden={page === "edit" || page === "ai"}
+          aria-hidden={page === "edit" || page === "ai"}
         >
           <Tabs
             className="main-tabs"
             activeKey={tabKey}
             onChange={(key) => {
-              if (key === "home" || key === "settings") setPage(key);
+              if (key === "home" || key === "settings" || key === "plugins") {
+                setPage(key);
+              }
             }}
             leafAnimation={false}
             shadow={false}
@@ -143,7 +156,16 @@ export default function App() {
                 onCreate={onCreate}
                 onEdit={onEdit}
                 onLogs={openLogs}
+                onAi={() => setPage("ai")}
+                fabVisible={page === "home"}
               />
+            </div>
+            <div
+              className={`tab-pane ${tabKey === "plugins" ? "is-active" : ""}`}
+              hidden={tabKey !== "plugins"}
+              aria-hidden={tabKey !== "plugins"}
+            >
+              <PluginsPage onOpenAi={() => setPage("ai")} />
             </div>
             <div
               className={`tab-pane ${tabKey === "settings" ? "is-active" : ""}`}
@@ -157,7 +179,7 @@ export default function App() {
         <div
           className="app-footer-band"
           aria-hidden
-          hidden={page === "edit"}
+          hidden={page === "edit" || page === "ai"}
         >
           <SeaMarquee />
         </div>
@@ -171,6 +193,19 @@ export default function App() {
                 window.dispatchEvent(new Event("callai:alarms-changed"));
                 setPage("home");
               }}
+            />
+          </div>
+        ) : null}
+        {page === "ai" ? (
+          <div className="edit-overlay">
+            <AiChatPage
+              onBack={() => setPage("home")}
+              onAlarmCreated={() => {
+                invalidateAlarmsCache();
+                window.dispatchEvent(new Event("callai:alarms-changed"));
+                setPage("home");
+              }}
+              onPluginCreated={() => setPage("plugins")}
             />
           </div>
         ) : null}

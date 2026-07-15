@@ -73,7 +73,7 @@ impl TomlConfigBackup {
 
     fn prune_backups(&self, keep: usize) -> DomainResult<()> {
         let keep = keep.min(Self::MAX_BACKUP_FILES);
-        let mut entries: Vec<_> = fs::read_dir(&self.paths.backups_dir)
+        let mut entries: Vec<_> = fs::read_dir(self.paths.backups_dir())
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?
             .filter_map(|e| e.ok())
             .filter(|e| {
@@ -100,13 +100,13 @@ impl TomlConfigBackup {
 impl ConfigBackup for TomlConfigBackup {
     fn backup_now(&self) -> DomainResult<String> {
         self.paths.ensure()?;
-        if !self.paths.config_file.exists() {
+        if !self.paths.config_file().exists() {
             return Ok(String::new());
         }
         let stamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
         let name = format!("config.toml.{stamp}.bak");
-        let dest = self.paths.backups_dir.join(&name);
-        fs::copy(&self.paths.config_file, &dest)
+        let dest = self.paths.backups_dir().join(&name);
+        fs::copy(self.paths.config_file(), &dest)
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("backup copy: {e}")))?;
         self.prune_backups(Self::MAX_BACKUP_FILES)?;
         Ok(name)
@@ -114,7 +114,7 @@ impl ConfigBackup for TomlConfigBackup {
 
     fn list_backups(&self) -> DomainResult<Vec<String>> {
         self.paths.ensure()?;
-        let mut names: Vec<String> = fs::read_dir(&self.paths.backups_dir)
+        let mut names: Vec<String> = fs::read_dir(self.paths.backups_dir())
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?
             .filter_map(|e| e.ok())
             .filter_map(|e| e.file_name().into_string().ok())
@@ -126,7 +126,7 @@ impl ConfigBackup for TomlConfigBackup {
     }
 
     fn restore(&self, backup_name: &str) -> DomainResult<()> {
-        let src = self.paths.backups_dir.join(backup_name);
+        let src = self.paths.backups_dir().join(backup_name);
         if !src.exists() {
             return Err(DomainError::new(
                 ErrorCode::StorageFailed,
@@ -135,7 +135,7 @@ impl ConfigBackup for TomlConfigBackup {
         }
         // backup current first
         let _ = self.backup_now();
-        fs::copy(&src, &self.paths.config_file)
+        fs::copy(&src, self.paths.config_file())
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("restore: {e}")))?;
         Ok(())
     }
@@ -157,7 +157,7 @@ impl ConfigBackup for TomlConfigBackup {
                 "invalid backup name",
             ));
         }
-        let path = self.paths.backups_dir.join(name);
+        let path = self.paths.backups_dir().join(name);
         if !path.exists() {
             return Err(DomainError::new(
                 ErrorCode::StorageFailed,
@@ -174,19 +174,19 @@ impl ConfigBackup for TomlConfigBackup {
         self.paths.ensure()?;
         let root = TomlRoot {
             settings: TomlSettings {
-                theme: match settings.theme {
+                theme: match settings.appearance.theme {
                     ThemeMode::System => "system".into(),
                     ThemeMode::Light => "light".into(),
                     ThemeMode::Dark => "dark".into(),
                 },
-                locale: settings.locale.as_str().into(),
-                launch_minimized: settings.launch_minimized,
-                log_retention_days: settings.log_retention_days,
-                notify_on_failure: settings.notify_on_failure,
-                sound_enabled: settings.sound_enabled,
-                timezone: settings.timezone.clone(),
-                auto_backup_on_start: settings.auto_backup_on_start,
-                backup_keep_count: settings.backup_keep_count,
+                locale: settings.appearance.locale.as_str().into(),
+                launch_minimized: settings.runtime.launch_minimized,
+                log_retention_days: settings.runtime.log_retention_days,
+                notify_on_failure: settings.notify.notify_on_failure,
+                sound_enabled: settings.notify.sound_enabled,
+                timezone: settings.runtime.timezone.clone(),
+                auto_backup_on_start: settings.backup.auto_backup_on_start,
+                backup_keep_count: settings.backup.backup_keep_count,
             },
             alarms: alarms
                 .iter()
@@ -240,35 +240,48 @@ impl ConfigBackup for TomlConfigBackup {
         };
         let text = toml::to_string_pretty(&root)
             .map_err(|e| DomainError::new(ErrorCode::StorageFailed, format!("toml encode: {e}")))?;
-        fs::write(&self.paths.config_file, text).map_err(|e| {
+        fs::write(self.paths.config_file(), text).map_err(|e| {
             DomainError::new(ErrorCode::StorageFailed, format!("write config: {e}"))
         })?;
         Ok(())
     }
 
     fn import_toml_if_needed(&self) -> DomainResult<Option<(Vec<AlarmDraft>, AppSettings)>> {
-        if !self.paths.config_file.exists() {
+        if !self.paths.config_file().exists() {
             return Ok(None);
         }
-        let text = fs::read_to_string(&self.paths.config_file)
+        let text = fs::read_to_string(self.paths.config_file())
             .map_err(|e| DomainError::new(ErrorCode::ConfigCorrupt, format!("read config: {e}")))?;
         let root: TomlRoot = toml::from_str(&text).map_err(|e| {
             DomainError::new(ErrorCode::ConfigCorrupt, format!("parse config: {e}"))
         })?;
+        use crate::domain::{
+            AiSettings, AppearanceSettings, BackupSettings, NotifySettings, RuntimeSettings,
+        };
         let settings = AppSettings {
-            theme: match root.settings.theme.as_str() {
-                "light" => ThemeMode::Light,
-                "dark" => ThemeMode::Dark,
-                _ => ThemeMode::System,
+            appearance: AppearanceSettings {
+                theme: match root.settings.theme.as_str() {
+                    "light" => ThemeMode::Light,
+                    "dark" => ThemeMode::Dark,
+                    _ => ThemeMode::System,
+                },
+                locale: LocaleCode::parse(&root.settings.locale),
             },
-            locale: LocaleCode::parse(&root.settings.locale),
-            launch_minimized: root.settings.launch_minimized,
-            log_retention_days: root.settings.log_retention_days,
-            notify_on_failure: root.settings.notify_on_failure,
-            sound_enabled: root.settings.sound_enabled,
-            timezone: root.settings.timezone,
-            auto_backup_on_start: root.settings.auto_backup_on_start,
-            backup_keep_count: root.settings.backup_keep_count,
+            runtime: RuntimeSettings {
+                launch_minimized: root.settings.launch_minimized,
+                log_retention_days: root.settings.log_retention_days,
+                timezone: root.settings.timezone.clone(),
+            },
+            notify: NotifySettings {
+                notify_on_failure: root.settings.notify_on_failure,
+                sound_enabled: root.settings.sound_enabled,
+            },
+            backup: BackupSettings {
+                auto_backup_on_start: root.settings.auto_backup_on_start,
+                backup_keep_count: root.settings.backup_keep_count,
+            },
+            ai: AiSettings::default(),
+            mcp: crate::domain::McpSettings::default(),
         };
         let drafts = root
             .alarms

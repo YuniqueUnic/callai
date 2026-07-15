@@ -107,6 +107,88 @@ export interface LogFilter {
   limit: number;
 }
 
+export type AiProvider = "openai" | "claude" | "gemini" | "openai_compatible";
+
+export interface AiSettings {
+  provider: AiProvider;
+  base_url: string;
+  api_key: string;
+  model: string;
+}
+
+export const AI_PROVIDER_DEFAULTS: Record<
+  AiProvider,
+  { base_url: string; model: string; label: string }
+> = {
+  openai: {
+    base_url: "https://api.openai.com/v1",
+    // Balanced GPT-5.6 tier (mini-class successor). Docs: developers.openai.com/api/docs/models
+    model: "gpt-5.6-terra",
+    label: "OpenAI",
+  },
+  claude: {
+    base_url: "https://api.anthropic.com/v1",
+    // Claude Sonnet 5 — speed/intelligence balance (claude-sonnet-4-20250514 retired).
+    model: "claude-sonnet-5",
+    label: "Claude",
+  },
+  gemini: {
+    base_url: "https://generativelanguage.googleapis.com/v1beta/openai",
+    model: "gemini-2.5-flash",
+    label: "Gemini",
+  },
+  openai_compatible: {
+    base_url: "",
+    model: "gpt-5.6-terra",
+    label: "OpenAI Compatible",
+  },
+};
+
+/** Seed / mock list for autocomplete when live /models is unavailable. */
+export const AI_MODEL_HINTS: string[] = [
+  // OpenAI GPT-5.6 family
+  "gpt-5.6-terra",
+  "gpt-5.6-sol",
+  "gpt-5.6-luna",
+  "gpt-5.6",
+  "gpt-5.5",
+  // Anthropic
+  "claude-sonnet-5",
+  "claude-opus-4-8",
+  "claude-fable-5",
+  "claude-haiku-4-5",
+  "claude-sonnet-4-6",
+  // Google Gemini
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-3-flash-preview",
+  "gemini-3-pro-preview",
+  // Common compatible gateways
+  "deepseek-chat",
+  "deepseek-reasoner",
+];
+
+export const DEFAULT_AI_SETTINGS: AiSettings = {
+  provider: "openai",
+  base_url: AI_PROVIDER_DEFAULTS.openai.base_url,
+  api_key: "",
+  model: AI_PROVIDER_DEFAULTS.openai.model,
+};
+
+export interface McpSettings {
+  enabled: boolean;
+  listen_host: string;
+  port: number;
+  auth_token: string;
+}
+
+export const DEFAULT_MCP_SETTINGS: McpSettings = {
+  enabled: false,
+  listen_host: "127.0.0.1",
+  port: 3927,
+  auth_token: "",
+};
+
 export interface AppSettings {
   theme: ThemeMode;
   locale: LocaleCode;
@@ -118,7 +200,67 @@ export interface AppSettings {
   timezone: string;
   auto_backup_on_start: boolean;
   backup_keep_count: number;
+  /** Nested AI chat config. */
+  ai: AiSettings;
+  /** Nested MCP HTTP endpoint config. */
+  mcp: McpSettings;
 }
+
+// Plugin / MCP types
+export type PluginPermission =
+  | "storage"
+  | "timer"
+  | "notification"
+  | "network_limited"
+  | "limited_exec"
+  | "history";
+
+export interface PluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  permissions: PluginPermission[];
+  ui: string;
+}
+
+export interface PluginDraft {
+  manifest: PluginManifest;
+  ui_html: string;
+}
+
+export interface PluginSummary {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  permissions: PluginPermission[];
+  ui: string;
+  installed_at: string;
+  last_run_at: string | null;
+  record_count: number;
+}
+
+export interface PluginHistoryEntry {
+  id: number;
+  method: string;
+  args_preview: string;
+  result_preview: string;
+  ok: boolean;
+  created_at: string;
+}
+
+export interface McpLogEntry {
+  id: number;
+  tool: string;
+  args_preview: string;
+  result_preview: string;
+  ok: boolean;
+  source: string;
+  created_at: string;
+}
+
+export type PageId = "home" | "edit" | "logs" | "settings" | "plugins" | "ai";
 
 export interface DomainError {
   code: string;
@@ -133,7 +275,6 @@ export interface TemplateDto {
   args: string[];
 }
 
-export type PageId = "home" | "edit" | "logs" | "settings";
 
 export type LoadState<T> =
   | { status: "idle" }

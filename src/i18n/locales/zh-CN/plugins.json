@@ -1,0 +1,22 @@
+{
+  "title": "插件",
+  "empty": "还没有插件。可以用 AI 创建一个。",
+  "createWithAi": "用 AI 创建",
+  "open": "打开",
+  "deleted": "插件已删除",
+  "deleteConfirm": "删除该插件及其数据？",
+  "noDesc": "暂无描述",
+  "records": "记录数",
+  "lastRun": "上次运行",
+  "runtime": "运行时",
+  "method": "方法",
+  "when": "时间",
+  "mcpLogs": "MCP 日志",
+  "mcpEmpty": "暂无 MCP 日志",
+  "mcpCap": "最多保留 500 条",
+  "refreshMcp": "刷新",
+  "clearMcp": "清空",
+  "subtitle": "独立交互任务，带隔离存储。",
+  "tabList": "插件",
+  "tabMcp": "MCP 日志"
+}

@@ -121,7 +121,7 @@ impl AlarmService {
 
     pub fn schedule_timezone(&self) -> DomainResult<chrono_tz::Tz> {
         let settings = self.store.get_settings()?;
-        resolve_timezone(&settings.timezone)
+        resolve_timezone(settings.timezone())
     }
 
     pub fn next_trigger_utc(
@@ -137,7 +137,7 @@ impl AlarmService {
 
     pub fn save_settings(&self, settings: AppSettings) -> DomainResult<AppSettings> {
         // Validate IANA / system token early.
-        let _ = resolve_timezone(&settings.timezone)?;
+        let _ = resolve_timezone(settings.timezone())?;
         self.store.save_settings(&settings)?;
         self.sync_export()?;
         Ok(settings)
@@ -456,12 +456,17 @@ impl AlarmService {
     }
 
     pub fn bootstrap(&self) -> DomainResult<()> {
-        let _ = self.store.get_settings()?;
-        let settings = self.store.get_settings()?;
-        if settings.auto_backup_on_start {
+        let mut settings = self.store.get_settings()?;
+        // MCP bearer: always have a system-generated token (stdio ignores it).
+        if settings.mcp.auth_token.trim().is_empty() {
+            settings.mcp.auth_token = crate::domain::generate_secret_token();
+            self.store.save_settings(&settings)?;
+            let _ = self.sync_export();
+        }
+        if settings.auto_backup_on_start() {
             let _ = self.backup.backup_now();
         }
-        let _ = self.store.purge_old_logs(settings.log_retention_days);
+        let _ = self.store.purge_old_logs(settings.log_retention_days());
         Ok(())
     }
 

@@ -1,0 +1,19 @@
+{
+  "title": "AI Assistant",
+  "welcome": "Describe an alarm or plugin — I will draft it for you.",
+  "placeholder": "e.g. remind me every weekday at 9:00…",
+  "send": "Send",
+  "you": "You",
+  "assistant": "callai",
+  "needConfig": "Configure AI in Settings first",
+  "needConfigHint": "Open Settings → AI, pick a provider and paste an API key.",
+  "intentAlarm": "Alarm",
+  "intentPlugin": "Plugin",
+  "intentChat": "Chat",
+  "alarmReady": "Alarm draft ready: {{name}}",
+  "pluginReady": "Plugin draft ready: {{name}}",
+  "createAlarm": "Create alarm",
+  "installPlugin": "Install plugin",
+  "pluginInstalled": "Plugin installed",
+  "intentLabel": "Create as"
+}

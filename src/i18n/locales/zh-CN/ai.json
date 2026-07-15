@@ -1,0 +1,19 @@
+{
+  "title": "AI 助手",
+  "welcome": "描述想要的闹钟或插件，我会帮你生成草稿。",
+  "placeholder": "例如：工作日早上 9 点提醒我…",
+  "send": "发送",
+  "you": "你",
+  "assistant": "callai",
+  "needConfig": "请先在设置中配置 AI",
+  "needConfigHint": "打开设置 → AI，选择服务商并填写 API Key。",
+  "intentAlarm": "闹钟",
+  "intentPlugin": "插件",
+  "intentChat": "聊天",
+  "alarmReady": "闹钟草稿已就绪：{{name}}",
+  "pluginReady": "插件草稿已就绪：{{name}}",
+  "createAlarm": "创建闹钟",
+  "installPlugin": "安装插件",
+  "pluginInstalled": "插件已安装",
+  "intentLabel": "生成类型"
+}

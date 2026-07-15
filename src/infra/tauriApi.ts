@@ -6,6 +6,10 @@ import type {
   DomainError,
   ExecutionLog,
   LogFilter,
+  McpLogEntry,
+  PluginDraft,
+  PluginHistoryEntry,
+  PluginSummary,
   TemplateDto,
 } from "../domain/types";
 
@@ -67,6 +71,29 @@ export const api = {
   listAlarmSounds: () => call<string[]>("list_alarm_sounds"),
   previewAlarmSound: (sound_id?: string | null) =>
     call<boolean>("preview_alarm_sound", { soundId: sound_id ?? null }),
+  listPlugins: () => call<PluginSummary[]>("list_plugins"),
+  getPlugin: (id: string) => call<PluginSummary>("get_plugin", { id }),
+  installPlugin: (draft: PluginDraft) =>
+    call<PluginSummary>("install_plugin", { draft }),
+  deletePlugin: (id: string) => call<void>("delete_plugin", { id }),
+  pluginInvoke: (plugin_id: string, method: string, args: unknown) =>
+    call<unknown>("plugin_invoke", { pluginId: plugin_id, method, args }),
+  pluginUiHtml: (id: string) => call<string>("plugin_ui_html", { id }),
+  pluginMarkRun: (id: string) => call<void>("plugin_mark_run", { id }),
+  pluginListHistory: (id: string, limit?: number) =>
+    call<PluginHistoryEntry[]>("plugin_list_history", { id, limit }),
+  listMcpLogs: (limit?: number) =>
+    call<McpLogEntry[]>("list_mcp_logs", { limit }),
+  clearMcpLogs: () => call<number>("clear_mcp_logs"),
+  getPrompt: (id: string) => call<string>("get_prompt", { id }),
+  listPrompts: () => call<string[]>("list_prompts"),
+  generateSecretToken: () => call<string>("generate_secret_token"),
+  listAiModels: (provider: string, base_url: string, api_key: string) =>
+    call<string[]>("list_ai_models", {
+      provider,
+      baseUrl: base_url,
+      apiKey: api_key,
+    }),
 };
 
 

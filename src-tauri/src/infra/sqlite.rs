@@ -131,6 +131,38 @@ impl SqliteStore {
             "ALTER TABLE alarms ADD COLUMN notification_json TEXT NOT NULL DEFAULT '{\"enabled\":true,\"notification_type\":\"with_sound\"}'",
             [],
         );
+        let _ = conn.execute(
+            "ALTER TABLE app_settings ADD COLUMN ai_base_url TEXT NOT NULL DEFAULT ''",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE app_settings ADD COLUMN ai_api_key TEXT NOT NULL DEFAULT ''",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE app_settings ADD COLUMN ai_model TEXT NOT NULL DEFAULT 'gpt-4o-mini'",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE app_settings ADD COLUMN ai_provider TEXT NOT NULL DEFAULT 'openai'",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE app_settings ADD COLUMN mcp_enabled INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE app_settings ADD COLUMN mcp_listen_host TEXT NOT NULL DEFAULT '127.0.0.1'",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE app_settings ADD COLUMN mcp_port INTEGER NOT NULL DEFAULT 3927",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE app_settings ADD COLUMN mcp_auth_token TEXT NOT NULL DEFAULT ''",
+            [],
+        );
         Ok(())
     }
 }
@@ -466,34 +498,79 @@ impl AlarmStore for SqliteStore {
     }
 
     fn get_settings(&self) -> DomainResult<AppSettings> {
+        use crate::domain::{
+            AiProvider, AiSettings, AppearanceSettings, BackupSettings, McpSettings,
+            NotifySettings, RuntimeSettings,
+        };
         let conn = self.conn.lock().unwrap();
         conn.query_row(
             "SELECT theme, locale, launch_minimized, log_retention_days,
-                    notify_on_failure, sound_enabled, timezone, auto_backup_on_start, backup_keep_count
+                    notify_on_failure, sound_enabled, timezone, auto_backup_on_start, backup_keep_count,
+                    COALESCE(ai_base_url, ''), COALESCE(ai_api_key, ''), COALESCE(ai_model, 'gpt-5.6-terra'),
+                    COALESCE(ai_provider, 'openai'),
+                    COALESCE(mcp_enabled, 0), COALESCE(mcp_listen_host, '127.0.0.1'),
+                    COALESCE(mcp_port, 3927), COALESCE(mcp_auth_token, '')
              FROM app_settings WHERE id = 1",
             [],
             |row| {
+                let theme = match row.get::<_, String>(0)?.as_str() {
+                    "light" => ThemeMode::Light,
+                    "dark" => ThemeMode::Dark,
+                    _ => ThemeMode::System,
+                };
+                let locale = LocaleCode::parse(&row.get::<_, String>(1)?);
+                let timezone: String = {
+                    let tz: String = row.get(6)?;
+                    if tz.trim().is_empty() {
+                        "system".into()
+                    } else {
+                        tz
+                    }
+                };
+                let provider = AiProvider::parse(&row.get::<_, String>(12)?);
+                let model: String = {
+                    let m: String = row.get(11)?;
+                    if m.trim().is_empty() {
+                        provider.default_model().into()
+                    } else {
+                        m
+                    }
+                };
+                let port = row.get::<_, i64>(15)?.clamp(1, 65535) as u16;
                 Ok(AppSettings {
-                    theme: match row.get::<_, String>(0)?.as_str() {
-                        "light" => ThemeMode::Light,
-                        "dark" => ThemeMode::Dark,
-                        _ => ThemeMode::System,
+                    appearance: AppearanceSettings { theme, locale },
+                    runtime: RuntimeSettings {
+                        launch_minimized: row.get::<_, i64>(2)? != 0,
+                        log_retention_days: row.get::<_, i64>(3)? as u32,
+                        timezone,
                     },
-                    locale: LocaleCode::parse(&row.get::<_, String>(1)?),
-                    launch_minimized: row.get::<_, i64>(2)? != 0,
-                    log_retention_days: row.get::<_, i64>(3)? as u32,
-                    notify_on_failure: row.get::<_, i64>(4)? != 0,
-                    sound_enabled: row.get::<_, i64>(5)? != 0,
-                    timezone: {
-                        let tz: String = row.get(6)?;
-                        if tz.trim().is_empty() {
-                            "system".into()
-                        } else {
-                            tz
-                        }
+                    notify: NotifySettings {
+                        notify_on_failure: row.get::<_, i64>(4)? != 0,
+                        sound_enabled: row.get::<_, i64>(5)? != 0,
                     },
-                    auto_backup_on_start: row.get::<_, i64>(7)? != 0,
-                    backup_keep_count: row.get::<_, i64>(8)? as u32,
+                    backup: BackupSettings {
+                        auto_backup_on_start: row.get::<_, i64>(7)? != 0,
+                        backup_keep_count: row.get::<_, i64>(8)? as u32,
+                    },
+                    ai: AiSettings {
+                        provider,
+                        base_url: row.get::<_, String>(9)?,
+                        api_key: row.get::<_, String>(10)?,
+                        model,
+                    },
+                    mcp: McpSettings {
+                        enabled: row.get::<_, i64>(13)? != 0,
+                        listen_host: {
+                            let h: String = row.get(14)?;
+                            if h.trim().is_empty() {
+                                "127.0.0.1".into()
+                            } else {
+                                h
+                            }
+                        },
+                        port,
+                        auth_token: row.get::<_, String>(16)?,
+                    },
                 })
             },
         )
@@ -506,22 +583,44 @@ impl AlarmStore for SqliteStore {
             "UPDATE app_settings SET
                 theme=?1, locale=?2, launch_minimized=?3, log_retention_days=?4,
                 notify_on_failure=?5, sound_enabled=?6, timezone=?7,
-                auto_backup_on_start=?8, backup_keep_count=?9
+                auto_backup_on_start=?8, backup_keep_count=?9,
+                ai_base_url=?10, ai_api_key=?11, ai_model=?12, ai_provider=?13,
+                mcp_enabled=?14, mcp_listen_host=?15, mcp_port=?16, mcp_auth_token=?17
              WHERE id=1",
             params![
-                match settings.theme {
+                match settings.appearance.theme {
                     ThemeMode::System => "system",
                     ThemeMode::Light => "light",
                     ThemeMode::Dark => "dark",
                 },
-                settings.locale.as_str(),
-                if settings.launch_minimized { 1 } else { 0 },
-                settings.log_retention_days as i64,
-                if settings.notify_on_failure { 1 } else { 0 },
-                if settings.sound_enabled { 1 } else { 0 },
-                settings.timezone.as_str(),
-                if settings.auto_backup_on_start { 1 } else { 0 },
-                settings.backup_keep_count as i64,
+                settings.appearance.locale.as_str(),
+                if settings.runtime.launch_minimized {
+                    1
+                } else {
+                    0
+                },
+                settings.runtime.log_retention_days as i64,
+                if settings.notify.notify_on_failure {
+                    1
+                } else {
+                    0
+                },
+                if settings.notify.sound_enabled { 1 } else { 0 },
+                settings.runtime.timezone.as_str(),
+                if settings.backup.auto_backup_on_start {
+                    1
+                } else {
+                    0
+                },
+                settings.backup.backup_keep_count as i64,
+                settings.ai.base_url.as_str(),
+                settings.ai.api_key.as_str(),
+                settings.ai.resolved_model(),
+                settings.ai.provider.as_str(),
+                if settings.mcp.enabled { 1 } else { 0 },
+                settings.mcp.listen_host.as_str(),
+                settings.mcp.port as i64,
+                settings.mcp.auth_token.as_str(),
             ],
         )
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;

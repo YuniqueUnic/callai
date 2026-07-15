@@ -103,5 +103,7 @@
   "soundIslandBell": "Island bell",
   "soundWoodKnock": "Wood knock",
   "soundWarmRise": "Warm rise",
-  "soundGentlePing": "Gentle ping"
+  "soundGentlePing": "Gentle ping",
+  "aiCreate": "AI create",
+  "createSuccess": "Alarm created"
 }

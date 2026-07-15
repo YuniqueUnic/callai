@@ -181,9 +181,12 @@ pub fn run() {
     let paths = AppPaths::resolve().expect("resolve paths");
     paths.ensure().expect("ensure dirs");
 
-    let store = Arc::new(SqliteStore::open(&paths.db_file).expect("open db"));
+    let store = Arc::new(SqliteStore::open(paths.db_file()).expect("open db"));
     let runner = Arc::new(SystemProcessRunner);
     let clock = Arc::new(SystemClock);
+    let plugins = Arc::new(crate::infra::PluginManager::new(&paths).expect("plugin manager"));
+    let mcp_logs =
+        Arc::new(crate::infra::McpLogStore::open(paths.mcp_log_file()).expect("mcp log store"));
     let backup = Arc::new(TomlConfigBackup::new(paths));
     let sleeper = Arc::new(SystemSleeper);
     let service = Arc::new(AlarmService::new(store, runner, clock, backup, sleeper));
@@ -195,6 +198,8 @@ pub fn run() {
     let state = AppState {
         service: Arc::clone(&service),
         scheduler: Arc::clone(&scheduler),
+        plugins,
+        mcp_logs,
     };
 
     tauri::Builder::default()
@@ -235,13 +240,27 @@ pub fn run() {
             commands::refresh_tray_menu,
             commands::list_alarm_sounds,
             commands::preview_alarm_sound,
+            commands::list_plugins,
+            commands::get_plugin,
+            commands::install_plugin,
+            commands::delete_plugin,
+            commands::plugin_invoke,
+            commands::plugin_ui_html,
+            commands::plugin_mark_run,
+            commands::plugin_list_history,
+            commands::list_mcp_logs,
+            commands::clear_mcp_logs,
+            commands::get_prompt,
+            commands::list_prompts,
+            commands::generate_secret_token,
+            commands::list_ai_models,
         ])
         .setup(|app| {
             let locale = app
                 .state::<AppState>()
                 .service
                 .get_settings()
-                .map(|s| s.locale)
+                .map(|s| s.locale())
                 .unwrap_or(LocaleCode::ZhCn);
             let copy = tray_copy_public(locale);
             let menu = build_tray_menu_public(app.handle(), &copy)?;
@@ -286,7 +305,7 @@ pub fn run() {
                                 let locale = state
                                     .service
                                     .get_settings()
-                                    .map(|s| s.locale)
+                                    .map(|s| s.locale())
                                     .unwrap_or(LocaleCode::ZhCn);
                                 for alarm in alarms.into_iter().filter(|a| a.enabled) {
                                     let service = Arc::clone(&state.service);
@@ -302,7 +321,7 @@ pub fn run() {
                                         {
                                             let notify = service
                                                 .get_settings()
-                                                .map(|s| s.notify_on_failure)
+                                                .map(|s| s.notify_on_failure())
                                                 .unwrap_or(false);
                                             if notify {
                                                 notify_failure(&app2, &name, locale);
@@ -311,7 +330,7 @@ pub fn run() {
                                         Err(_) => {
                                             let notify = service
                                                 .get_settings()
-                                                .map(|s| s.notify_on_failure)
+                                                .map(|s| s.notify_on_failure())
                                                 .unwrap_or(false);
                                             if notify {
                                                 notify_failure(&app2, &name, locale);
@@ -348,13 +367,13 @@ pub fn run() {
 
             // Apply launch_minimized
             if let Ok(settings) = app.state::<AppState>().service.get_settings() {
-                if settings.launch_minimized {
+                if settings.launch_minimized() {
                     if let Some(w) = app.get_webview_window("main") {
                         let _ = w.hide();
                     }
                 }
                 // best-effort theme hint for webview is frontend-owned
-                let _ = settings.theme;
+                let _ = settings.theme();
             }
 
             if let Some(window) = app.get_webview_window("main") {
@@ -374,14 +393,14 @@ pub fn run() {
                 set_failure_hook(move |name| {
                     let notify = service_hook
                         .get_settings()
-                        .map(|s| s.notify_on_failure)
+                        .map(|s| s.notify_on_failure())
                         .unwrap_or(false);
                     if !notify {
                         return;
                     }
                     let locale = service_hook
                         .get_settings()
-                        .map(|s| s.locale)
+                        .map(|s| s.locale())
                         .unwrap_or(LocaleCode::ZhCn);
                     notify_failure(&app_handle, &name, locale);
                 });

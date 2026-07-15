@@ -7,10 +7,12 @@ use tauri::State;
 use crate::app::AlarmService;
 use crate::domain::{
     draft_from_template, Alarm, AlarmDraft, AppSettings, BuiltinSoundId, DomainError, ExecutionLog,
-    LogFilter, TEMPLATES,
+    LogFilter, McpLogEntry, PluginDraft, PluginHistoryEntry, PluginSummary, PromptId, TEMPLATES,
 };
 use crate::infra::alarm_sound;
+use crate::infra::plugin::{McpLogStore, PluginManager};
 use crate::infra::AlarmScheduler;
+use serde_json::Value;
 
 #[derive(Debug, Serialize)]
 pub struct TemplateDto {
@@ -104,10 +106,10 @@ fn maybe_notify_failure(app: &tauri::AppHandle, state: &AppState, name: &str) {
     let Ok(settings) = state.service.get_settings() else {
         return;
     };
-    if !settings.notify_on_failure {
+    if !settings.notify_on_failure() {
         return;
     }
-    let (title, body) = match settings.locale {
+    let (title, body) = match settings.locale() {
         crate::domain::LocaleCode::En => ("Task failed".to_string(), format!("{name} failed")),
         crate::domain::LocaleCode::ZhCn => ("任务失败".to_string(), format!("「{name}」未完成")),
     };
@@ -149,7 +151,7 @@ pub fn save_settings(
     settings: AppSettings,
 ) -> Result<AppSettings, String> {
     let saved = state.service.save_settings(settings).map_err(map_err)?;
-    let _ = rebuild_tray_menu(&app, saved.locale);
+    let _ = rebuild_tray_menu(&app, saved.locale());
     Ok(saved)
 }
 
@@ -233,7 +235,7 @@ pub fn get_app_version() -> String {
 pub fn get_backups_dir() -> Result<String, String> {
     let paths = crate::infra::AppPaths::resolve().map_err(map_err)?;
     paths.ensure().map_err(map_err)?;
-    Ok(paths.backups_dir.display().to_string())
+    Ok(paths.backups_dir().display().to_string())
 }
 
 /// Open the backups directory in the OS file manager.
@@ -242,7 +244,7 @@ pub fn get_backups_dir() -> Result<String, String> {
 pub fn open_backups_dir() -> Result<String, String> {
     let paths = crate::infra::AppPaths::resolve().map_err(map_err)?;
     paths.ensure().map_err(map_err)?;
-    let dir = paths.backups_dir;
+    let dir = paths.backups_dir().to_path_buf();
     tauri_plugin_opener::open_path(&dir, None::<&str>).map_err(|e| e.to_string())?;
     Ok(dir.display().to_string())
 }
@@ -252,7 +254,7 @@ pub fn refresh_tray_menu(app: tauri::AppHandle, state: State<'_, AppState>) -> R
     let locale = state
         .service
         .get_settings()
-        .map(|s| s.locale)
+        .map(|s| s.locale())
         .map_err(map_err)?;
     rebuild_tray_menu(&app, locale).map_err(|e| e.to_string())
 }
@@ -275,6 +277,8 @@ fn rebuild_tray_menu(
 pub struct AppState {
     pub service: Arc<AlarmService>,
     pub scheduler: Arc<AlarmScheduler>,
+    pub plugins: Arc<PluginManager>,
+    pub mcp_logs: Arc<McpLogStore>,
 }
 
 #[tauri::command]
@@ -294,4 +298,131 @@ pub fn preview_alarm_sound(sound_id: Option<String>) -> Result<bool, String> {
         .and_then(BuiltinSoundId::parse)
         .unwrap_or_default();
     alarm_sound::play_sound(id)
+}
+
+// ---- Plugins / MCP / Prompts ------------------------------------------------
+
+#[tauri::command]
+pub fn list_plugins(state: State<'_, AppState>) -> Result<Vec<PluginSummary>, String> {
+    state.plugins.list().map_err(map_err)
+}
+
+#[tauri::command]
+pub fn get_plugin(state: State<'_, AppState>, id: String) -> Result<PluginSummary, String> {
+    state.plugins.get_summary(&id).map_err(map_err)
+}
+
+#[tauri::command]
+pub fn install_plugin(
+    state: State<'_, AppState>,
+    draft: PluginDraft,
+) -> Result<PluginSummary, String> {
+    let summary = state.plugins.install(draft).map_err(map_err)?;
+    let _ = state.mcp_logs.append(
+        "install_plugin",
+        &summary.id,
+        &format!("{}@{}", summary.name, summary.version),
+        true,
+        "ui",
+    );
+    Ok(summary)
+}
+
+#[tauri::command]
+pub fn delete_plugin(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    state.plugins.delete(&id).map_err(map_err)?;
+    let _ = state
+        .mcp_logs
+        .append("delete_plugin", &id, "ok", true, "ui");
+    Ok(())
+}
+
+#[tauri::command]
+pub fn plugin_invoke(
+    state: State<'_, AppState>,
+    plugin_id: String,
+    method: String,
+    args: Value,
+) -> Result<Value, String> {
+    let res = state.plugins.invoke(&plugin_id, &method, args.clone());
+    let (ok, preview) = match &res {
+        Ok(v) => (true, v.to_string()),
+        Err(e) => (false, e.message.clone()),
+    };
+    let _ = state.mcp_logs.append(
+        "plugin_invoke",
+        &format!("{plugin_id}.{method}"),
+        &preview,
+        ok,
+        "ui",
+    );
+    res.map_err(map_err)
+}
+
+#[tauri::command]
+pub fn plugin_ui_html(state: State<'_, AppState>, id: String) -> Result<String, String> {
+    state.plugins.compose_host_html(&id).map_err(map_err)
+}
+
+#[tauri::command]
+pub fn plugin_mark_run(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    state.plugins.mark_run(&id).map_err(map_err)
+}
+
+#[tauri::command]
+pub fn plugin_list_history(
+    state: State<'_, AppState>,
+    id: String,
+    limit: Option<u32>,
+) -> Result<Vec<PluginHistoryEntry>, String> {
+    state
+        .plugins
+        .list_history(&id, limit.unwrap_or(50))
+        .map_err(map_err)
+}
+
+#[tauri::command]
+pub fn list_mcp_logs(
+    state: State<'_, AppState>,
+    limit: Option<u32>,
+) -> Result<Vec<McpLogEntry>, String> {
+    state.mcp_logs.list(limit.unwrap_or(100)).map_err(map_err)
+}
+
+#[tauri::command]
+pub fn clear_mcp_logs(state: State<'_, AppState>) -> Result<u64, String> {
+    state.mcp_logs.clear().map_err(map_err)
+}
+
+#[tauri::command]
+pub fn get_prompt(id: String) -> Result<String, String> {
+    let pid = PromptId::parse(&id).ok_or_else(|| {
+        map_err(DomainError::new(
+            crate::domain::ErrorCode::InvalidArgs,
+            "unknown prompt id",
+        ))
+    })?;
+    Ok(pid.body().to_string())
+}
+
+#[tauri::command]
+pub fn list_prompts() -> Result<Vec<String>, String> {
+    Ok(PromptId::all()
+        .into_iter()
+        .map(|p| p.as_str().to_string())
+        .collect())
+}
+
+#[tauri::command]
+pub fn generate_secret_token() -> String {
+    crate::domain::generate_secret_token()
+}
+
+#[tauri::command]
+pub fn list_ai_models(
+    provider: String,
+    base_url: String,
+    api_key: String,
+) -> Result<Vec<String>, String> {
+    crate::infra::ai_models::list_models(&provider, &base_url, &api_key).map_err(map_err)
 }

@@ -4011,6 +4011,11 @@ html.tauri .app-shell.has-titlebar.is-fullscreen .app-footer-band {
   margin-top: calc(52px + var(--callai-titlebar-h) - 8px) !important;
 }
 
+.app-shell.has-titlebar .plugins-page .plugins-hero,
+.app-shell.has-titlebar .tab-pane .plugins-hero {
+  margin-top: calc(52px + var(--callai-titlebar-h) - 8px) !important;
+}
+
 .app-shell.has-titlebar .settings-hero-deco {
   top: calc(56px + var(--callai-titlebar-h)) !important;
 }
@@ -4193,6 +4198,14 @@ html.tauri .app-shell.has-titlebar.is-fullscreen .app-footer-band {
   min-height: 0;
   overflow: hidden;
   background: var(--callai-bg);
+}
+.edit-overlay > .edit-page,
+.edit-overlay > .ai-page {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  width: 100%;
 }
 .app-shell.has-titlebar > .edit-overlay {
   /* sit under transparent HUD titlebar */
@@ -4769,4 +4782,990 @@ html.tauri .titlebar-tagline {
   text-shadow:
     0 1px 0 color-mix(in srgb, var(--callai-bg) 70%, transparent),
     0 0 8px color-mix(in srgb, var(--callai-bg) 55%, transparent);
+}
+
+/* ── FAB cluster (create + AI hover action) ─────────── */
+.fab-cluster {
+  position: fixed !important;
+  right: max(20px, env(safe-area-inset-right, 0px)) !important;
+  bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+  z-index: 19000 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto !important;
+}
+
+.fab-cluster .fab {
+  position: relative !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+
+.fab-ai {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #fff9e6;
+  background: #f0b429;
+  color: #3d3428;
+  box-shadow: 0 4px 0 0 #c48912, 0 8px 16px rgba(61, 52, 40, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.fab-cluster:hover .fab-ai,
+.fab-cluster:focus-within .fab-ai,
+.fab-ai:focus-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Touch / coarse pointer: keep AI pencil always reachable (no hover). */
+@media (hover: none), (pointer: coarse) {
+  .fab-ai {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+}
+
+.fab-ai:hover {
+  transform: translateY(-2px) scale(1.04);
+}
+
+body.callai-logs-open .fab-cluster {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* AI chat */
+.ai-chat-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
+  padding-bottom: 12px;
+}
+
+.ai-chat-stream {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 12px;
+}
+
+.ai-bubble.is-user {
+  margin-left: 18%;
+}
+
+.ai-bubble.is-bot {
+  margin-right: 10%;
+}
+
+.ai-bubble-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 4px;
+}
+
+.ai-composer {
+  display: grid;
+  grid-template-columns: minmax(96px, 120px) 1fr auto;
+  gap: 8px;
+  align-items: center;
+  position: sticky;
+  bottom: 0;
+  padding-top: 6px;
+  background: linear-gradient(to top, var(--callai-page-bg, transparent) 70%, transparent);
+}
+
+.ai-json {
+  max-height: 180px;
+  overflow: auto;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Plugins */
+.plugins-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 24px;
+}
+
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plugin-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.plugin-desc {
+  margin: 8px 0;
+  opacity: 0.85;
+}
+
+.plugin-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.plugin-frame {
+  width: 100%;
+  min-height: 320px;
+  border: 2px solid rgba(61, 52, 40, 0.12);
+  border-radius: 12px;
+  background: #fffdf6;
+  margin: 10px 0;
+}
+
+.plugin-runtime {
+  margin-top: 8px;
+}
+
+/* Settings AI / MCP */
+.settings-section-title {
+  margin-top: 18px;
+  margin-bottom: 4px;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.settings-section-hint {
+  margin-bottom: 10px;
+}
+
+.secret-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, auto);
+  gap: 6px;
+  align-items: center;
+}
+
+.settings-code {
+  display: block;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  font-size: 12px;
+}
+
+@media (max-width: 420px) {
+  .ai-composer {
+    grid-template-columns: 1fr;
+  }
+  .secret-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── AI / MCP settings blocks ───────────────────────── */
+.settings-block {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(61, 52, 40, 0.12);
+}
+
+.settings-section-hint {
+  margin: 0 0 10px;
+  line-height: 1.35;
+}
+
+.segmented-wrap {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.secret-tools {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.settings-code {
+  display: block;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(61, 52, 40, 0.06);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--callai-ink);
+}
+
+/* ── AI page (matches edit-page hero) ───────────────── */
+.ai-page .ai-main {
+  /* legacy class unused; stage layout owns spacing */
+  gap: 12px;
+}
+
+.ai-stream-card .ai-chat-stream {
+  /* height managed by .ai-stage layout; avoid locking to 42vh */
+  min-height: 140px;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 4px 2px;
+}
+
+.ai-welcome {
+  padding: 8px 4px 12px;
+  font-weight: 700;
+  color: var(--callai-ink-soft);
+  line-height: 1.45;
+}
+
+.ai-bubble {
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 253, 246, 0.92);
+  border: 2px solid rgba(61, 52, 40, 0.08);
+  box-shadow: 0 3px 0 rgba(61, 52, 40, 0.06);
+}
+
+[data-theme="dark"] .ai-bubble {
+  background: rgba(40, 36, 30, 0.72);
+  border-color: rgba(255, 249, 230, 0.08);
+}
+
+.ai-bubble.is-user {
+  margin-left: 14%;
+  background: color-mix(in srgb, var(--callai-fab) 18%, #fffdf6);
+}
+
+.ai-bubble.is-bot {
+  margin-right: 8%;
+}
+
+.ai-bubble-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 4px;
+  font-weight: 650;
+  color: var(--callai-ink);
+}
+
+.ai-loading {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+}
+
+.ai-json {
+  max-height: 160px;
+  overflow: auto;
+  font-size: 11px;
+  line-height: 1.4;
+  background: rgba(61, 52, 40, 0.05);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 8px 0 12px;
+}
+
+.ai-composer-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.ai-config-hint .panel-head h3 {
+  margin: 0;
+}
+
+/* Plugins hero — clear floating tab pill (same rhythm as home/settings) */
+.plugins-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  /* tab pill ~36px + gap; titlebar offset applied under .has-titlebar */
+  margin: 52px 12px 8px;
+  padding-top: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+
+/* Plugins under keep-alive tab panes (not animal-tabContentInner) */
+.tab-pane .plugins-page > .plugins-hero.soft-header,
+.plugins-page > header.plugins-hero {
+  margin-top: 52px;
+  margin-left: 12px;
+  margin-right: 12px;
+  margin-bottom: 8px;
+  padding-top: 8px !important;
+}
+.plugins-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.plugins-hero h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--callai-ink);
+}
+
+.plugins-page .empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 28px 16px;
+}
+
+.plugins-page .plugin-card {
+  border-radius: 16px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* ── Plugins management layout ─────────────────────── */
+.plugins-page {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.plugins-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 96px;
+}
+
+.plugins-tabs {
+  width: 100%;
+  max-width: 100%;
+}
+
+.plugins-hero {
+  min-width: 0;
+}
+
+.plugins-hero-brand {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.plugins-hero .soft-header-copy,
+.plugins-hero-brand > div {
+  min-width: 0;
+}
+
+.plugins-hero h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.plugins-hero-actions {
+  flex: 0 0 auto;
+}
+
+.plugin-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.plugin-card-meta {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.plugin-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  font-weight: 800;
+  color: var(--callai-ink);
+}
+
+.plugin-id-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.plugin-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(100%, 220px);
+}
+
+.plugin-card-actions {
+  flex: 0 0 auto;
+}
+
+.plugin-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 6px;
+}
+
+.plugin-runtime-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-frame {
+  width: 100%;
+  max-width: 100%;
+  min-height: min(48vh, 360px);
+  height: min(52vh, 420px);
+  border: 2px solid rgba(61, 52, 40, 0.12);
+  border-radius: 12px;
+  background: #fffdf6;
+  margin: 10px 0;
+}
+
+.plugin-history-wrap,
+.mcp-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 8px;
+}
+
+.plugin-history-wrap table,
+.mcp-table-wrap table {
+  min-width: 420px;
+}
+
+.mcp-log-panel {
+  min-width: 0;
+}
+
+
+/* ── AI page: relative stage + bottom-fixed composer HUD ─ */
+.ai-page {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-width: 100%;
+  overflow: hidden !important;
+}
+
+.ai-page .ai-hero {
+  /* keep floating top HUD chrome from edit-hero */
+  z-index: 320 !important;
+}
+
+/* relative layout root for chat + fixed HUD */
+.ai-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* room under floating top hero */
+  padding-top: 88px;
+}
+
+.ai-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 12px 16px;
+  /* leave space so last bubble isn't under bottom HUD */
+  padding-bottom: calc(168px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+.ai-scroll > .form-panel,
+.ai-scroll > [class*="animal-card"] {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ai-stream-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* content-sized inside scroll area (stage scrolls, HUD stays pinned) */
+  flex: 0 0 auto;
+}
+
+.ai-stream-card .ai-chat-stream {
+  flex: 1 1 auto;
+  min-height: 140px;
+  max-height: none;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 4px 2px;
+}
+
+/* bottom HUD — fixed to page bottom, not document body (stays in overlay) */
+.ai-composer-hud {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 310;
+  padding: 0 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--callai-bg) 96%, transparent) 55%,
+    color-mix(in srgb, var(--callai-bg) 70%, transparent) 82%,
+    transparent 100%
+  );
+}
+
+.ai-composer-hud > .form-panel,
+.ai-composer-hud > [class*="animal-card"] {
+  pointer-events: auto;
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+  box-shadow:
+    0 -2px 0 color-mix(in srgb, var(--callai-border) 35%, transparent),
+    0 8px 22px rgba(40, 30, 20, 0.12);
+}
+
+.ai-page .ai-composer-card {
+  padding-bottom: 12px;
+}
+
+.ai-composer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+
+.ai-composer-row > * {
+  min-width: 0;
+}
+
+.ai-composer-row .icon-btn-wrap {
+  flex: 0 0 auto;
+  min-width: auto;
+  position: relative;
+  z-index: 3;
+}
+
+@media (max-width: 520px) {
+  .ai-stage {
+    padding-top: 76px;
+  }
+  .ai-scroll {
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-bottom: calc(180px + env(safe-area-inset-bottom, 0px));
+  }
+  .ai-composer-hud {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+
+/* AI stage under titlebar HUD */
+.app-shell.has-titlebar .ai-page .ai-stage {
+  padding-top: calc(88px + var(--callai-titlebar-h, 42px) - 8px);
+}
+.app-shell.has-titlebar .ai-page .ai-composer-hud {
+  /* keep bottom HUD above window radius / sea if any */
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+/* AI page boundary: keep composer usable, stream scrollable */
+.ai-page {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ai-page .ai-main {
+  min-width: 0;
+}
+
+.ai-page .form-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ai-composer-row {
+  min-width: 0;
+}
+
+.ai-composer-row > * {
+  min-width: 0;
+}
+
+.ai-composer-row .icon-btn-wrap {
+  flex: 0 0 auto;
+  min-width: auto;
+}
+
+@media (max-width: 520px) {
+  .plugins-hero {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+  .plugin-card-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .plugin-card-actions {
+    justify-content: flex-end;
+  }
+  .ai-bubble.is-user {
+    margin-left: 6%;
+  }
+  .ai-bubble.is-bot {
+    margin-right: 4%;
+  }
+}
+
+
+/* ── Provider gear picker (AI settings) ─────────────── */
+.provider-picker-trigger {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.provider-picker-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.provider-wheels {
+  width: 100%;
+}
+
+.provider-wheel-col {
+  width: 100%;
+  max-width: 100%;
+}
+
+.provider-wheel-item {
+  font-variant-numeric: normal;
+  letter-spacing: 0.01em;
+  padding: 0 10px;
+  font-size: 0.95rem;
+}
+
+.provider-picker-caption {
+  text-align: center;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: var(--callai-ink);
+}
+
+.provider-picker-popup {
+  z-index: 20050;
+}
+
+[data-theme="dark"] .provider-picker-trigger {
+  background: rgba(40, 36, 30, 0.92);
+  color: #fff9e6;
+  border-color: rgba(255, 249, 230, 0.18);
+}
+
+[data-theme="dark"] .provider-picker-value {
+  color: #fff9e6;
+}
+
+[data-theme="dark"] .provider-picker-popup .provider-wheel-item {
+  color: rgba(255, 249, 230, 0.72);
+}
+
+[data-theme="dark"] .provider-picker-popup .provider-wheel-item.active {
+  color: #fff9e6;
+}
+
+/* Tab anti-squeeze: never stack CJK glyphs vertically */
+.main-tabs [class*="animal-tabList"] {
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  max-width: min(100% - 24px, 420px) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.main-tabs [class*="animal-tabList"]::-webkit-scrollbar {
+  display: none;
+}
+
+.main-tabs [class*="animal-tabItem"],
+.main-tabs [class*="animal-tabItem"] * {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  line-height: 1.2 !important;
+}
+
+.main-tabs [class*="animal-tabItem"] {
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  min-width: max-content !important;
+  width: auto !important;
+  max-width: none !important;
+  padding: 6px 16px !important;
+  font-size: 0.92rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* Immersive pages (edit / AI): hide body-portaled FAB cluster */
+body.callai-immersive > .fab-cluster,
+body.callai-immersive .fab-cluster,
+body.callai-immersive > .fab {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+
+
+/* Tab labels: force horizontal CJK (override any library/layout shrink) */
+.main-tabs [class*="animal-tabList"] {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: max-content !important;
+  min-width: min(320px, calc(100vw - 48px)) !important;
+  max-width: calc(100% - 24px) !important;
+  box-sizing: border-box !important;
+}
+
+.main-tabs [class*="animal-tabItem"] {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  min-width: 4.5em !important;
+  padding: 0 18px !important;
+  box-sizing: border-box !important;
+}
+
+.main-tabs [class*="animal-tabLabel"],
+.main-tabs [class*="animal-tabItem"] span {
+  display: inline !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  writing-mode: horizontal-tb !important;
+  max-width: none !important;
+  width: auto !important;
+}
+
+.main-tabs [class*="animal-tabItem"].animal-active-AoX4Y,
+.main-tabs [class*="animal-tabItem"][class*="active"] {
+  border-radius: 999px !important;
+  min-width: 4.5em !important;
+}
+
+
+/* Idle chrome: tabs + FAB rest at 60% opacity; full on hover/focus */
+.main-tabs [class*="animal-tabList"] {
+  opacity: 0.6;
+  transition: opacity 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease !important;
+}
+
+.main-tabs [class*="animal-tabList"]:hover,
+.main-tabs [class*="animal-tabList"]:focus-within {
+  opacity: 1;
+}
+
+.fab-cluster {
+  opacity: 0.6;
+  transition: opacity 0.18s ease;
+}
+
+.fab-cluster:hover,
+.fab-cluster:focus-within {
+  opacity: 1;
+}
+
+/* logs drawer still dims FAB further */
+body.callai-logs-open .fab-cluster {
+  opacity: 0.35;
+}
+
+/* Touch / no-hover: keep full opacity so chrome stays discoverable */
+@media (hover: none), (pointer: coarse) {
+  .main-tabs [class*="animal-tabList"],
+  .fab-cluster {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-tabs [class*="animal-tabList"],
+  .fab-cluster {
+    transition: none !important;
+  }
+}
+
+/* ── Model autocomplete (AI settings) ───────────────── */
+.model-ac {
+  width: 100%;
+  min-width: 0;
+}
+
+.model-ac-head {
+  margin-bottom: 6px;
+}
+
+.model-ac-input-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.model-ac-hint,
+.model-ac-meta {
+  margin: 6px 0 0;
+  line-height: 1.35;
+}
+
+.model-ac-dropdown {
+  max-height: 220px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px;
+  border-radius: 14px;
+  border: 2px solid var(--callai-border);
+  background: var(--callai-surface);
+  box-shadow: var(--callai-card-shadow);
+}
+
+.model-ac-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--callai-ink);
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-ac-option:hover,
+.model-ac-option.active {
+  background: color-mix(in srgb, var(--callai-primary) 16%, transparent);
+  color: var(--callai-ink);
+}
+
+[data-theme="dark"] .model-ac-dropdown {
+  background: rgba(40, 36, 30, 0.96);
+  border-color: rgba(255, 249, 230, 0.14);
+}
+
+[data-theme="dark"] .model-ac-option {
+  color: #fff9e6;
+}
+
+[data-theme="dark"] .model-ac-option:hover,
+[data-theme="dark"] .model-ac-option.active {
+  background: rgba(25, 200, 185, 0.22);
 }

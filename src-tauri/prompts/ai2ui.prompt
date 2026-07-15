@@ -1,0 +1,11 @@
+AI2UI bridge for callai plugins.
+
+When generating ui_html for PluginDraft:
+1. **Visual design = animal_island_style prompt** (authoritative). Match animal-island-ui tokens, components, and composition rules exactly.
+2. Host bridge: window.callai.pluginId and window.callai.invoke(method, args) → Promise.
+3. Methods: storage.get/set/list/delete, history.list, timer.now, notification.show, ping.
+4. Layout vocabulary still welcome: form, table, wallet, phone-frame (as described in animal-island-style Card/Phone/Wallet/Form sections).
+5. Prefer complete HTML document. Inject bridge script early (after React mount is fine if you call invoke from handlers).
+6. Sandbox note: host may inject postMessage bridge; do not overwrite window.callai.invoke if already present — only define if missing.
+
+If the user only wants a UI sketch without PluginDraft wrapper, still return {"ui_html":"..."}.

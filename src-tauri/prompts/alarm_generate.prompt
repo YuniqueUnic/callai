@@ -1,0 +1,29 @@
+Generate a single callai AlarmDraft JSON object from the user's request.
+
+Schema (JSON):
+{
+  "name": string,
+  "enabled": boolean,
+  "schedule":
+    | { "mode": "daily", "times": ["HH:MM", ...] }
+    | { "mode": "weekly", "days": [0-6], "times": ["HH:MM", ...] }  // 0=Sun
+    | { "mode": "monthly", "days": [1-31], "times": ["HH:MM", ...] }
+    | { "mode": "cron", "expression": "m h dom mon dow" },
+  "binary": string,
+  "args": string[],
+  "env_vars": [{ "key": string, "value": string }],
+  "retry": { "interval": "1m"|"2m"|"5m"|"10m", "max_attempts": number },
+  "timeout_secs": number,
+  "notification": {
+    "enabled": boolean,
+    "notification_type": "system_only"|"with_sound",
+    "sound_id": "soft_chime"|"island_bell"|"wood_knock"|"warm_rise"|"gentle_ping"|null
+  }
+}
+
+Rules:
+- Output ONLY valid JSON (no markdown fences).
+- If user wants a pure reminder/chime without external CLI, set binary to "__callai_alarm__" and args [].
+- timeout_secs default 20; retry default interval "1m", max_attempts 1 for simple reminders, 3 for AI CLI warmers.
+- Prefer daily times over cron when possible.
+- name should be short and cute (island vibe) but clear.

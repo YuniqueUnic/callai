@@ -16,6 +16,7 @@ import {
   ensureDetectedTimezone,
   peekDetectedTimezone,
 } from "../infra/timezoneCache";
+import { SettingsAiMcpPanel } from "./SettingsAiMcpPanel";
 import {
   getAppVersionCached,
   getAutostartCached,
@@ -87,7 +88,11 @@ export function SettingsPage({ onOpenLogs }: Props) {
       try {
         const s = await getSettingsCached();
         if (cancelled) return;
-        setSettings(s);
+        setSettings({
+          ...s,
+          ai: s.ai ?? { provider: "openai", base_url: "https://api.openai.com/v1", api_key: "", model: "gpt-5.6-terra" },
+          mcp: s.mcp ?? { enabled: false, listen_host: "127.0.0.1", port: 3927, auth_token: "" },
+        });
       } catch {
         if (!cancelled) setSettings(null);
         return;
@@ -114,7 +119,7 @@ export function SettingsPage({ onOpenLogs }: Props) {
     };
   }, []);
 
-  async function save(next: AppSettings) {
+  async function save(next: AppSettings, opts?: { silent?: boolean }) {
     const saved = await client.saveSettings(next);
     setSettingsCache(saved);
     setSettings(saved);
@@ -122,7 +127,9 @@ export function SettingsPage({ onOpenLogs }: Props) {
     if (saved.locale !== i18n.language) {
       await i18n.changeLanguage(saved.locale);
     }
-    toast.success({ message: t("settings:saved"), key: "settings-save", duration: 2.6 });
+    if (!opts?.silent) {
+      toast.success({ message: t("settings:saved"), key: "settings-save", duration: 2.6 });
+    }
   }
 
 
@@ -282,6 +289,17 @@ export function SettingsPage({ onOpenLogs }: Props) {
             </div>
           </div>
 
+          <SettingsAiMcpPanel
+            settings={settings}
+            onLocal={(next) => {
+              setSettings(next);
+            }}
+            onSave={async (next, opts) => {
+              setSettings(next);
+              await save(next, opts);
+            }}
+          />
+
           <div className="settings-row">
             <span>{t("settings:launchMinimized")}</span>
             <Switch
@@ -396,7 +414,9 @@ export function SettingsPage({ onOpenLogs }: Props) {
                 const n = Number(e.target.value) || 30;
                 setSettings({ ...settings, log_retention_days: n });
               }}
-              onBlur={() => void save(settings)}
+              onBlur={() => {
+                if (settings) void save(settings, { silent: true });
+              }}
               style={{ width: "100%", maxWidth: 160 }}
             />
           </div>

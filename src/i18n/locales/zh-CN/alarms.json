@@ -103,5 +103,7 @@
   "soundIslandBell": "小岛铃",
   "soundWoodKnock": "木敲",
   "soundWarmRise": "暖升",
-  "soundGentlePing": "轻点"
+  "soundGentlePing": "轻点",
+  "aiCreate": "AI 创建",
+  "createSuccess": "闹钟已创建"
 }

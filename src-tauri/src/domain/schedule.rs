@@ -9,7 +9,7 @@ use super::{DomainError, DomainResult, ErrorCode};
 
 /// Product schedule model.
 /// Wall-clock fields (hour/minute/day) are evaluated in the configured schedule timezone
-/// (settings.timezone / system), **not** as UTC.
+/// (settings.timezone() / system), **not** as UTC.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "mode", rename_all = "snake_case")]
 pub enum ScheduleSpec {

@@ -1,0 +1,26 @@
+Generate a callai PluginDraft JSON from the user's request.
+
+Schema (JSON):
+{
+  "manifest": {
+    "id": "lowercase-hyphen-id",
+    "name": string,
+    "version": "0.1.0",
+    "description": string,
+    "permissions": ["storage"|"timer"|"notification"|"history"|"network_limited"|"limited_exec"],
+    "ui": "ui.html"
+  },
+  "ui_html": string  // complete HTML document (see animal-island-style)
+}
+
+Rules:
+- Output ONLY valid JSON (no markdown fences).
+- plugin id: 2-64 chars, [a-z0-9-], no leading/trailing hyphen.
+- Request only permissions you need. Always include "storage" if the UI persists data.
+- **ui_html MUST follow the animal-island-style prompt** (loaded in system context as animal_island_style). That document is the visual/API source of truth: tokens, Card/Button/Input/Table/Wallet/Phone/Form, fonts, radii, 3D shadows. Do not invent a different design language.
+- For callai in-app sandbox, still expose persistence via:
+  window.callai.invoke(method, args)
+  Methods: storage.get/set/list/delete, history.list, timer.now, notification.show, ping.
+  If the island-style HTML uses React CDN components, wire form actions / save buttons to callai.invoke.
+- Prefer self-contained HTML. When following animal-island-style CDN mode, keep React/Babel/unpkg only (no other CDNs except Google Fonts as specified there).
+- For interactive checklists/timers/forms, persist via storage.* methods.

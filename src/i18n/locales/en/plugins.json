@@ -1,0 +1,22 @@
+{
+  "title": "Plugins",
+  "empty": "No plugins yet. Create one with AI.",
+  "createWithAi": "Create with AI",
+  "open": "Open",
+  "deleted": "Plugin removed",
+  "deleteConfirm": "Delete this plugin and its data?",
+  "noDesc": "No description",
+  "records": "Records",
+  "lastRun": "Last run",
+  "runtime": "Runtime",
+  "method": "Method",
+  "when": "When",
+  "mcpLogs": "MCP logs",
+  "mcpEmpty": "No MCP logs yet",
+  "mcpCap": "Kept at most 500 entries",
+  "refreshMcp": "Refresh",
+  "clearMcp": "Clear",
+  "subtitle": "Isolated interactive tasks with own storage.",
+  "tabList": "Plugins",
+  "tabMcp": "MCP logs"
+}

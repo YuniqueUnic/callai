@@ -22,6 +22,18 @@ let settings: AppSettings = {
   timezone: "system",
   auto_backup_on_start: true,
   backup_keep_count: 10,
+  ai: {
+    provider: "openai",
+    base_url: "https://api.openai.com/v1",
+    api_key: "",
+    model: "gpt-5.6-terra",
+  },
+  mcp: {
+    enabled: false,
+    listen_host: "127.0.0.1",
+    port: 3927,
+    auth_token: "",
+  },
 };
 let logSeq = 1;
 let mockBackups: string[] = ["config.toml.mock.bak"];
@@ -228,5 +240,80 @@ export const mockApi = {
   async previewAlarmSound(sound_id?: string | null) {
     playAlarmSoundPreview(sound_id ?? "soft_chime");
     return true;
+  },
+
+  async listPlugins() {
+    return [] as import("../domain/types").PluginSummary[];
+  },
+  async getPlugin(_id: string) {
+    throw { code: "ALARM_NOT_FOUND", message: "plugin not found" };
+  },
+  async installPlugin(draft: import("../domain/types").PluginDraft) {
+    return {
+      id: draft.manifest.id,
+      name: draft.manifest.name,
+      version: draft.manifest.version,
+      description: draft.manifest.description,
+      permissions: draft.manifest.permissions,
+      ui: draft.manifest.ui,
+      installed_at: now(),
+      last_run_at: null,
+      record_count: 0,
+    };
+  },
+  async deletePlugin(_id: string) {},
+  async pluginInvoke(_pluginId: string, method: string, _args: unknown) {
+    if (method === "ping") return { pong: true };
+    return {};
+  },
+  async pluginUiHtml(_id: string) {
+    return "<html><body>mock plugin</body></html>";
+  },
+  async pluginMarkRun(_id: string) {},
+  async pluginListHistory(_id: string, _limit?: number) {
+    return [];
+  },
+  async listMcpLogs(_limit?: number) {
+    return [];
+  },
+  async clearMcpLogs() {
+    return 0;
+  },
+  async getPrompt(id: string) {
+    return `mock prompt: ${id}`;
+  },
+  async listPrompts() {
+    return [
+      "system",
+      "alarm_generate",
+      "plugin_generate",
+      "ai2ui",
+      "animal_island_style",
+    ];
+  },
+  async generateSecretToken() {
+    return (
+      crypto.randomUUID().split("-").join("") +
+      crypto.randomUUID().split("-").join("")
+    );
+  },
+  async listAiModels(_provider: string, _base_url: string, _api_key: string) {
+    // Keep in sync with AI_MODEL_HINTS / current public frontier models (2026-07).
+    return [
+      "gpt-5.6-terra",
+      "gpt-5.6-sol",
+      "gpt-5.6-luna",
+      "gpt-5.6",
+      "gpt-5.5",
+      "claude-sonnet-5",
+      "claude-opus-4-8",
+      "claude-fable-5",
+      "claude-haiku-4-5",
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-3-flash-preview",
+      "deepseek-chat",
+      "deepseek-reasoner",
+    ];
   },
 };
