@@ -1,9 +1,9 @@
 cask "callai-app" do
   arch arm: "aarch64", intel: "x64"
 
-  version "0.3.0"
-  sha256 arm:   "d04c3350e1dbf678fb9a753f838ed194b56fc3f287a01943ea6682b17ac69ee9",
-         intel: "268e536ca31b8f544a0dceaf9f230499c5c935d3c5eaa757ded8fd2d34ff325f"
+  version "0.3.1"
+  sha256 arm:   "84de741c88c00204b2578e29dec67a5a96489a96897e8021f6391e534f0f0b65",
+         intel: "a1e6898c64c3b209e3003cfaf1057e891afb05bce926bae84ab7573380e0d73d"
 
   url "https://github.com/YuniqueUnic/callai/releases/download/v#{version}/callai_#{version}_#{arch}.dmg",
       verified: "github.com/YuniqueUnic/callai/"

@@ -1,12 +1,12 @@
 {
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Cozy AI window-warming alarm (CLI / daemon)",
   "homepage": "https://github.com/YuniqueUnic/callai",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/YuniqueUnic/callai/releases/download/v0.3.0/callai-cli-x86_64-pc-windows-msvc.exe#/callai.exe",
-      "hash": "bf9303e8584456c31173989d72fb63ca5de197575eb730302ad211f3c556a853"
+      "url": "https://github.com/YuniqueUnic/callai/releases/download/v0.3.1/callai-cli-x86_64-pc-windows-msvc.exe#/callai.exe",
+      "hash": "e8f2ec35c2362600f56fc24a73aeed7c46116c61eb4d283ad5f083d6e62ee98e"
     }
   },
   "bin": "callai.exe",
