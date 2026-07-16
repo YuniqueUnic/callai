@@ -94,6 +94,10 @@ impl AiRuntimeContext {
             "Never echo or request API keys / MCP tokens.".into(),
             "For pure chime reminders use binary `__callai_alarm__`.".into(),
             "Respond in the user's locale when writing names/copy.".into(),
+            format!(
+                "Schedule HH:MM is wall-clock in {tz}; never UTC-convert times[].",
+                tz = tz_resolved
+            ),
         ];
         if os_family == "macos" {
             notes.push("macOS: prefer `say`, `osascript`, `open`; avoid Windows-only cmds.".into());
@@ -173,6 +177,13 @@ notes:
 Treat this block as authoritative environment/preferences for generation.
 Pick binaries, paths, schedule times, and UI copy that fit this machine and locale.
 Do not invent paths outside dirs.config / dirs.data unless the user asked.
+
+## Schedule / timezone (CRITICAL)
+- Alarm schedule.times and cron hour/minute are wall-clock in timezone.resolved.
+- Do NOT convert local clock times into UTC for the JSON times array.
+- Example: 晚上 8 点 with Asia/Shanghai → times: ["20:00"] (NOT "12:00").
+- Relative phrases use now.local + timezone.resolved, not now.utc alone.
+- The app evaluates every alarm in this same resolved zone.
 "#,
             app = self.app_name,
             ver = self.app_version,

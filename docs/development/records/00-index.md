@@ -49,7 +49,7 @@
 
 ### 路径 D · 只学执行语义与交互硬化
 
-`05` → `12` → `03`（CLI 对等），配合本地 `sleep`/`osascript`/`say` 手测。
+`05` → `12`（**附录 A 墙钟** · **附录 B GMT 误判 / detect / 浇花 20:00**）→ `03`（CLI 对等），配合 `sleep`/`osascript`/`say` + **上海下午 daily 20:00 剩余 ~5h** 手测。
 
 ### 路径 E · 只学桌面窗口铬 / 自绘 titlebar
 
@@ -84,6 +84,7 @@
 | 包管理 | `68aa339` `d798362` | 11 |
 | 运行时硬化 | `f9cc5ba` `7eaf32d` `0db6b62` `6bc6223` | 12 |
 | UI 浮层顶栏 / 海浪无缝 / 时区墙钟 | `ce863f6` `909a0cb` + SeaMarquee 续 | 04 附录 B · 05 附录 B · 12 附录 A |
+| 时区 GMT 误判 / 墙钟 detect 硬化 / AI 浇花 20:00 验收 | 工作区 `timezone_detect.rs` · timezoneCache · alarm_generate CRITICAL；显式 Asia/Shanghai 写库 | 12 附录 B · 15 §12 |
 | Issues #16–#19 功能与周期教材 | `fix/issues-16-19` | 13 |
 | 自绘 titlebar / 透明圆角 / 窗口增强 | `fix/dark-modal-contrast` + TitleBar | 14 |
 | UI 切换卡顿 / keep-alive / 多级 cache | 工作区 App panes + *Cache.ts | 05 附录 C |

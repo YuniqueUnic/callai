@@ -11,6 +11,12 @@ describe("formatDateTime", () => {
   it("returns original on invalid", () => {
     expect(formatDateTime("not-a-date")).toBe("not-a-date");
   });
+
+  it("respects explicit IANA timeZone", () => {
+    // 12:00 UTC → 20:00 in Shanghai
+    const s = formatDateTime("2026-07-12T12:00:00.000Z", "en-US", "Asia/Shanghai");
+    expect(s).toMatch(/8:00|20:00/);
+  });
 });
 
 describe("nextTriggerProgress", () => {

@@ -173,3 +173,13 @@
 .alarm-status-row {
   min-height: 28px;
 }
+
+.alarm-next-tz {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary, #9f927d);
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}

@@ -137,6 +137,18 @@ html, body {
   font-size: 12px; font-weight: 800; border: 2px solid rgba(17,168,155,.25);
 }
 .tag.warn { background: #fff4cc; color: #a07a00; border-color: rgba(219,169,14,.35); }
+.tag.soft {
+  background: rgba(25, 200, 185, 0.12);
+  color: #0a8f84;
+  border-color: rgba(25, 200, 185, 0.28);
+  max-width: min(220px, 52vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .tag.ok { background: #e8f7d8; color: #4d8a12; border-color: rgba(95,158,30,.3); }
 .tag.muted { background: #efe8d4; color: var(--text-secondary); border-color: var(--border); }
 .seg {
@@ -326,15 +338,22 @@ function usePluginSettings(api, storageKey, defaults) {
   useEffect(() => {
     if (!api) return;
     let alive = true;
+    function alarmOnly(src) {
+      // Prefer explicit alarm layer; never treat saved settings as "闹钟覆盖".
+      if (src && typeof src === "object" && src.alarm && typeof src.alarm === "object") {
+        return src.alarm;
+      }
+      if (api.getAlarmLaunchParams) return api.getAlarmLaunchParams() || {};
+      return api.launchParams || {};
+    }
     (async () => {
       const raw = (await api.storage.get(storageKey)) || {};
       if (!alive) return;
       setSaved(Object.assign({}, defaults, raw));
-      const lp = (api.getLaunchParams && api.getLaunchParams()) || api.launchParams || {};
-      applyOverride(lp);
+      applyOverride(alarmOnly(null));
       setReady(true);
     })();
-    function onLaunch(ev) { applyOverride((ev && ev.detail) || {}); }
+    function onLaunch(ev) { applyOverride(alarmOnly(ev && ev.detail)); }
     window.addEventListener("callai:launch-params", onLaunch);
     return () => {
       alive = false;
@@ -361,15 +380,24 @@ function usePluginSettings(api, storageKey, defaults) {
 }
 
 function OverrideBanner({ override, keys }) {
+  // Alarm runtime overrides only — soft chip, not a warning strip.
+  // Full list lives in host settings (clock badge on host bar).
   const entries = Object.entries(override || {}).filter(([k, v]) => {
     if (v == null || v === "") return false;
     if (keys && keys.length && !keys.includes(k)) return false;
     return true;
   });
   if (!entries.length) return null;
+  const summary =
+    entries.length <= 2
+      ? entries.map(([k, v]) => k + "=" + String(v)).join(" · ")
+      : entries.length + " 项临时参数";
   return (
-    <span className="tag warn">
-      闹钟覆盖 {entries.map(([k, v]) => k + "=" + String(v)).join(" · ")}
+    <span
+      className="tag soft"
+      title={"本次闹钟临时参数（不写回设置）\n" + entries.map(([k, v]) => k + "=" + String(v)).join("\n")}
+    >
+      闹钟临时 · {summary}
     </span>
   );
 }

@@ -12,6 +12,7 @@ callai's client **strictly parses** model output. Follow these contracts exactly
 - Output: **one** JSON object matching AlarmDraft (see alarm_generate task).
 - No markdown fences, no trailing commas, no comments, no prose before/after.
 - Times `"HH:MM"` zero-padded when possible.
+- **Wall-clock only:** `times` / cron h-m use `timezone.resolved` civil time; never subtract UTC offset.
 - `max_attempts` integer 1–3; `timeout_secs` integer 1–3600.
 - Weekly `days` 0–6; monthly 1–31.
 - Pure reminder: `"binary":"{{ product.default_chime }}"`.
@@ -43,6 +44,7 @@ callai's client **strictly parses** model output. Follow these contracts exactly
 
 ## Desired results (quality bar)
 - Schedules interpret relative time using runtime `now.local` + `timezone.resolved`
+- Absolute local clock phrases (晚上8点) stay as local HH:MM in that zone (no UTC shift)
 - Binaries/scripts match runtime `os_family` / `shell`
 - Names are short, island-cozy, unambiguous
 - Plugins that persist state request `storage` and call `window.callai.invoke`

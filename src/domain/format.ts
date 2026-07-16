@@ -1,17 +1,27 @@
-/** Friendly datetime for next trigger / logs. */
-export function formatDateTime(iso: string, locale?: string): string {
+/** Friendly datetime for next trigger / logs. Optionally force IANA timeZone. */
+export function formatDateTime(
+  iso: string,
+  locale?: string,
+  timeZone?: string,
+): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   try {
-    return new Intl.DateTimeFormat(locale || undefined, {
+    const opts: Intl.DateTimeFormatOptions = {
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
-    }).format(d);
+    };
+    if (timeZone) opts.timeZone = timeZone;
+    return new Intl.DateTimeFormat(locale || undefined, opts).format(d);
   } catch {
-    return d.toLocaleString();
+    try {
+      return d.toLocaleString(locale || undefined, timeZone ? { timeZone } : undefined);
+    } catch {
+      return d.toLocaleString();
+    }
   }
 }
 
@@ -43,10 +53,11 @@ export function remainingLabel(
   nextIso: string | undefined | null,
   locale?: string,
   nowMs: number = Date.now(),
+  timeZone?: string,
 ): string {
   if (!nextIso) return "—";
   const next = Date.parse(nextIso);
-  if (Number.isNaN(next)) return formatDateTime(nextIso, locale);
+  if (Number.isNaN(next)) return formatDateTime(nextIso, locale, timeZone);
   const diff = next - nowMs;
   const zh = Boolean(locale?.startsWith("zh"));
   if (diff <= 0) return zh ? "即将" : "soon";
@@ -58,5 +69,5 @@ export function remainingLabel(
     if (zh) return rem ? `${hours} 小时 ${rem} 分后` : `${hours} 小时后`;
     return rem ? `in ${hours}h ${rem}m` : `in ${hours}h`;
   }
-  return formatDateTime(nextIso, locale);
+  return formatDateTime(nextIso, locale, timeZone);
 }

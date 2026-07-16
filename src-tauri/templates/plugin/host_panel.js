@@ -45,26 +45,109 @@
     } catch (e) {}
   }
 
-  function mergeLaunchParams() {
-    // effective launch = host params (plugin settings sheet) then alarm overrides
+  function alarmLaunchOnly() {
     var alarm = window.callai.launchParams || {};
-    return Object.assign({}, hostParams, alarm);
+    return alarm && typeof alarm === "object" && !Array.isArray(alarm) ? alarm : {};
+  }
+
+  function mergeLaunchParams() {
+    // effective = plugin settings (hostParams) then alarm runtime overrides
+    return Object.assign({}, hostParams, alarmLaunchOnly());
+  }
+
+  function alarmOverrideEntries() {
+    var alarm = alarmLaunchOnly();
+    var out = [];
+    Object.keys(alarm).forEach(function (k) {
+      var v = alarm[k];
+      if (v == null || v === "") return;
+      // host-reserved keys are not business overrides
+      if (k === "theme" || k === "notifications" || k.indexOf("__") === 0) return;
+      out.push([k, v]);
+    });
+    return out;
+  }
+
+  function syncOverrideBadge() {
+    var btn = $("ch-bar-override");
+    if (!btn) return;
+    var entries = alarmOverrideEntries();
+    if (!entries.length) {
+      btn.hidden = true;
+      btn.classList.remove("is-on");
+      btn.title = "本次闹钟参数";
+      return;
+    }
+    btn.hidden = false;
+    btn.classList.add("is-on");
+    btn.title =
+      "本次闹钟临时参数（不写回设置）：\n" +
+      entries.map(function (e) {
+        return e[0] + "=" + String(e[1]);
+      }).join("\n");
+  }
+
+  function renderOverridePanel() {
+    var box = $("ch-override-list");
+    if (!box) return;
+    box.innerHTML = "";
+    var entries = alarmOverrideEntries();
+    if (!entries.length) {
+      var empty = document.createElement("p");
+      empty.className = "ch-hint";
+      empty.textContent = "这次不是闹钟打开的，没有临时覆盖。";
+      box.appendChild(empty);
+      return;
+    }
+    var tip = document.createElement("p");
+    tip.className = "ch-hint";
+    tip.textContent = "仅本次生效，不会写进插件设置。";
+    box.appendChild(tip);
+    entries.forEach(function (pair) {
+      var row = document.createElement("div");
+      row.className = "ch-override-row";
+      var k = document.createElement("span");
+      k.className = "ch-override-k";
+      k.textContent = pair[0];
+      var v = document.createElement("span");
+      v.className = "ch-override-v";
+      v.textContent = String(pair[1]);
+      row.appendChild(k);
+      row.appendChild(v);
+      box.appendChild(row);
+    });
   }
 
   function wireLaunchParamsApi() {
-    var prevGet = window.callai.getLaunchParams;
     window.callai.getLaunchParams = function () {
       return mergeLaunchParams();
     };
-    // keep raw alarm params accessible
+    // raw alarm layer only — plugins should use this for "override" UI
     window.callai.getAlarmLaunchParams = function () {
-      return window.callai.launchParams || {};
+      return Object.assign({}, alarmLaunchOnly());
     };
     window.callai.getHostParams = function () {
       return Object.assign({}, hostParams);
     };
-    // re-fire when either layer changes
-    var origReady = window.callai.ready;
+    window.addEventListener("message", function (ev) {
+      var d = ev.data || {};
+      if (d && d.__callai_set_launch_params) {
+        // bridge already set launchParams; refresh badge + notify with split detail
+        try {
+          window.dispatchEvent(
+            new CustomEvent("callai:launch-params", {
+              detail: {
+                alarm: alarmLaunchOnly(),
+                host: Object.assign({}, hostParams),
+                effective: mergeLaunchParams(),
+              },
+            }),
+          );
+        } catch (e) {}
+        syncOverrideBadge();
+        renderOverridePanel();
+      }
+    });
   }
 
   function wireNotifications() {
@@ -94,9 +177,15 @@
         try {
           window.dispatchEvent(
             new CustomEvent("callai:launch-params", {
-              detail: mergeLaunchParams(),
+              detail: {
+                alarm: alarmLaunchOnly(),
+                host: Object.assign({}, hostParams),
+                effective: mergeLaunchParams(),
+              },
             }),
           );
+          syncOverrideBadge();
+          renderOverridePanel();
         } catch (e) {}
       });
   }
@@ -298,6 +387,8 @@
     var bd = $("callai-host-modal-backdrop");
     if (bd) bd.classList.add("is-open");
     renderParamsEditor();
+    renderOverridePanel();
+    syncOverrideBadge();
     syncThemeSeg();
     syncNotifyBtn();
     syncBarButtons();
@@ -414,6 +505,11 @@
       '<path d="M6 17h12l-1.2-2.2V11a4.8 4.8 0 1 0-9.6 0v3.8L6 17z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>' +
       '<path d="M10 19a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
       "</svg></button>" +
+      '<button type="button" class="ch-bar-btn ch-bar-override" id="ch-bar-override" title="本次闹钟参数" aria-label="查看本次闹钟参数" hidden>' +
+      '<svg class="callai-host-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+      '<path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+      '<circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="2"/>' +
+      "</svg></button>" +
       "</div>" +
       '<svg id="callai-host-modal-clip-svg" style="position:absolute;width:0;height:0" aria-hidden="true" focusable="false">' +
       "<defs>" +
@@ -436,7 +532,11 @@
       "</div>" +
       '<div class="ch-modal-body">' +
       '<div id="ch-panel-params" class="ch-panel on" role="tabpanel">' +
-      '<p class="ch-hint">这里保存的是插件自己的参数。闹钟里的同名项只会临时生效这一次。</p>' +
+      '<p class="ch-hint">这里保存的是插件自己的参数。</p>' +
+      '<div id="ch-override-block" class="ch-override-block">' +
+      '<div class="ch-label">本次闹钟</div>' +
+      '<div id="ch-override-list"></div>' +
+      "</div>" +
       '<div id="ch-params-list"></div>' +
       '<div class="ch-actions ch-actions-inline">' +
       '<button type="button" class="ch-btn" id="ch-param-add">加一个</button>' +
@@ -502,6 +602,15 @@
       openModal();
       setTab("params");
     };
+    var ovBtn = $("ch-bar-override");
+    if (ovBtn) {
+      ovBtn.onclick = function (e) {
+        e.stopPropagation();
+        openModal();
+        setTab("params");
+        renderOverridePanel();
+      };
+    }
     $("ch-bar-theme").onclick = function (e) {
       e.stopPropagation();
       setTheme(prefs.theme === "dark" ? "light" : "dark");
@@ -615,9 +724,15 @@
         try {
           window.dispatchEvent(
             new CustomEvent("callai:launch-params", {
-              detail: mergeLaunchParams(),
+              detail: {
+                alarm: alarmLaunchOnly(),
+                host: Object.assign({}, hostParams),
+                effective: mergeLaunchParams(),
+              },
             }),
           );
+          syncOverrideBadge();
+          renderOverridePanel();
         } catch (e) {}
       })
       .catch(function () {

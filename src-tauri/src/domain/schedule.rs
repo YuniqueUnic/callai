@@ -113,7 +113,7 @@ impl ScheduleSpec {
         &self,
         after: DateTime<Local>,
     ) -> DomainResult<Option<DateTime<Local>>> {
-        let tz = detect_system_timezone();
+        let tz = crate::domain::detect_system_timezone();
         let next = self.next_trigger_after_in_tz(after.with_timezone(&Utc), tz)?;
         Ok(next.map(|u| u.with_timezone(&Local)))
     }
@@ -221,21 +221,11 @@ fn expand_time_pairs(times: &[String], dom: &str, dow: &str) -> DomainResult<Str
     Ok(parts.join(" || "))
 }
 
-/// Detect host IANA timezone. Falls back to UTC.
-pub fn detect_system_timezone() -> Tz {
-    if let Ok(name) = iana_time_zone::get_timezone() {
-        if let Ok(tz) = name.parse::<Tz>() {
-            return tz;
-        }
-    }
-    chrono_tz::UTC
-}
-
 /// empty / "system" / "auto" → detect; else parse IANA name.
 pub fn resolve_timezone(setting: &str) -> DomainResult<Tz> {
     let s = setting.trim();
     if s.is_empty() || s.eq_ignore_ascii_case("system") || s.eq_ignore_ascii_case("auto") {
-        return Ok(detect_system_timezone());
+        return Ok(crate::domain::detect_system_timezone());
     }
     s.parse::<Tz>()
         .map_err(|_| DomainError::new(ErrorCode::InvalidArgs, format!("unknown timezone: {s}")))

@@ -33,7 +33,9 @@ If user requirements conflict with contracts, keep a **valid parseable** result 
 When a `<callai_runtime_context>...</callai_runtime_context>` block is present:
 - Treat OS, arch, locale, theme, timezone, local/UTC now, shell, config/data dirs, and prefs as ground truth
 - Prefer binaries that work on that OS / shell
-- Interpret relative times with `timezone.resolved` + `now.local`
+- **One global schedule zone:** `timezone.resolved` (from settings `system` → host detect, or an IANA name)
+- Alarm `times[]` / cron hour-minute are **wall-clock in that zone** — never UTC-convert clock times into the JSON
+- Interpret relative times with `timezone.resolved` + `now.local` (not `now.utc` alone)
 - Secrets are intentionally omitted — do not invent keys/tokens
 
 ## High-level product surface

@@ -114,6 +114,13 @@ export function removeAlarmFromCache(id: string): void {
 export function invalidateAlarmsCache(): void {
   alarmsCache = null;
   nextMapCache = {};
+  nextInflight = null;
+}
+
+/** Drop next-trigger only (e.g. timezone change). */
+export function invalidateNextMapCache(): void {
+  nextMapCache = {};
+  nextInflight = null;
 }
 
 export function warmAlarmsCache(): void {

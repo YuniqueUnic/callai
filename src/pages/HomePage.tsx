@@ -19,10 +19,13 @@ import {
 } from "../domain/format";
 import { client } from "../infra/client";
 import {
+  invalidateNextMapCache,
   peekAlarms,
   peekNextMap,
   refreshAlarmsBundle,
 } from "../infra/alarmsCache";
+import { peekSettings } from "../infra/settingsCache";
+import { peekResolvedTimezone } from "../domain/timezone";
 import { ElementImage } from "../ui/ElementImage";
 import { IconButton } from "../ui/IconButton";
 import { IslandTime } from "../ui/IslandTime";
@@ -58,6 +61,7 @@ export function HomePage({ onCreate, onEdit, onLogs, onAi, fabVisible = true }: 
   const [stoppingId, setStoppingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [tick, setTick] = useState(0);
+  const scheduleTz = peekResolvedTimezone(peekSettings()?.timezone);
 
   async function refresh(opts?: { silent?: boolean; force?: boolean }) {
     const silent = Boolean(opts?.silent);
@@ -72,6 +76,7 @@ export function HomePage({ onCreate, onEdit, onLogs, onAi, fabVisible = true }: 
       setLoading(true);
     }
     try {
+      if (force) invalidateNextMapCache();
       const { alarms: list, nextMap: nm } = await refreshAlarmsBundle(force || !cached);
       setAlarms(list);
       setNextMap({ ...nm });
@@ -89,7 +94,7 @@ export function HomePage({ onCreate, onEdit, onLogs, onAi, fabVisible = true }: 
 
   useEffect(() => {
     // Prefer silent if cache already warm (return from edit / tab switch).
-    void refresh({ silent: Boolean(peekAlarms()), force: false });
+    void refresh({ silent: Boolean(peekAlarms()), force: true });
     const onChanged = () => {
       void refresh({ silent: true, force: true });
     };
@@ -377,13 +382,18 @@ export function HomePage({ onCreate, onEdit, onLogs, onAi, fabVisible = true }: 
                       </span>
                       <span className="alarm-next-remain">
                         {alarm.enabled
-                          ? remainingLabel(next || null, i18n.language)
+                          ? remainingLabel(next || null, i18n.language, Date.now(), scheduleTz)
                           : t("alarms:paused")}
                       </span>
                     </div>
                     <strong className="alarm-next-when">
-                      {next ? formatDateTime(next, i18n.language) : "—"}
+                      {next ? formatDateTime(next, i18n.language, scheduleTz) : "—"}
                     </strong>
+                    {next ? (
+                      <span className="alarm-next-tz" title={scheduleTz}>
+                        {scheduleTz}
+                      </span>
+                    ) : null}
                     {alarm.enabled && next ? (
                       <Progress
                         percent={pct}
