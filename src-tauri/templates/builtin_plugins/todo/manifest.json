@@ -1,0 +1,32 @@
+{
+  "id": "todo",
+  "name": "TODO",
+  "version": "0.6.1",
+  "description": "待办。settings/ENV：filter, notifyOnOpen, compactNotes。",
+  "permissions": [
+    "storage",
+    "timer",
+    "notification",
+    "history"
+  ],
+  "ui": "ui.html",
+  "params": {
+    "filter": {
+      "description": "列表过滤",
+      "default": "all",
+      "enum": [
+        "all",
+        "open",
+        "done"
+      ]
+    },
+    "notifyOnOpen": {
+      "description": "打开时通知",
+      "default": false
+    },
+    "compactNotes": {
+      "description": "紧凑备注",
+      "default": false
+    }
+  }
+}
