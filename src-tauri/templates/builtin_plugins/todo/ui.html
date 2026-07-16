@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TODO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+/* Canonical island tokens for builtin plugins */
+
+:root {
+  --primary: #19c8b9;
+  --primary-hover: #3dd4c6;
+  --primary-active: #11a89b;
+  --primary-bg: #e6f9f6;
+  --text: #794f27;
+  --text-body: #725d42;
+  --text-secondary: #9f927d;
+  --text-muted: #8a7b66;
+  --text-disabled: #c4b89e;
+  --bg: #f8f8f0;
+  --bg-content: rgb(247, 243, 223);
+  --bg-disabled: #f0ece2;
+  --border: #c4b89e;
+  --border-hover: #a89878;
+  --border-strong: #9f927d;
+  --success: #6fba2c;
+  --success-active: #5a9e1e;
+  --warning: #f5c31c;
+  --warning-active: #dba90e;
+  --error: #e05a5a;
+  --error-active: #c94444;
+  --shadow: 0 6px 0 rgba(121, 79, 39, 0.12);
+  --shadow-sm: 0 3px 0 rgba(121, 79, 39, 0.1);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(25,200,185,.10), transparent 28%),
+    radial-gradient(circle at 88% 0%, rgba(245,195,28,.12), transparent 26%),
+    var(--bg);
+  color: var(--text-body);
+  font-family: var(--font);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+#root { min-height: 100%; }
+.app {
+  padding: 18px 16px 28px;
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--text);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.header p { margin: 6px 0 0; font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+.card {
+  background: var(--bg-content);
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+.card.soft { border-width: 2px; box-shadow: var(--shadow-sm); }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.btn {
+  appearance: none;
+  border: 3px solid var(--border-strong);
+  background: #fffdf6;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, background .15s ease, box-shadow .08s ease;
+}
+.btn:hover { background: #fff8e8; border-color: var(--border-hover); }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.btn.primary {
+  background: var(--primary);
+  border-color: var(--primary-active);
+  color: #fff;
+}
+.btn.primary:hover { background: var(--primary-hover); }
+.btn.ghost { background: transparent; box-shadow: none; border-width: 2px; }
+.btn.danger {
+  background: #ffe8e8;
+  border-color: #e8a0a0;
+  color: var(--error-active);
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+.input, .textarea, .select {
+  width: 100%;
+  border: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: #fffdf8;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+}
+.input:focus, .textarea:focus, .select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(25,200,185,.18);
+}
+.textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
+.meta { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--primary-bg); color: var(--primary-active);
+  font-size: 12px; font-weight: 800; border: 2px solid rgba(17,168,155,.25);
+}
+.tag.warn { background: #fff4cc; color: #a07a00; border-color: rgba(219,169,14,.35); }
+.tag.soft {
+  background: rgba(25, 200, 185, 0.12);
+  color: #0a8f84;
+  border-color: rgba(25, 200, 185, 0.28);
+  max-width: min(220px, 52vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tag.ok { background: #e8f7d8; color: #4d8a12; border-color: rgba(95,158,30,.3); }
+.tag.muted { background: #efe8d4; color: var(--text-secondary); border-color: var(--border); }
+.seg {
+  display: flex; gap: 6px; background: #efe8d4;
+  padding: 5px; border-radius: 999px; border: 2px solid var(--border);
+}
+.seg button {
+  flex: 1; border: 0; background: transparent; border-radius: 999px;
+  padding: 8px 10px; font: inherit; font-weight: 800; color: var(--text-secondary); cursor: pointer;
+}
+.seg button.on {
+  background: #fffdf8; color: var(--text); box-shadow: var(--shadow-sm);
+  border: 2px solid var(--border);
+}
+.seg button:disabled { opacity: .5; cursor: not-allowed; }
+.list { display: flex; flex-direction: column; gap: 8px; max-height: 42vh; overflow: auto; }
+.item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 11px 12px; border: 2px solid var(--border);
+  border-radius: 14px; background: #fffdf8;
+}
+.item.done .item-title { text-decoration: line-through; color: var(--text-muted); }
+.item-title { font-weight: 800; color: var(--text); word-break: break-word; }
+.item-note { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+.check {
+  width: 24px; height: 24px; border-radius: 9px; border: 3px solid var(--border);
+  background: #fff; flex-shrink: 0; margin-top: 1px; cursor: pointer;
+  display: grid; place-items: center; font-size: 12px; font-weight: 900; color: #fff;
+}
+.check.on { background: var(--success); border-color: var(--success-active); }
+.timer-face {
+  font-size: 56px; font-weight: 900; color: var(--text); text-align: center;
+  letter-spacing: 0.04em; font-variant-numeric: tabular-nums;
+}
+.progress {
+  height: 12px; border-radius: 999px; background: #efe8d4;
+  overflow: hidden; border: 2px solid var(--border);
+}
+.progress > i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--success));
+  width: 0%;
+}
+.wheel-wrap { position: relative; width: min(280px, 80vw); margin: 4px auto; aspect-ratio: 1; }
+.wheel {
+  width: 100%; height: 100%; border-radius: 50%;
+  border: 5px solid var(--border-strong); box-shadow: var(--shadow);
+  transition: transform 4s cubic-bezier(.15,.8,.1,1);
+}
+.wheel-pin {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 11px solid transparent; border-right: 11px solid transparent;
+  border-top: 20px solid var(--error); z-index: 2;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.08));
+}
+.wheel-center {
+  position: absolute; inset: 36%; border-radius: 50%;
+  background: #fffdf8; border: 3px solid var(--border-strong);
+  display: grid; place-items: center; font-weight: 900; color: var(--text);
+  font-size: 13px; z-index: 1;
+}
+.result {
+  text-align: center; font-size: 20px; font-weight: 900; color: var(--text); min-height: 28px;
+}
+.empty { text-align: center; color: var(--text-secondary); padding: 18px 8px; font-size: 13px; }
+.field-label {
+  font-size: 12px; font-weight: 800; color: var(--text); letter-spacing: 0.02em;
+}
+.settings-grid {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center;
+}
+.settings-grid .input { width: 88px; text-align: center; }
+.banner {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  padding: 8px 10px; border-radius: 14px;
+  background: rgba(255,255,255,.55); border: 2px dashed var(--border);
+}
+.section-title {
+  margin: 0; font-size: 14px; font-weight: 900; color: var(--text); letter-spacing: 0.02em;
+}
+
+.btn-icon {
+  width: 36px; height: 36px; padding: 0;
+  display: inline-grid; place-items: center;
+  border-radius: 12px !important;
+  flex-shrink: 0;
+}
+.btn-icon svg { width: 18px; height: 18px; display: block; }
+.btn-icon.danger { background: #ffe8e8; border-color: #e8a0a0; color: var(--error); }
+.btn-icon.primary { background: var(--primary); border-color: var(--primary-active); color: #fff; }
+.wheel-labels {
+  position: absolute; inset: 0; pointer-events: none;
+  transition: transform 4s cubic-bezier(.15,.8,.1,1);
+}
+.wheel-label {
+  position: absolute; left: 50%; top: 50%;
+  width: 0; height: 0;
+  transform-origin: 0 0;
+}
+.wheel-label > span {
+  display: block;
+  min-width: 56px;
+  max-width: 88px;
+  margin-left: -28px;
+  margin-top: -96px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.45), 0 0 6px rgba(0,0,0,.25);
+  word-break: break-all;
+}
+
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react-classic">
+
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+async function waitCallai(timeoutMs) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < (timeoutMs || 2500)) {
+    if (window.callai && (window.callai.ready || window.callai.storage || window.callai.invoke)) {
+      return window.callai;
+    }
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  const mem = {};
+  return {
+    ready: false,
+    launchParams: {},
+    getLaunchParams: function () { return this.launchParams || {}; },
+    storage: {
+      async get(k) {
+        if (k in mem) return mem[k];
+        try {
+          const raw = localStorage.getItem("callai-preview:" + k);
+          return raw == null ? null : JSON.parse(raw);
+        } catch (e) { return null; }
+      },
+      async set(k, v) {
+        mem[k] = v;
+        try { localStorage.setItem("callai-preview:" + k, JSON.stringify(v)); } catch (e) {}
+      },
+    },
+    timer: {
+      async now() {
+        const d = new Date();
+        const iso = d.toISOString();
+        return { iso, now: iso, ts: d.getTime() };
+      },
+    },
+    notification: {
+      async show(a, b) {
+        const title = typeof a === "string" ? a : (a && a.title) || "callai";
+        const body = typeof a === "string" ? (b || "") : (a && a.body) || "";
+        console.info("[notify]", title, body);
+      },
+    },
+  };
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+}
+
+function asBool(v, fallback) {
+  if (v === true || v === "1" || v === "true" || v === "yes") return true;
+  if (v === false || v === "0" || v === "false" || v === "no") return false;
+  return fallback;
+}
+
+function usePluginSettings(api, storageKey, defaults) {
+  const [saved, setSaved] = useState(defaults);
+  const [override, setOverride] = useState({});
+  const [ready, setReady] = useState(false);
+
+  const applyOverride = useCallback((p) => {
+    setOverride(p && typeof p === "object" && !Array.isArray(p) ? p : {});
+  }, []);
+
+  useEffect(() => {
+    if (!api) return;
+    let alive = true;
+    function alarmOnly(src) {
+      if (src && typeof src === "object" && src.alarm && typeof src.alarm === "object") {
+        return src.alarm;
+      }
+      if (api.getAlarmLaunchParams) return api.getAlarmLaunchParams() || {};
+      return api.launchParams || {};
+    }
+    (async () => {
+      const raw = (await api.storage.get(storageKey)) || {};
+      if (!alive) return;
+      setSaved(Object.assign({}, defaults, raw));
+      applyOverride(alarmOnly(null));
+      setReady(true);
+    })();
+    function onLaunch(ev) { applyOverride(alarmOnly(ev && ev.detail)); }
+    window.addEventListener("callai:launch-params", onLaunch);
+    return () => {
+      alive = false;
+      window.removeEventListener("callai:launch-params", onLaunch);
+    };
+  }, [api, storageKey, applyOverride]);
+
+  const effective = useMemo(
+    () => Object.assign({}, defaults, saved, override),
+    [defaults, saved, override],
+  );
+
+  const saveSettings = useCallback(async (next) => {
+    const merged = Object.assign({}, defaults, next);
+    setSaved(merged);
+    if (api) await api.storage.set(storageKey, merged);
+  }, [api, storageKey, defaults]);
+
+  const patchSettings = useCallback(async (partial) => {
+    await saveSettings(Object.assign({}, saved, partial));
+  }, [saved, saveSettings]);
+
+  return { saved, override, effective, ready, saveSettings, patchSettings };
+}
+
+function IconBtn({ className, onClick, title, children, disabled }) {
+  return (
+    <button
+      type="button"
+      className={"btn btn-icon " + (className || "")}
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+}
+
+
+const DATA_KEY = "todo:items";
+const SETTINGS_KEY = "settings";
+const DEFAULTS = { filter: "all", notifyOnOpen: false, compactNotes: false };
+
+function App() {
+  const [api, setApi] = useState(null);
+  const [items, setItems] = useState([]);
+  const [text, setText] = useState("");
+  const [note, setNote] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const s = usePluginSettings(api, SETTINGS_KEY, DEFAULTS);
+  const filter = ["all", "open", "done"].includes(String(s.effective.filter))
+    ? String(s.effective.filter) : "all";
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const c = await waitCallai();
+      if (!alive) return;
+      setApi(c);
+      const saved = (await c.storage.get(DATA_KEY)) || [];
+      setItems(Array.isArray(saved) ? saved : []);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!s.ready || !api) return;
+    if (!asBool(s.effective.notifyOnOpen, false)) return;
+    const open = items.filter((x) => !x.done).length;
+    api.notification.show({
+      title: "TODO",
+      body: open ? `未完成 ${open} 项` : "清单空空或已完成",
+    });
+  }, [s.ready]);
+
+  const persist = async (next) => {
+    setItems(next);
+    if (api) await api.storage.set(DATA_KEY, next);
+  };
+  const add = async () => {
+    const t = text.trim();
+    if (!t) return;
+    await persist([{ id: uid(), text: t, note: note.trim(), done: false, createdAt: Date.now() }, ...items]);
+    setText(""); setNote("");
+  };
+  const visible = items.filter((x) => {
+    if (filter === "open") return !x.done;
+    if (filter === "done") return x.done;
+    return true;
+  });
+  const openCount = items.filter((x) => !x.done).length;
+
+  return (
+    <div className="app">
+      <div className="header">
+        <h1>TODO</h1>
+        <p>设置即参数；闹钟 ENV/params 同名覆盖（如 filter=open）</p>
+      </div>
+      <div className="banner">
+        <span className="tag">{openCount} 待办</span>
+<IconBtn className="ghost" title={showSettings ? "收起设置" : "设置"} onClick={() => setShowSettings((v) => !v)}>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="2"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6.2 6.2l1.6 1.6M16.2 16.2l1.6 1.6M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+        </IconBtn>
+      </div>
+
+      {showSettings ? (
+        <div className="card soft stack">
+          <h3 className="section-title">插件设置</h3>
+          <div className="settings-grid">
+            <span className="field-label">filter</span>
+            <select className="select" style={{ width: 120 }} value={s.saved.filter}
+              onChange={(e) => s.patchSettings({ filter: e.target.value })}>
+              <option value="all">全部</option>
+              <option value="open">未完成</option>
+              <option value="done">已完成</option>
+            </select>
+            <span className="field-label">notifyOnOpen</span>
+            <button className={"btn" + (s.saved.notifyOnOpen ? " primary" : "")}
+              onClick={() => s.patchSettings({ notifyOnOpen: !s.saved.notifyOnOpen })}>
+              {s.saved.notifyOnOpen ? "开" : "关"}
+            </button>
+            <span className="field-label">compactNotes</span>
+            <button className={"btn" + (s.saved.compactNotes ? " primary" : "")}
+              onClick={() => s.patchSettings({ compactNotes: !s.saved.compactNotes })}>
+              {s.saved.compactNotes ? "开" : "关"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="card stack">
+        <div className="row">
+          <input className="input grow" placeholder="写下一件小事…" value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
+          <IconBtn className="primary" title="添加" onClick={add} disabled={!s.ready}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/></svg></IconBtn>
+        </div>
+        {!asBool(s.effective.compactNotes, false) ? (
+          <input className="input" placeholder="备注（可选）" value={note}
+            onChange={(e) => setNote(e.target.value)} />
+        ) : null}
+      </div>
+
+      <div className="seg">
+        {[["all","全部"],["open","未完成"],["done","已完成"]].map(([k,l]) => (
+          <button key={k} className={filter===k?"on":""}
+            onClick={() => s.patchSettings({ filter: k })}>{l}</button>
+        ))}
+      </div>
+
+      <div className="list">
+        {!s.ready && <div className="empty">加载中…</div>}
+        {s.ready && visible.length === 0 && <div className="empty">这里空空的，加一条吧</div>}
+        {visible.map((it) => (
+          <div key={it.id} className={"item" + (it.done ? " done" : "")}>
+            <div className={"check" + (it.done ? " on" : "")}
+              onClick={() => persist(items.map((x) => x.id === it.id ? { ...x, done: !x.done } : x))}>
+              {it.done ? "✓" : ""}
+            </div>
+            <div className="grow">
+              <div className="item-title">{it.text}</div>
+              {it.note ? <div className="item-note">{it.note}</div> : null}
+            </div>
+            <IconBtn className="ghost danger" title="删除"
+              onClick={() => persist(items.filter((x) => x.id !== it.id))}>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7M8 7l.7 12a1.5 1.5 0 0 0 1.5 1.4h4.6a1.5 1.5 0 0 0 1.5-1.4L17 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </IconBtn>
+          </div>
+        ))}
+      </div>
+      {items.some((x) => x.done) ? (
+        <button className="btn ghost" onClick={() => persist(items.filter((x) => !x.done))}>清除已完成</button>
+      ) : null}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+  </script>
+</body>
+</html>
