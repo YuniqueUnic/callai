@@ -107,11 +107,76 @@ export const api = {
   getPlugin: (id: string) => call<PluginSummary>("get_plugin", { id }),
   installPlugin: (draft: PluginDraft) =>
     call<PluginSummary>("install_plugin", { draft }),
+  importPluginZipBytes: (
+    bytes: number[] | Uint8Array,
+    conflict?: string | null,
+  ) =>
+    call<PluginSummary | null>("import_plugin_zip_bytes", {
+      bytes: Array.from(bytes as Uint8Array),
+      conflict: conflict ?? null,
+    }),
+  importPluginZipPath: (path: string, conflict?: string | null) =>
+    call<PluginSummary | null>("import_plugin_zip_path", {
+      path,
+      conflict: conflict ?? null,
+    }),
+  fetchPluginRegistry: (url?: string | null) =>
+    call<{
+      schema: number;
+      name: string;
+      updated_at?: string | null;
+      plugins: {
+        id: string;
+        name: string;
+        version: string;
+        description: string;
+        author?: string | null;
+        zip_url: string;
+        homepage?: string | null;
+        repository?: string | null;
+        tags?: string[];
+      }[];
+    }>("fetch_plugin_registry", { url: url ?? null }),
+  peekPluginZipId: (bytes: number[] | Uint8Array) =>
+    call<string>("peek_plugin_zip_id", {
+      bytes: Array.from(bytes as Uint8Array),
+    }),
+  importPluginZipUrl: (url: string, conflict?: string | null) =>
+    call<PluginSummary | null>("import_plugin_zip_url", {
+      url,
+      conflict: conflict ?? null,
+    }),
+  listBuiltinCatalog: () =>
+    call<
+      {
+        id: string;
+        name: string;
+        version: string;
+        description: string;
+        installed: boolean;
+        installed_version: string | null;
+        update_available: boolean;
+        user_edited: boolean;
+        blocked_by_user_edit: boolean;
+      }[]
+    >("list_builtin_catalog"),
+  restoreBuiltinPlugin: (id: string, wipe_data?: boolean) =>
+    call<PluginSummary>("restore_builtin_plugin", {
+      id,
+      wipe_data: wipe_data ?? false,
+    }),
+  upgradeBuiltinPlugins: () =>
+    call<PluginSummary[]>("upgrade_builtin_plugins"),
+  exportPluginZipPath: (id: string, include_data: boolean, path: string) =>
+    call<void>("export_plugin_zip_path", { id, include_data, path }),
+  exportPluginZipBytes: (id: string, include_data: boolean) =>
+    call<number[]>("export_plugin_zip_bytes", { id, include_data }),
   deletePlugin: (id: string) => call<void>("delete_plugin", { id }),
   pluginInvoke: (plugin_id: string, method: string, args: unknown) =>
     call<unknown>("plugin_invoke", { pluginId: plugin_id, method, args }),
   pluginUiHtml: (id: string) => call<string>("plugin_ui_html", { id }),
-  openPluginWindow: (id: string) => call<void>("open_plugin_window", { id }),
+  openPluginWindow: (id: string, params?: Record<string, unknown> | null) =>
+    call<void>("open_plugin_window", { id, params: params ?? null }),
   pluginGetSource: (id: string) => call<string>("plugin_get_source", { id }),
   pluginSetSource: (id: string, html: string) =>
     call<void>("plugin_set_source", { id, html }),

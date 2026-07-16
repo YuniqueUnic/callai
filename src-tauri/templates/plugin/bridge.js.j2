@@ -21,7 +21,7 @@
         t: Date.now(),
       };
       __consoleBuf.push(entry);
-      if (__consoleBuf.length > 300) __consoleBuf.shift();
+      if (__consoleBuf.length > 100) __consoleBuf.shift();
       var target =
         window.parent && window.parent !== window ? window.parent : window;
       target.postMessage(
@@ -193,6 +193,27 @@
   window.callai.ping = function () {
     return window.callai.invoke("ping", {});
   };
+
+  // Launch params from host (alarm / open_plugin_window). ENV force-overrides win at host merge time.
+  window.callai.launchParams = window.callai.launchParams || {};
+  window.callai.getLaunchParams = function () {
+    return window.callai.launchParams || {};
+  };
+  window.addEventListener("message", function (ev) {
+    var d = ev.data || {};
+    if (d && d.__callai_set_launch_params) {
+      window.callai.launchParams =
+        d.params && typeof d.params === "object" ? d.params : {};
+      try {
+        window.dispatchEvent(
+          new CustomEvent("callai:launch-params", {
+            detail: window.callai.launchParams,
+          }),
+        );
+      } catch (e) {}
+    }
+  });
+
   window.callai.ready = true;
 })();
 </script>

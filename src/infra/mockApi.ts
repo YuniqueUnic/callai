@@ -252,6 +252,41 @@ export const mockApi = {
   async getPlugin(_id: string) {
     throw { code: "ALARM_NOT_FOUND", message: "plugin not found" };
   },
+  
+  async fetchPluginRegistry(_url?: string | null) {
+    return {
+      schema: 1,
+      name: "mock-registry",
+      plugins: [],
+    };
+  },
+  async peekPluginZipId(_bytes: number[] | Uint8Array) {
+    throw { code: "UNSUPPORTED", message: "peek requires desktop app" };
+  },
+  async importPluginZipBytes(_bytes: number[] | Uint8Array, _conflict?: string | null) {
+    throw { code: "UNSUPPORTED", message: "zip import requires desktop app" };
+  },
+  async importPluginZipPath(_path: string, _conflict?: string | null) {
+    throw { code: "UNSUPPORTED", message: "zip import requires desktop app" };
+  },
+  async importPluginZipUrl(_url: string, _conflict?: string | null) {
+    throw { code: "UNSUPPORTED", message: "zip import requires desktop app" };
+  },
+  async listBuiltinCatalog() {
+    return [];
+  },
+  async restoreBuiltinPlugin(_id: string, _wipe?: boolean) {
+    throw { code: "UNSUPPORTED", message: "restore requires desktop app" };
+  },
+  async upgradeBuiltinPlugins() {
+    return [];
+  },
+  async exportPluginZipPath(_id: string, _include_data: boolean, _path: string) {
+    throw { code: "UNSUPPORTED", message: "zip export requires desktop app" };
+  },
+  async exportPluginZipBytes(_id: string, _include_data: boolean) {
+    throw { code: "UNSUPPORTED", message: "zip export requires desktop app" };
+  },
   async installPlugin(draft: import("../domain/types").PluginDraft) {
     return {
       id: draft.manifest.id,
@@ -276,7 +311,7 @@ export const mockApi = {
   },
   async pluginSetSource(_id: string, _html: string) {},
   async pluginAppendConsole(id: string, entries: { level: string; args: string[]; t: number }[]) {
-    this._console[id] = [...(this._console[id] || []), ...entries].slice(-300);
+    this._console[id] = [...(this._console[id] || []), ...entries].slice(-100);
   },
   async pluginGetConsole(id: string, limit?: number) {
     return (this._console[id] || []).slice(-(limit ?? 100));
@@ -284,9 +319,9 @@ export const mockApi = {
   async pluginClearConsole(id: string) {
     delete this._console[id];
   },
-  async openPluginWindow(id: string) {
+  async openPluginWindow(id: string, params?: Record<string, unknown> | null) {
     // Browser mock: open a blank preview tab with the composed HTML if possible.
-    console.info("[mock] openPluginWindow", id);
+    console.info("[mock] openPluginWindow", id, params ?? null);
     const html = await this.pluginUiHtml(id);
     const w = window.open("", `plugin-${id}`, "width=440,height=720");
     if (w) {

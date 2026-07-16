@@ -115,6 +115,20 @@ const App = () => <div style={{x:1}}>hi</div>;
         "bridge SDK from templates/plugin/bridge.js.j2 must be injected"
     );
     assert!(
+        host.contains("getLaunchParams") || host.contains("launchParams"),
+        "bridge must expose launchParams for alarm-driven page override"
+    );
+    assert!(
+        host.contains("callai-host-bar")
+            || host.contains("callai-host-fab")
+            || host.contains("__callaiHostPanel"),
+        "host settings panel must be injected"
+    );
+    assert!(
+        host.contains("callai-theme-dark") || host.contains("hue-rotate"),
+        "host dark theme invert CSS must be present"
+    );
+    assert!(
         host.contains("scrollbar-width") || host.contains("::-webkit-scrollbar"),
         "host chrome CSS (hide scrollbars) must be injected"
     );

@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>番茄时钟</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+/* Canonical island tokens for builtin plugins */
+
+:root {
+  --primary: #19c8b9;
+  --primary-hover: #3dd4c6;
+  --primary-active: #11a89b;
+  --primary-bg: #e6f9f6;
+  --text: #794f27;
+  --text-body: #725d42;
+  --text-secondary: #9f927d;
+  --text-muted: #8a7b66;
+  --text-disabled: #c4b89e;
+  --bg: #f8f8f0;
+  --bg-content: rgb(247, 243, 223);
+  --bg-disabled: #f0ece2;
+  --border: #c4b89e;
+  --border-hover: #a89878;
+  --border-strong: #9f927d;
+  --success: #6fba2c;
+  --success-active: #5a9e1e;
+  --warning: #f5c31c;
+  --warning-active: #dba90e;
+  --error: #e05a5a;
+  --error-active: #c94444;
+  --shadow: 0 6px 0 rgba(121, 79, 39, 0.12);
+  --shadow-sm: 0 3px 0 rgba(121, 79, 39, 0.1);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(25,200,185,.10), transparent 28%),
+    radial-gradient(circle at 88% 0%, rgba(245,195,28,.12), transparent 26%),
+    var(--bg);
+  color: var(--text-body);
+  font-family: var(--font);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+#root { min-height: 100%; }
+.app {
+  padding: 18px 16px 28px;
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--text);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.header p { margin: 6px 0 0; font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+.card {
+  background: var(--bg-content);
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+.card.soft { border-width: 2px; box-shadow: var(--shadow-sm); }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.btn {
+  appearance: none;
+  border: 3px solid var(--border-strong);
+  background: #fffdf6;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, background .15s ease, box-shadow .08s ease;
+}
+.btn:hover { background: #fff8e8; border-color: var(--border-hover); }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.btn.primary {
+  background: var(--primary);
+  border-color: var(--primary-active);
+  color: #fff;
+}
+.btn.primary:hover { background: var(--primary-hover); }
+.btn.ghost { background: transparent; box-shadow: none; border-width: 2px; }
+.btn.danger {
+  background: #ffe8e8;
+  border-color: #e8a0a0;
+  color: var(--error-active);
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+.input, .textarea, .select {
+  width: 100%;
+  border: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: #fffdf8;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+}
+.input:focus, .textarea:focus, .select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(25,200,185,.18);
+}
+.textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
+.meta { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--primary-bg); color: var(--primary-active);
+  font-size: 12px; font-weight: 800; border: 2px solid rgba(17,168,155,.25);
+}
+.tag.warn { background: #fff4cc; color: #a07a00; border-color: rgba(219,169,14,.35); }
+.tag.ok { background: #e8f7d8; color: #4d8a12; border-color: rgba(95,158,30,.3); }
+.tag.muted { background: #efe8d4; color: var(--text-secondary); border-color: var(--border); }
+.seg {
+  display: flex; gap: 6px; background: #efe8d4;
+  padding: 5px; border-radius: 999px; border: 2px solid var(--border);
+}
+.seg button {
+  flex: 1; border: 0; background: transparent; border-radius: 999px;
+  padding: 8px 10px; font: inherit; font-weight: 800; color: var(--text-secondary); cursor: pointer;
+}
+.seg button.on {
+  background: #fffdf8; color: var(--text); box-shadow: var(--shadow-sm);
+  border: 2px solid var(--border);
+}
+.seg button:disabled { opacity: .5; cursor: not-allowed; }
+.list { display: flex; flex-direction: column; gap: 8px; max-height: 42vh; overflow: auto; }
+.item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 11px 12px; border: 2px solid var(--border);
+  border-radius: 14px; background: #fffdf8;
+}
+.item.done .item-title { text-decoration: line-through; color: var(--text-muted); }
+.item-title { font-weight: 800; color: var(--text); word-break: break-word; }
+.item-note { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+.check {
+  width: 24px; height: 24px; border-radius: 9px; border: 3px solid var(--border);
+  background: #fff; flex-shrink: 0; margin-top: 1px; cursor: pointer;
+  display: grid; place-items: center; font-size: 12px; font-weight: 900; color: #fff;
+}
+.check.on { background: var(--success); border-color: var(--success-active); }
+.timer-face {
+  font-size: 56px; font-weight: 900; color: var(--text); text-align: center;
+  letter-spacing: 0.04em; font-variant-numeric: tabular-nums;
+}
+.progress {
+  height: 12px; border-radius: 999px; background: #efe8d4;
+  overflow: hidden; border: 2px solid var(--border);
+}
+.progress > i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--success));
+  width: 0%;
+}
+.wheel-wrap { position: relative; width: min(280px, 80vw); margin: 4px auto; aspect-ratio: 1; }
+.wheel {
+  width: 100%; height: 100%; border-radius: 50%;
+  border: 5px solid var(--border-strong); box-shadow: var(--shadow);
+  transition: transform 4s cubic-bezier(.15,.8,.1,1);
+}
+.wheel-pin {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 11px solid transparent; border-right: 11px solid transparent;
+  border-top: 20px solid var(--error); z-index: 2;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.08));
+}
+.wheel-center {
+  position: absolute; inset: 36%; border-radius: 50%;
+  background: #fffdf8; border: 3px solid var(--border-strong);
+  display: grid; place-items: center; font-weight: 900; color: var(--text);
+  font-size: 13px; z-index: 1;
+}
+.result {
+  text-align: center; font-size: 20px; font-weight: 900; color: var(--text); min-height: 28px;
+}
+.empty { text-align: center; color: var(--text-secondary); padding: 18px 8px; font-size: 13px; }
+.field-label {
+  font-size: 12px; font-weight: 800; color: var(--text); letter-spacing: 0.02em;
+}
+.settings-grid {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center;
+}
+.settings-grid .input { width: 88px; text-align: center; }
+.banner {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  padding: 8px 10px; border-radius: 14px;
+  background: rgba(255,255,255,.55); border: 2px dashed var(--border);
+}
+.section-title {
+  margin: 0; font-size: 14px; font-weight: 900; color: var(--text); letter-spacing: 0.02em;
+}
+
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react-classic">
+
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+async function waitCallai(timeoutMs) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < (timeoutMs || 2500)) {
+    if (window.callai && (window.callai.ready || window.callai.storage || window.callai.invoke)) {
+      return window.callai;
+    }
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  const mem = {};
+  return {
+    ready: false,
+    launchParams: {},
+    getLaunchParams: function () { return this.launchParams || {}; },
+    storage: {
+      async get(k) {
+        if (k in mem) return mem[k];
+        try {
+          const raw = localStorage.getItem("callai-preview:" + k);
+          return raw == null ? null : JSON.parse(raw);
+        } catch (e) { return null; }
+      },
+      async set(k, v) {
+        mem[k] = v;
+        try { localStorage.setItem("callai-preview:" + k, JSON.stringify(v)); } catch (e) {}
+      },
+    },
+    timer: {
+      async now() {
+        const d = new Date();
+        const iso = d.toISOString();
+        return { iso, now: iso, ts: d.getTime() };
+      },
+    },
+    notification: {
+      async show(a, b) {
+        const title = typeof a === "string" ? a : (a && a.title) || "callai";
+        const body = typeof a === "string" ? (b || "") : (a && a.body) || "";
+        console.info("[notify]", title, body);
+      },
+    },
+  };
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+}
+
+function asBool(v, fallback) {
+  if (v === true || v === "1" || v === "true" || v === "yes") return true;
+  if (v === false || v === "0" || v === "false" || v === "no") return false;
+  return fallback;
+}
+
+/**
+ * Plugin settings model (single namespace):
+ *   effective = defaults + saved settings + same-name overrides from alarm
+ *
+ * Overrides come from host launchParams (built from alarm.plugin.params +
+ * argv key=value + ENV CALLAI_PLUGIN_PARAM_* / CALLAI_PLUGIN_MODE / CALLAI_PLUGIN_PARAMS).
+ * Overrides are one-shot for this open — they do not write back to storage
+ * unless the plugin UI explicitly saves.
+ */
+function usePluginSettings(api, storageKey, defaults) {
+  const [saved, setSaved] = useState(defaults);
+  const [override, setOverride] = useState({});
+  const [ready, setReady] = useState(false);
+
+  const applyOverride = useCallback((p) => {
+    setOverride(p && typeof p === "object" && !Array.isArray(p) ? p : {});
+  }, []);
+
+  useEffect(() => {
+    if (!api) return;
+    let alive = true;
+    (async () => {
+      const raw = (await api.storage.get(storageKey)) || {};
+      if (!alive) return;
+      setSaved(Object.assign({}, defaults, raw));
+      const lp = (api.getLaunchParams && api.getLaunchParams()) || api.launchParams || {};
+      applyOverride(lp);
+      setReady(true);
+    })();
+    function onLaunch(ev) { applyOverride((ev && ev.detail) || {}); }
+    window.addEventListener("callai:launch-params", onLaunch);
+    return () => {
+      alive = false;
+      window.removeEventListener("callai:launch-params", onLaunch);
+    };
+  }, [api, storageKey, applyOverride]);
+
+  const effective = useMemo(
+    () => Object.assign({}, defaults, saved, override),
+    [defaults, saved, override],
+  );
+
+  const saveSettings = useCallback(async (next) => {
+    const merged = Object.assign({}, defaults, next);
+    setSaved(merged);
+    if (api) await api.storage.set(storageKey, merged);
+  }, [api, storageKey, defaults]);
+
+  const patchSettings = useCallback(async (partial) => {
+    await saveSettings(Object.assign({}, saved, partial));
+  }, [saved, saveSettings]);
+
+  return {
+    saved,       // persisted plugin settings
+    override,    // same-key overrides from alarm (ENV/params) for this open
+    effective,   // what the UI should use
+    ready,
+    saveSettings,
+    patchSettings,
+  };
+}
+
+function OverrideBanner({ override, keys }) {
+  const entries = Object.entries(override || {}).filter(([k, v]) => {
+    if (v == null || v === "") return false;
+    if (keys && keys.length && !keys.includes(k)) return false;
+    return true;
+  });
+  if (!entries.length) return null;
+  return (
+    <span className="tag warn">
+      闹钟覆盖 {entries.map(([k, v]) => k + "=" + String(v)).join(" · ")}
+    </span>
+  );
+}
+
+
+const SETTINGS_KEY = "pomodoro:settings";
+const DEFAULTS = {
+  mode: "focus", // focus | short | long
+  focusMin: 25, shortBreakMin: 5, longBreakMin: 15, cycles: 4,
+  autoStartBreak: true, soundNotify: true,
+};
+
+function fmt(sec) {
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+}
+
+function App() {
+  const [api, setApi] = useState(null);
+  const s = usePluginSettings(api, SETTINGS_KEY, DEFAULTS);
+  const cfg = s.effective;
+  const [mode, setMode] = useState("focus");
+  const [left, setLeft] = useState(DEFAULTS.focusMin * 60);
+  const [running, setRunning] = useState(false);
+  const [doneFocus, setDoneFocus] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const tickRef = useRef(null);
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+
+  // Seed session mode from effective settings (includes alarm same-key override).
+  useEffect(() => {
+    if (!s.ready) return;
+    const m = ["focus", "short", "long"].includes(String(cfg.mode)) ? String(cfg.mode) : "focus";
+    setMode(m);
+  }, [s.ready, cfg.mode]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const c = await waitCallai();
+      if (alive) setApi(c);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const total = useMemo(() => {
+    if (mode === "focus") return (cfg.focusMin || 25) * 60;
+    if (mode === "long") return (cfg.longBreakMin || 15) * 60;
+    return (cfg.shortBreakMin || 5) * 60;
+  }, [mode, cfg.focusMin, cfg.longBreakMin, cfg.shortBreakMin]);
+
+  useEffect(() => {
+    if (!s.ready) return;
+    setLeft(total);
+    setRunning(false);
+  }, [s.ready, mode, total]);
+
+  useEffect(() => {
+    if (!running) {
+      if (tickRef.current) clearInterval(tickRef.current);
+      return;
+    }
+    tickRef.current = setInterval(() => {
+      setLeft((v) => {
+        if (v <= 1) {
+          clearInterval(tickRef.current);
+          setRunning(false);
+          onComplete();
+          return 0;
+        }
+        return v - 1;
+      });
+    }, 1000);
+    return () => clearInterval(tickRef.current);
+  }, [running]);
+
+  async function onComplete() {
+    const m = modeRef.current;
+    if (asBool(cfg.soundNotify, true) && api) {
+      await api.notification.show({
+        title: m === "focus" ? "专注结束" : "休息结束",
+        body: m === "focus" ? "起来走动一下吧" : "准备好继续专注了吗？",
+      });
+    }
+    if (m === "focus") {
+      const n = doneFocus + 1;
+      setDoneFocus(n);
+      const next = n % (cfg.cycles || 4) === 0 ? "long" : "short";
+      // session switch only — do not write settings unless user asks
+      setMode(next);
+      if (asBool(cfg.autoStartBreak, true)) setRunning(true);
+    } else {
+      setMode("focus");
+    }
+  }
+
+  const pct = total > 0 ? Math.round(((total - left) / total) * 100) : 0;
+
+  return (
+    <div className="app">
+      <div className="header">
+        <h1>番茄时钟</h1>
+        <p>设置即参数；闹钟可用 mode=short 等同名覆盖</p>
+      </div>
+      <div className="banner">
+        <span className="tag">专注完成 {doneFocus}</span>
+        <OverrideBanner override={s.override} keys={["mode","focusMin","shortBreakMin","longBreakMin","autoStartBreak"]} />
+        <button className="btn ghost" onClick={() => setShowSettings((v) => !v)}>
+          {showSettings ? "收起设置" : "设置"}
+        </button>
+      </div>
+
+      <div className="seg">
+        {[["focus","专注"],["short","短休"],["long","长休"]].map(([k,l]) => (
+          <button key={k} className={mode===k?"on":""}
+            onClick={() => { setMode(k); s.patchSettings({ mode: k }); }}>{l}</button>
+        ))}
+      </div>
+
+      <div className="card stack">
+        <div className="timer-face">{fmt(left)}</div>
+        <div className="progress"><i style={{ width: pct + "%" }} /></div>
+        <div className="row">
+          <button className="btn primary grow" onClick={() => setRunning((r) => !r)}>
+            {running ? "暂停" : left === 0 ? "再来" : "开始"}
+          </button>
+          <button className="btn" onClick={() => { setRunning(false); setLeft(total); }}>重置</button>
+        </div>
+      </div>
+
+      {showSettings ? (
+        <div className="card soft stack">
+          <h3 className="section-title">插件设置</h3>
+          <p className="meta">这些 key 可被闹钟 ENV 同名覆盖，例如 CALLAI_PLUGIN_PARAM_focusMin=50</p>
+          <div className="settings-grid">
+            <span className="field-label">focusMin</span>
+            <input className="input" type="number" min="1" max="120" value={s.saved.focusMin}
+              onChange={(e) => s.patchSettings({ focusMin: Math.max(1, +e.target.value || 1) })} />
+            <span className="field-label">shortBreakMin</span>
+            <input className="input" type="number" min="1" max="60" value={s.saved.shortBreakMin}
+              onChange={(e) => s.patchSettings({ shortBreakMin: Math.max(1, +e.target.value || 1) })} />
+            <span className="field-label">longBreakMin</span>
+            <input className="input" type="number" min="1" max="60" value={s.saved.longBreakMin}
+              onChange={(e) => s.patchSettings({ longBreakMin: Math.max(1, +e.target.value || 1) })} />
+            <span className="field-label">cycles</span>
+            <input className="input" type="number" min="1" max="12" value={s.saved.cycles}
+              onChange={(e) => s.patchSettings({ cycles: Math.max(1, +e.target.value || 1) })} />
+            <span className="field-label">autoStartBreak</span>
+            <button className={"btn" + (s.saved.autoStartBreak ? " primary" : "")}
+              onClick={() => s.patchSettings({ autoStartBreak: !s.saved.autoStartBreak })}>
+              {s.saved.autoStartBreak ? "开" : "关"}
+            </button>
+            <span className="field-label">soundNotify</span>
+            <button className={"btn" + (s.saved.soundNotify ? " primary" : "")}
+              onClick={() => s.patchSettings({ soundNotify: !s.saved.soundNotify })}>
+              {s.saved.soundNotify ? "开" : "关"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+  </script>
+</body>
+</html>

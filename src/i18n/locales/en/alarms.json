@@ -107,8 +107,10 @@
   "aiCreate": "AI create",
   "createSuccess": "Alarm created",
   "pluginRun": "Plugin run",
-  "pluginRunHint": "Host only schedules fire time and popup policy; configure business params inside the plugin UI.",
+  "pluginRunHint": "Schedule, popup, and same-key setting overrides (ENV can force this open).",
   "pluginPopup": "Open plugin window",
   "pluginSuppressFs": "No popup while fullscreen (notify only)",
-  "pluginParams": "Plugin params (one key=value per line)"
+  "pluginParams": "Param overrides (same keys as plugin settings)",
+  "pluginParamsHint": "Same keys as in-plugin settings. e.g. meal-spin mode=drink. ENV: CALLAI_PLUGIN_MODE / CALLAI_PLUGIN_PARAM_mode / CALLAI_PLUGIN_PARAMS force this open.",
+  "addParam": "+ param"
 }

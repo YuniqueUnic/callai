@@ -1,110 +1,248 @@
 # callai Plugin Runtime SDK (authoritative)
 
-Plugins run as sandboxed HTML. Talk to the host **only** through `window.callai`.
-Prefer the high-level helpers. Raw `invoke` is still supported with the contracts below.
+You are writing a **sandboxed plugin** for callai. The host injects chrome and a control panel.
+Your job is a **small domain UI** — not a second settings app.
 
-## Always available
+Talk to the host **only** through `window.callai`.
+
+---
+
+## 0. Mental model (read first — non-negotiable)
+
+### 0.1 One persistence layer
+
+- **`callai.storage` is the only durable store** for plugin configuration and user data.
+- **settings ≡ params** — different English words, same keys, same storage.
+- **launch / alarm / ENV overrides** are **not** a second product system.
+  They are **same-key overlays for this open only** (they do **not** write storage unless the user explicitly saves in your UI).
+
+```text
+effective(key) = defaults < storage value < same-key override (this open)
+```
+
+Override sources (later wins), merged into `callai.getLaunchParams()`:
+
+1. Host panel params (optional convenience editor)
+2. `alarm.plugin.params`
+3. argv `key=value` after plugin id
+4. ENV: `CALLAI_PLUGIN_PARAMS` JSON, `CALLAI_PLUGIN_PARAM_<key>`, `CALLAI_PLUGIN_MODE` / `CALLAI_PLUGIN_PAGE`
+
+### 0.2 Host already owns common chrome
+
+Every plugin document is composed by the host with:
+
+- Bridge SDK (`window.callai`)
+- **Draggable edge-snapping FAB** → modal: **参数 / 主题 / 通知**
+- Dark theme via CSS `invert(1) hue-rotate(180deg)` (+ media re-invert)
+- Notification master gate
+
+**Therefore your `ui.html` must NOT reimplement:**
+
+| Do **not** build | Host already provides |
+| --- | --- |
+| Global light/dark theme switch | Host modal → 主题 |
+| Global “notifications on/off” | Host modal → 通知 |
+| A second “params center” for chrome | Host modal → 参数 |
+| Floating settings gear of your own for those three | Host FAB |
+
+**Your `ui.html` SHOULD implement:**
+
+- The **domain main screen** (list, timer, wheel, editor, …)
+- Business data CRUD on **clear storage keys**
+- Optional **in-place** domain controls (e.g. filter chips) that read/write the **same keys** as overrides
+
+### 0.3 Size & reliability
+
+- Prefer a **complete one-screen** page over a huge multi-page shell.
+- Dual-part generation (manifest JSON + html fence) when producing a PluginDraft.
+- Babel: `data-presets="react-classic"` only (no TypeScript, no `import`).
+
+---
+
+## 1. Always available
+
 ```js
 window.callai.pluginId          // string
 window.callai.ready             // true when bridge injected
 window.callai.ping()            // -> { pong: true, plugin_id }
-window.callai.getConsole()      // recent console capture (host Fix-with-AI)
+window.callai.getConsole()      // recent console capture (Fix-with-AI / MCP)
 ```
 
-## Preferred high-level API
+Host helpers (optional):
 
-### Storage (needs permission `"storage"`)
 ```js
-// get: returns parsed JSON when value is JSON text, else string/null
-const data = await window.callai.storage.get("my-key");
-// set: objects/arrays are JSON.stringified automatically
-await window.callai.storage.set("my-key", { hello: 1 });
-await window.callai.storage.delete("my-key");
+window.callai.openHostSettings()   // open injected modal
+window.callai.getHostPrefs()       // { theme, notifications }
+window.callai.getHostParams()      // host-panel param layer
+window.callai.getLaunchParams()    // effective overrides for this open
+window.callai.getAlarmLaunchParams?.() // raw alarm layer if present
+```
+
+Listen when an already-open window is re-triggered:
+
+```js
+window.addEventListener("callai:launch-params", (ev) => {
+  applyEffective(ev.detail || {});
+});
+```
+
+---
+
+## 2. Preferred high-level API
+
+### Storage (permission `"storage"`)
+
+```js
+const data = await window.callai.storage.get("settings"); // parsed JSON when possible
+await window.callai.storage.set("settings", { mode: "drink", focusMin: 25 });
+await window.callai.storage.delete("settings");
 const keys = await window.callai.storage.list("prefix-"); // string[]
 ```
 
-### Timer (needs `"timer"`)
+**Reserved host keys** (do not use for business data): prefixes `__callai_host__/`.
+
+**Convention:** put business params in one object, e.g. key `"settings"` or domain keys like `"items"`.
+Param **names inside** that object (`mode`, `filter`, `kind`, …) are what alarms override by same name when flattened into launch params / ENV.
+
+### Timer (permission `"timer"`)
+
 ```js
 const { iso, ts, now } = await window.callai.timer.now();
-// iso / now = RFC3339 string, ts = epoch millis
 ```
 
-### Notification (needs `"notification"`)
+### Notification (permission `"notification"`)
+
 ```js
-await window.callai.notification.show({
-  title: "小岛提醒",
-  body: "写一点 TODO 吧～",
-});
-// or: await window.callai.notification.show("标题", "正文");
+await window.callai.notification.show({ title: "小岛提醒", body: "…" });
+// Host may suppress if user turned notifications off in the host modal.
 ```
 
-### History (needs `"history"`)
+### History (permission `"history"`)
+
 ```js
 const rows = await window.callai.history.list(50);
 ```
 
-## Raw invoke contracts (if you use invoke only)
+---
+
+## 3. Recommended effective-settings pattern
+
+```js
+const DEFAULTS = { mode: "food", spinSeconds: 4 };
+
+async function loadEffective() {
+  const saved = (await callai.storage.get("settings")) || {};
+  const overlay = (callai.getLaunchParams && callai.getLaunchParams()) || {};
+  return Object.assign({}, DEFAULTS, saved, overlay);
+}
+
+async function saveSettings(next) {
+  // writes storage only — does not clear alarm overlays for this open
+  await callai.storage.set("settings", next);
+}
+```
+
+Use **one key name** everywhere:
+
+| Use | Example |
+| --- | --- |
+| storage | `{ mode: "food" }` |
+| alarm params | `{ "mode": "drink" }` |
+| ENV | `CALLAI_PLUGIN_PARAM_mode=drink` or `CALLAI_PLUGIN_MODE=drink` |
+
+---
+
+## 4. Raw invoke (only if needed)
 
 ```js
 await window.callai.invoke(method, args)
 ```
 
-| method | args | result (after host normalize) |
-|---|---|---|
-| `storage.get` | `{ key }` | **value itself** (JSON-parsed when possible), not `{value}` |
-| `storage.set` | `{ key, value }` | `{ ok: true }` — `value` string or object |
+| method | args | high-level result |
+| --- | --- | --- |
+| `storage.get` | `{ key }` | **value itself** (JSON-parsed when possible) |
+| `storage.set` | `{ key, value }` | `{ ok: true }` |
 | `storage.delete` | `{ key }` | `{ deleted: bool }` |
-| `storage.list` | `{ prefix? }` | `string[]` keys |
+| `storage.list` | `{ prefix? }` | `string[]` |
 | `timer.now` | `{}` | `{ iso, ts, now }` |
-| `notification.show` | `{ title, body }` | `{ queued: true, ... }` (+ OS toast) |
-| `history.list` | `{ limit? }` | history rows |
-| `ping` | `{}` | `{ pong: true, plugin_id }` |
+| `notification.show` | `{ title, body }` | `{ queued: true, … }` |
+| `history.list` | `{ limit? }` | rows |
+| `ping` | `{}` | `{ pong, plugin_id }` |
 
-### ❌ Wrong patterns (will look like “storage broken”)
+### Wrong patterns
+
 ```js
-// BAD: treating host envelope as your document
-const data = await callai.invoke("storage.get", { key });
-setState(data); // if you forget normalize, data might be { value: "..." }
-
-// GOOD:
-const data = await callai.storage.get(key);
-setState(data ?? {});
+// BAD
+localStorage.setItem(...)
+await callai.invoke("storage.get", { key }) // then treating envelope as document without normalize
+window.callai.save(...)
+// building your own theme engine / notify kill-switch / second params database
 ```
 
 ```js
-// BAD: inventing APIs
-localStorage.setItem(...)          // wiped / isolated; not shared with host
-fetch("/api/...")                  // no network unless permission + future host
-window.callai.save(...)            // does not exist
+// GOOD
+const v = await callai.storage.get(key);
+setState(v ?? defaults);
 ```
 
-## Persistence checklist
-1. Manifest includes `"storage"` when saving user data.
-2. Load on mount: `const v = await callai.storage.get(KEY); setState(v ?? initial);`
-3. Save on every mutation: `await callai.storage.set(KEY, state);`
-4. Keys are plain strings scoped **per plugin id** (isolated SQLite).
-5. Store JSON-serializable data only.
+---
 
-## UI constraints
-- Babel script: `data-presets="react-classic"` (host rewrites unsafe presets).
-- UMD React 18 + classic JSX only (no TypeScript, no `import`).
-- Keep one screen; core CRUD first.
+## 5. UI constraints
 
-## Debugging for Fix-with-AI
-Host captures `console.*` and runtime errors. Prefer:
+- React 18 UMD + Babel **classic** JSX: `data-presets="react-classic"`.
+- No TypeScript, no ESM `import` in the page.
+- Visual style: follow `animal_island_style` / island tokens when generating UI.
+- **One screen first** — domain CRUD visible without a settings maze.
+- Do not depend on host removing your work: assume FAB exists; leave bottom/right margin if needed (~64px) so content is not covered.
+
+---
+
+## 6. Host vs plugin responsibilities
+
+| Host / alarm editor | Plugin `ui.html` |
+| --- | --- |
+| Schedule, enable, popup, suppress-when-fullscreen | Domain UX and business data |
+| Inject bridge + FAB + theme + notify gate | Optional domain-side controls for the **same** keys |
+| Pass same-key overrides on open | `getLaunchParams()` + storage |
+
+Alarm editor does **not** collect long business forms. Put those in the plugin (or use host param editor for a few keys).
+
+---
+
+## 7. Package / marketplace hint (zip)
+
+Installable packages are zips:
+
+```text
+manifest.json
+ui.html                 # or manifest.ui
+callai-package.json     # optional meta
+data.db                 # optional — only when exported “with data”
+```
+
+When **authoring** for share/marketplace, assume **bare** package (no `data.db`).  
+Do not embed secrets in ui.html.
+
+---
+
+## 8. Debugging / Fix-with-AI
+
 ```js
-console.info("[todo] saved", count);
-console.error("[todo] persist failed", err);
+console.info("[meal-spin] mode", mode);
+console.error("[meal-spin] persist failed", err);
 ```
 
-## Host vs plugin responsibilities
-- **Host / alarm editor**: schedule time, enable, popup window yes/no, suppress when fullscreen.
-- **Plugin UI**: all business settings, user data forms, CRUD, and param controls.
-- Do **not** expect the alarm editor to collect plugin business params.
-- Persist settings with `callai.storage.set("settings", …)` inside the plugin.
+Host captures `console.*` and errors for Fix-with-AI / MCP `plugin_console`.
 
-## Fix / debug contract (for external agents)
-- Host may capture `console.*` into a ring buffer for Fix-with-AI / MCP `plugin_console`.
-- Prefer throwing clear errors rather than silent failures.
-- After storage writes, re-read on load so refresh does not wipe state.
-- Do not call Tauri plugins directly (`@tauri-apps/*`); only `window.callai`.
+---
+
+## 9. Agent checklist before finishing ui.html
+
+1. [ ] Manifest permissions match used APIs (`storage` if you persist).
+2. [ ] Business keys are stable strings; overrides use the **same** names.
+3. [ ] Load: `storage.get` → merge `getLaunchParams()` → render.
+4. [ ] Save: only `storage.set` on user intent (not on every overlay).
+5. [ ] No localStorage; no invented `callai.*` methods.
+6. [ ] No full theme/notify/settings chrome (host FAB).
+7. [ ] Page is complete and small enough to not truncate.
+8. [ ] `data-presets="react-classic"` if using Babel JSX.

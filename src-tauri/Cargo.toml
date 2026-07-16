@@ -87,6 +87,7 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls", "j
 tokio-util = { version = "0.7", default-features = false, features = ["rt"] }
 axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "tower-log"] }
 tower-http = { version = "0.7", default-features = false, features = ["cors"] }
+zip = { version = "8.6", default-features = false, features = ["deflate-flate2"] }
 
 [dev-dependencies]
 tempfile = "3"

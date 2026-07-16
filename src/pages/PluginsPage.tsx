@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, Drawer, Modal, Table, Tag } from "animal-island-ui";
+import { Card, Drawer, Modal, Table } from "animal-island-ui";
 import { ElementImage } from "../ui/ElementImage";
 import type { PluginHistoryEntry, PluginSummary } from "../domain/types";
 import { client } from "../infra/client";
@@ -11,15 +11,19 @@ import { IconButton } from "../ui/IconButton";
 import {
   IconBack,
   IconChat,
-  IconLogs,
-  IconOpen,
-  IconTrash,
+  IconRestore,
+  IconUpload,
 } from "../ui/icons";
 import { PluginLogsPanel } from "./PluginLogsPanel";
+import { PluginExportModal } from "./plugins/PluginExportModal";
+import { PluginImportConflictModal } from "./plugins/PluginImportConflictModal";
+import { usePluginZip } from "./plugins/usePluginZip";
+import type { BuiltinCatalogItem } from "./plugins/types";
+import { PluginListCard } from "./plugins/PluginListCard";
+import { PluginRegistryPanel } from "./plugins/PluginRegistryPanel";
 
 interface Props {
   onOpenAi: () => void;
-  /** Open AI assistant with a prefilled fix brief for a plugin. */
   onFixPlugin?: (brief: {
     pluginId: string;
     pluginName: string;
@@ -27,29 +31,36 @@ interface Props {
     history: PluginHistoryEntry[];
     consoleLines: { level: string; args: string[]; t: number }[];
   }) => void;
-  /** When keep-alive tab becomes active, parent sets true so we re-fetch. */
   tabActive?: boolean;
 }
 
-
-export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) {
+export function PluginsPage({
+  onOpenAi,
+  onFixPlugin,
+  tabActive = true,
+}: Props) {
   const { t } = useTranslation(["plugins", "common"]);
   const [plugins, setPlugins] = useState<PluginSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<PluginSummary | null>(null);
   const [history, setHistory] = useState<PluginHistoryEntry[]>([]);
   const [uiHtml, setUiHtml] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<PluginSummary | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<PluginSummary | null>(
+    null,
+  );
   const [logTarget, setLogTarget] = useState<PluginSummary | null>(null);
   const [consoleLines, setConsoleLines] = useState<
     { level: string; args: string[]; t: number }[]
   >([]);
-  /** Logs drawer history (isolated from in-page runtime table). */
   const [logHistory, setLogHistory] = useState<PluginHistoryEntry[]>([]);
   const [logLoading, setLogLoading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [catalog, setCatalog] = useState<BuiltinCatalogItem[]>([]);
+  const [pendingOpenId, setPendingOpenId] = useState<string | null>(null);
+  const [pluginView, setPluginView] = useState<"installed" | "registry">(
+    "installed",
+  );
 
-
-  // Same rounded-window chrome fix as main logs / AI detail drawers.
   useEffect(() => {
     const open = logTarget != null;
     document.body.classList.toggle("callai-drawer-open", open);
@@ -64,6 +75,13 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
     setLoading(true);
     try {
       setPlugins(await client.listPlugins());
+      if (typeof client.listBuiltinCatalog === "function") {
+        try {
+          setCatalog(await client.listBuiltinCatalog());
+        } catch {
+          /* optional */
+        }
+      }
     } catch (e) {
       toast.error({
         message: String((e as { message?: string })?.message ?? e),
@@ -73,31 +91,33 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
     }
   }, []);
 
-
-  const [pendingOpenId, setPendingOpenId] = useState<string | null>(null);
+  const zip = usePluginZip({
+    onChanged: refresh,
+    t: t as (k: string, o?: Record<string, unknown>) => string,
+    toastSuccess: (o) => toast.success(o),
+    toastError: (o) => toast.error(o),
+    playConfirm: () => playSound("confirm"),
+  });
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  // Keep-alive tab: re-fetch when this pane becomes active again.
   useEffect(() => {
     if (tabActive) void refresh();
   }, [tabActive, refresh]);
 
   useEffect(() => {
     function onPluginsChanged(ev: Event) {
-      const detail = (ev as CustomEvent<{ id?: string; open?: boolean }>).detail;
+      const detail = (ev as CustomEvent<{ id?: string; open?: boolean }>)
+        .detail;
       void refresh();
-            if (detail?.id && detail.open !== false) {
-        setPendingOpenId(detail.id);
-      }
+      if (detail?.id && detail.open !== false) setPendingOpenId(detail.id);
     }
     window.addEventListener("callai:plugins-changed", onPluginsChanged);
     return () =>
       window.removeEventListener("callai:plugins-changed", onPluginsChanged);
   }, [refresh]);
-
 
   useEffect(() => {
     function onMessage(ev: MessageEvent) {
@@ -108,7 +128,8 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
         method?: string;
         args?: unknown;
       };
-      if (!d?.__callai_plugin_invoke || !d.reqId || !d.pluginId || !d.method) return;
+      if (!d?.__callai_plugin_invoke || !d.reqId || !d.pluginId || !d.method)
+        return;
       void client
         .pluginInvoke(d.pluginId, d.method, d.args ?? {})
         .then((value) => {
@@ -133,15 +154,14 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
-
   async function showPluginLogs(p: PluginSummary) {
     setLogTarget(p);
     setLogLoading(true);
     try {
       const [hist, cons] = await Promise.all([
-        client.pluginListHistory(p.id, 80),
+        client.pluginListHistory(p.id, 100),
         typeof client.pluginGetConsole === "function"
-          ? client.pluginGetConsole(p.id, 200)
+          ? client.pluginGetConsole(p.id, 100)
           : Promise.resolve([]),
       ]);
       setLogHistory(hist);
@@ -166,9 +186,9 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
         typeof client.pluginGetSource === "function"
           ? client.pluginGetSource(p.id)
           : client.pluginUiHtml(p.id),
-        client.pluginListHistory(p.id, 40),
+        client.pluginListHistory(p.id, 100),
         typeof client.pluginGetConsole === "function"
-          ? client.pluginGetConsole(p.id, 200)
+          ? client.pluginGetConsole(p.id, 100)
           : Promise.resolve([]),
       ]);
       playSound("confirm");
@@ -187,12 +207,10 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
   }
 
   async function openPlugin(p: PluginSummary) {
-        try {
-      // Prefer independent OS window (generic HTML host). Fall back to in-page iframe.
+    try {
       if (isTauri() && typeof client.openPluginWindow === "function") {
         await client.openPluginWindow(p.id);
         playSound("soft");
-        // still refresh history meta in list
         try {
           await client.pluginMarkRun(p.id);
           await refresh();
@@ -203,7 +221,7 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
       }
       setActive(p);
       const [hist, html] = await Promise.all([
-        client.pluginListHistory(p.id, 50),
+        client.pluginListHistory(p.id, 100),
         client.pluginUiHtml(p.id),
       ]);
       setHistory(hist);
@@ -256,6 +274,42 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
         </div>
         <div className="header-actions plugins-hero-actions">
           <IconButton
+            label={t("plugins:importZip", { defaultValue: "安装 zip" })}
+            icon={<IconUpload size={18} />}
+            tooltipPlacement="bottom"
+            sfx="soft"
+            disabled={zip.importing}
+            onClick={() => void zip.pickAndImport()}
+          />
+          <IconButton
+            label={t("plugins:upgradeBuiltins", { defaultValue: "更新内置" })}
+            icon={<IconRestore size={18} />}
+            tooltipPlacement="bottom"
+            sfx="soft"
+            onClick={() => {
+              void (async () => {
+                try {
+                  if (typeof client.upgradeBuiltinPlugins !== "function")
+                    return;
+                  const up = await client.upgradeBuiltinPlugins();
+                  await refresh();
+                  toast.success({
+                    message: t("plugins:upgraded", {
+                      defaultValue: "已更新 {{n}} 个内置插件",
+                      n: up.length,
+                    }),
+                  });
+                } catch (e) {
+                  toast.error({
+                    message: String(
+                      (e as { message?: string })?.message ?? e,
+                    ),
+                  });
+                }
+              })();
+            }}
+          />
+          <IconButton
             label={t("plugins:createWithAi")}
             icon={<IconChat size={18} />}
             variant="primary"
@@ -266,141 +320,182 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
         </div>
       </header>
 
-      <div className="app-main plugins-main">
-            {loading ? (
-              <p className="meta">{t("common:loading")}</p>
-            ) : plugins.length === 0 ? (
-              <Card color="default" className="form-panel empty-card">
-                <ElementImage id="sprout-fresh" size={88} alt="" motion="breathe" />
-                <p>{t("plugins:empty")}</p>
-                <div className="row-actions" style={{ justifyContent: "center" }}>
-                  <IconButton
-                    label={t("plugins:createWithAi")}
-                    icon={<IconChat size={18} />}
-                    variant="primary"
-                    sfx="confirm"
-                    onClick={onOpenAi}
-                  />
-                </div>
-              </Card>
-            ) : (
-              <div className="plugin-list">
-                {plugins.map((p) => (
-                  <Card key={p.id} className="plugin-card form-panel">
-                    <div className="plugin-card-head">
-                      <div className="plugin-card-meta">
-                        <strong className="plugin-name">{p.name}</strong>
-                        <div className="meta plugin-id-line">
-                          <span className="plugin-id">{p.id}</span>
-                          <span aria-hidden>·</span>
-                          <span>v{p.version}</span>
-                        </div>
-                      </div>
-                      <div className="icon-actions plugin-card-actions">
-                        <IconButton
-                          label={t("plugins:open")}
-                          icon={<IconOpen size={16} />}
-                          variant="primary"
-                          sfx="soft"
-                          onClick={() => void openPlugin(p)}
-                        />
-                        <IconButton
-                          label={t("plugins:logs", { defaultValue: "日志" })}
-                          icon={<IconLogs size={16} />}
-                          sfx="soft"
-                          onClick={() => void showPluginLogs(p)}
-                        />
-                        <IconButton
-                          label={t("plugins:fixWithAi", { defaultValue: "AI 修复" })}
-                          icon={<IconChat size={16} />}
-                          sfx="confirm"
-                          onClick={() => void fixPluginWithAi(p)}
-                        />
-                        <IconButton
-                          label={t("common:delete")}
-                          icon={<IconTrash size={16} />}
-                          variant="danger"
-                          sfx="soft"
-                          onClick={() => setConfirmDelete(p)}
-                        />
-                      </div>
-                    </div>
-                    <p className="plugin-desc">{p.description || t("plugins:noDesc")}</p>
-                    <div className="plugin-tags">
-                      {p.permissions.map((perm) => (
-                        <Tag key={perm} size="small">
-                          {perm}
-                        </Tag>
-                      ))}
-                    </div>
-                    <div className="meta plugin-stats">
-                      <span>
-                        {t("plugins:records")}: {p.record_count}
-                      </span>
-                      {p.last_run_at ? (
-                        <span>
-                          {t("plugins:lastRun")}:{" "}
-                          {new Date(p.last_run_at).toLocaleString()}
-                        </span>
-                      ) : null}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+      <div
+        className={`app-main plugins-main${dragOver ? " is-drag-over" : ""}`}
+        onDragEnter={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          if (e.currentTarget === e.target) setDragOver(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          const files = Array.from(e.dataTransfer.files || []);
+          const z = files.find(
+            (f) =>
+              f.name.toLowerCase().endsWith(".zip") ||
+              f.type.includes("zip"),
+          );
+          if (!z) {
+            toast.error({
+              message: t("plugins:dropZipOnly", {
+                defaultValue: "请拖入 .zip 插件包",
+              }),
+            });
+            return;
+          }
+          void z.arrayBuffer().then((buf) =>
+            zip.beginImportBytes(new Uint8Array(buf)),
+          );
+        }}
+      >
+        {dragOver ? (
+          <div className="plugins-drop-hint" aria-hidden>
+            {t("plugins:dropToInstall", {
+              defaultValue: "松开以安装插件包",
+            })}
+          </div>
+        ) : null}
 
-            {active && uiHtml ? (
-              <Card className="plugin-runtime form-panel">
-                <div className="plugin-card-head">
-                  <strong className="plugin-runtime-title">
-                    {active.name}
-                    <span className="meta"> — {t("plugins:runtime")}</span>
-                  </strong>
-                  <IconButton
-                    label={t("common:back")}
-                    icon={<IconBack size={16} />}
-                    sfx="cancel"
-                    onClick={() => {
-                      setActive(null);
-                      setUiHtml(null);
-                    }}
-                  />
-                </div>
-                <iframe
-                  className="plugin-frame"
-                  title={active.name}
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
-                  srcDoc={uiHtml}
+        <div className="plugin-view-seg" role="tablist">
+          <button
+            type="button"
+            className={pluginView === "installed" ? "on" : ""}
+            onClick={() => setPluginView("installed")}
+          >
+            {t("plugins:tabInstalled", { defaultValue: "已安装" })}
+          </button>
+          <button
+            type="button"
+            className={pluginView === "registry" ? "on" : ""}
+            onClick={() => setPluginView("registry")}
+          >
+            {t("plugins:tabRegistry", { defaultValue: "市场" })}
+          </button>
+        </div>
+
+        {pluginView === "registry" ? (
+          <PluginRegistryPanel
+            installedIds={new Set(plugins.map((p) => p.id))}
+            onInstalled={refresh}
+          />
+        ) : loading ? (
+          <p className="meta">{t("common:loading")}</p>
+        ) : plugins.length === 0 ? (
+          <Card color="default" className="form-panel empty-card">
+            <ElementImage
+              id="sprout-fresh"
+              size={88}
+              alt=""
+              motion="breathe"
+            />
+            <p>{t("plugins:empty")}</p>
+            <div className="row-actions" style={{ justifyContent: "center" }}>
+              <IconButton
+                label={t("plugins:createWithAi")}
+                icon={<IconChat size={18} />}
+                variant="primary"
+                sfx="confirm"
+                onClick={onOpenAi}
+              />
+            </div>
+          </Card>
+        ) : (
+          <div className="plugin-list">
+            {plugins.map((p) => (
+              <PluginListCard
+                key={p.id}
+                plugin={p}
+                catalog={catalog}
+                onOpen={() => void openPlugin(p)}
+                onLogs={() => void showPluginLogs(p)}
+                onFix={() => void fixPluginWithAi(p)}
+                onExport={() => zip.setExportTarget(p)}
+                onRestore={() => {
+                  void (async () => {
+                    try {
+                      await client.restoreBuiltinPlugin(p.id, false);
+                      await refresh();
+                      toast.success({
+                        message: t("plugins:restored", {
+                          defaultValue: "已从内置目录恢复 UI",
+                        }),
+                      });
+                    } catch (e) {
+                      toast.error({
+                        message: String(
+                          (e as { message?: string })?.message ?? e,
+                        ),
+                      });
+                    }
+                  })();
+                }}
+                onDelete={() => setConfirmDelete(p)}
+              />
+            ))}
+          </div>
+        )}
+
+        {active && uiHtml ? (
+          <Card className="plugin-runtime form-panel">
+            <div className="plugin-card-head">
+              <strong className="plugin-runtime-title">
+                {active.name}
+                <span className="meta"> — {t("plugins:runtime")}</span>
+              </strong>
+              <IconButton
+                label={t("common:back")}
+                icon={<IconBack size={16} />}
+                sfx="cancel"
+                onClick={() => {
+                  setActive(null);
+                  setUiHtml(null);
+                }}
+              />
+            </div>
+            <iframe
+              className="plugin-frame"
+              title={active.name}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+              srcDoc={uiHtml}
+            />
+            {history.length > 0 ? (
+              <div className="plugin-history-wrap">
+                <Table
+                  rowKey="id"
+                  columns={[
+                    { title: t("plugins:method"), dataIndex: "method" },
+                    {
+                      title: "OK",
+                      dataIndex: "ok",
+                      render: (v) => (v ? "Y" : "N"),
+                    },
+                    {
+                      title: t("plugins:when"),
+                      dataIndex: "created_at",
+                      render: (v) =>
+                        typeof v === "string"
+                          ? new Date(v).toLocaleString()
+                          : "",
+                    },
+                  ]}
+                  dataSource={
+                    history as unknown as Record<string, unknown>[]
+                  }
                 />
-                {history.length > 0 ? (
-                  <div className="plugin-history-wrap">
-                    <Table
-                      rowKey="id"
-                      columns={[
-                        { title: t("plugins:method"), dataIndex: "method" },
-                        {
-                          title: "OK",
-                          dataIndex: "ok",
-                          render: (v) => (v ? "Y" : "N"),
-                        },
-                        {
-                          title: t("plugins:when"),
-                          dataIndex: "created_at",
-                          render: (v) =>
-                            typeof v === "string"
-                              ? new Date(v).toLocaleString()
-                              : "",
-                        },
-                      ]}
-                      dataSource={history as unknown as Record<string, unknown>[]}
-                    />
-                  </div>
-                ) : null}
-              </Card>
+              </div>
             ) : null}
+          </Card>
+        ) : null}
       </div>
 
-      
       <Drawer
         open={logTarget != null}
         title={
@@ -410,7 +505,6 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
         }
         placement="right"
         width="min(420px, 92vw)"
-        /* Same as main logs drawer: avoid pushBackground square-corner bug. */
         pushBackground={false}
         onClose={() => setLogTarget(null)}
         className="logs-drawer plugin-logs-drawer"
@@ -433,7 +527,9 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
                   toast.success({ message: t("plugins:consoleCleared") });
                 } catch (e) {
                   toast.error({
-                    message: String((e as { message?: string })?.message ?? e),
+                    message: String(
+                      (e as { message?: string })?.message ?? e,
+                    ),
                   });
                 }
               })();
@@ -458,6 +554,19 @@ export function PluginsPage({ onOpenAi, onFixPlugin, tabActive = true }: Props) 
           </div>
         ) : null}
       </Modal>
+
+      <PluginExportModal
+        target={zip.exportTarget}
+        exporting={zip.exporting}
+        onClose={() => zip.setExportTarget(null)}
+        onExport={(d) => void zip.doExport(d)}
+      />
+      <PluginImportConflictModal
+        open={zip.conflictOpen}
+        pluginId={zip.conflictId}
+        onCancel={zip.cancelConflict}
+        onChoose={(mode) => void zip.importWithMode(mode)}
+      />
     </div>
   );
 }

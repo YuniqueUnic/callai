@@ -1,0 +1,13 @@
+{
+  "id": "work-report",
+  "name": "工作汇报",
+  "version": "0.4.0",
+  "description": "日/周/月报。设置 kind；闹钟 ENV kind=weekly 打开周报。",
+  "permissions": [
+    "storage",
+    "timer",
+    "notification",
+    "history"
+  ],
+  "ui": "ui.html"
+}

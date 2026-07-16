@@ -7,6 +7,11 @@ use super::{DomainError, DomainResult, ErrorCode};
 /// Max retained MCP/tool audit log entries (ring).
 pub const MCP_LOG_MAX: usize = 500;
 
+/// Per-plugin log caps (avoid unbounded disk / RAM growth).
+pub const PLUGIN_CONSOLE_MAX: usize = 100;
+pub const PLUGIN_ERROR_LOG_MAX: usize = 100;
+pub const PLUGIN_INVOKE_HISTORY_MAX: usize = 100;
+
 /// Plugin id: lowercase letters, digits, hyphen; 2..=64 chars.
 pub fn validate_plugin_id(id: &str) -> DomainResult<()> {
     let id = id.trim();
