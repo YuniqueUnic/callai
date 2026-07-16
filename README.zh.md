@@ -39,7 +39,7 @@
   <a href="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-0.3.0?logo=github" alt="version 0.2.1" /><!-- x-release-please-version -->
+  <img src="https://img.shields.io/badge/version-0.3.0?logo=github" alt="version 0.3.0" /><!-- x-release-please-version -->
   <img src="https://img.shields.io/badge/Tauri-2-ffc131?logo=tauri&logoColor=white" alt="Tauri 2" />
   <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust&logoColor=white" alt="Rust" />
   <img src="https://img.shields.io/badge/Bun-React-fbf0df?logo=bun&logoColor=black" alt="Bun React" />
@@ -97,13 +97,13 @@
 | --- | --- | --- |
 | Homebrew | `brew tap YuniqueUnic/homebrew-callai && brew install --cask callai-app` | `brew tap YuniqueUnic/homebrew-callai && brew install callai` |
 | Scoop | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai` | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai-cli` |
-| winget | 社区 PR（**每个 PR 只能一个应用**，GUI 单独一条）→ 通过后 `winget install YuniqueUnic.Callai` · 本地：`winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai/0.2.1` | CLI 需**另开 PR** → `winget install YuniqueUnic.Callai.CLI` · 本地：`--manifest .../Callai.CLI/0.2.1` |
+| winget | 社区 PR（**每个 PR 只能一个应用**，GUI 单独一条）→ 通过后 `winget install YuniqueUnic.Callai` · 本地：`winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai/0.3.0` | CLI 需**另开 PR** → `winget install YuniqueUnic.Callai.CLI` · 本地：`--manifest .../Callai.CLI/0.3.0` |
 
 完整矩阵、刷新脚本与上游提交说明见 **[packaging/README.md](./packaging/README.md)**。
 
 ```bash
 # 发版后刷新清单 hash/version
-./packaging/scripts/generate_from_release.sh v0.2.1
+./packaging/scripts/generate_from_release.sh v0.3.0
 just packaging-validate
 ```
 
@@ -230,14 +230,51 @@ curl -sf http://localhost:8080/health || osascript -e 'display notification "本
 
 | | 功能 | 说明 |
 | :---: | --- | --- |
-| <img src="docs/assets/elements/create-alarm.png" height="48" alt="新建" /> | **闹钟 = 任务** | 新建闹钟时一并配置 binary、参数与调度 |
-| <img src="docs/assets/elements/set-time.png" height="48" alt="时间" /> | **温柔的时间** | 可视化时间 + cron 风格规则 |
-| <img src="docs/assets/elements/running.png" height="48" alt="运行" /> | **桌面 + CLI** | Tauri App 与无 GUI 的 `run` / `daemon` 共用数据 |
-| <img src="docs/assets/elements/theme-light.png" height="48" alt="主题" /> | **主题 + 多语言** | 亮 / 暗 / 跟随系统 · 中英双语 |
+| <img src="docs/assets/elements/create-alarm.png" height="48" alt="新建" /> | **闹钟 = 任务** | binary + 参数 + 调度 + ENV；本地墙钟时区 |
+| <img src="docs/assets/elements/set-time.png" height="48" alt="时间" /> | **温柔的时间** | 每天 / 每周 / 每月 + cron · 单闹钟通知音 |
+| <img src="docs/assets/elements/task-checklist.png" height="48" alt="AI" /> | **AI 助手** | 闹钟 / 插件 / 聊天三模式 · 流式 · 草稿落地 · 历史 |
+| <img src="docs/assets/elements/sprout-fresh.png" height="48" alt="插件" /> | **插件** | 内置小岛小应用 + zip 安装/导出 · host 主题与设置条 |
+| <img src="docs/assets/elements/running.png" height="48" alt="运行" /> | **桌面 + CLI + MCP** | GUI、无界面 `run`/`daemon`，以及给 agent 用的 MCP |
+| <img src="docs/assets/elements/theme-light.png" height="48" alt="主题" /> | **主题 + 多语言** | 亮 / 暗 / 跟随系统 · 中英 · Animal Island UI |
 | <img src="docs/assets/elements/logs-clipboard.png" height="48" alt="日志" /> | **日志与重试** | 本地历史、柔和重试、失败系统通知 |
 | <img src="docs/assets/elements/notify-badge.png" height="48" alt="托盘" /> | **原生托盘** | macOS 自适应托盘剪影 |
 | <img src="docs/assets/elements/sync-refresh.png" height="48" alt="更新" /> | **自动更新** | Tauri updater，读取 GitHub Releases |
 | <img src="docs/assets/elements/multi-device.png" height="48" alt="跨平台" /> | **跨平台** | macOS · Windows · Linux CI 构建 |
+
+
+## 插件与 AI
+
+### 内置插件
+
+首次安装会 seed 到用户插件目录（可删除；删除后不会自动重装）。与普通插件同一运行时：`__callai_plugin__` + ENV 同名覆盖。
+
+| id | 名称 | 能力 |
+| --- | --- | --- |
+| `todo` | TODO | 轻量待办 + 备注 |
+| `pomodoro` | 番茄时钟 | 专注 / 短休 / 长休 + 通知 |
+| `meal-spin` | 今天吃喝什么 | 吃/喝转盘；ENV `mode=food\|drink` |
+| `work-report` | 工作汇报 | 日 / 周 / 月报 |
+| `ledger` | 小岛记账 | 日历 + 竖向时间线 · 分类 · 区间汇总 |
+
+源码目录：[`src-tauri/templates/builtin_plugins/`](./src-tauri/templates/builtin_plugins/)。开发说明：[内置插件 README](./src-tauri/templates/builtin_plugins/README.md)。
+
+### 插件平台（要点）
+
+- **settings ≡ params**：storage 一套 key；闹钟 ENV 同名 key **仅本次打开覆盖**（不写回）。
+- **Host bar**：主题 / 通知 / 设置 / 闹钟覆盖 chip，插件 `ui.html` 不必重复实现。
+- **Zip**：安装（选文件 / 拖放）、导出（裸包或含数据）；按 `manifest.id` + 版本更新；禁止静默降级。
+- **市场预备**：registry schema 文档见 `docs/`，便于后续 GitHub 市场。
+
+### AI 助手
+
+- 模式：**闹钟草稿** · **插件草稿** · **聊天**（自由文本，不强行 JSON）。
+- 经 Tauri 代理流式输出（OpenAI 兼容 chat/responses）。
+- 草稿可一键落地为闹钟/插件；历史多选删除带二次确认。
+
+### MCP（给 agent）
+
+- `callai mcp-server`（stdio）与 HTTP MCP，方便 Codex / Claude 等 CLI。
+- 闹钟、插件、日志、prompts 等工具说明见 [`docs/mcp.md`](./docs/mcp.md)。
 
 ## 下载与首次打开（未公证 / 未签名安装包）
 
@@ -332,10 +369,11 @@ cargo build --manifest-path src-tauri/Cargo.toml
 ```
 src/                 # UI + 前端领域 + Tauri bridge
 src-tauri/
-  src/domain/        # 纯 Rust 规则
+  src/domain/        # 纯 Rust 规则（闹钟 / 插件 / 调度 / 时区）
   src/app/           # 用例 + ports
-  src/infra/         # sqlite / process / toml / scheduler
-  src/commands.rs    # Tauri 命令 + CLI 入口
+  src/infra/         # sqlite / process / toml / scheduler / plugin host / MCP / AI
+  src/commands/      # Tauri 命令
+  templates/         # 内置插件 + host panel + prompts
 ```
 
 依赖方向：**UI → domain ← infra**。
@@ -362,9 +400,10 @@ just brand
 ```
 
 ## 文档
-- [开发过程 records（教学）](./docs/development/README.md)
 
 - [PRODUCT.md](./PRODUCT.md) · [DESIGN.md](./DESIGN.md) · [usecases/](./usecases/)
+- [MCP 说明](./docs/mcp.md) · [内置插件](./src-tauri/templates/builtin_plugins/README.md)
+- [开发过程 records（教学）](./docs/development/README.md)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md)
 
 ## Links

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
 import type { AiProvider } from "../domain/types";
 import { AI_PROVIDER_DEFAULTS } from "../domain/types";
+import { WheelColumn, focusFirstWheel } from "./WheelColumn";
 import { playSound, playTick, unlockAudio } from "./sounds";
 
 export const AI_PROVIDERS: AiProvider[] = [
@@ -16,69 +17,6 @@ export const AI_PROVIDERS: AiProvider[] = [
 interface Props {
   value: AiProvider;
   onChange: (provider: AiProvider) => void;
-}
-
-function WheelList({
-  items,
-  value,
-  labels,
-  onChange,
-  label,
-}: {
-  items: AiProvider[];
-  value: AiProvider;
-  labels: Record<AiProvider, string>;
-  onChange: (v: AiProvider) => void;
-  label: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const itemH = 36;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const idx = Math.max(0, items.indexOf(value));
-    el.scrollTop = idx * itemH;
-  }, [value, items]);
-
-  return (
-    <div className="time-wheel-col provider-wheel-col" aria-label={label}>
-      <div className="time-wheel-fade time-wheel-fade-top" />
-      <div
-        className="time-wheel-scroller"
-        ref={ref}
-        onScroll={() => {
-          const el = ref.current;
-          if (!el) return;
-          const idx = Math.round(el.scrollTop / itemH);
-          const next = items[Math.min(items.length - 1, Math.max(0, idx))];
-          if (next !== value) onChange(next);
-        }}
-      >
-        <div className="time-wheel-pad" />
-        {items.map((p) => (
-          <button
-            key={p}
-            type="button"
-            className={`time-wheel-item provider-wheel-item ${p === value ? "active" : ""}`}
-            onClick={() => {
-              onChange(p);
-              const el = ref.current;
-              if (el) {
-                const idx = items.indexOf(p);
-                el.scrollTo({ top: idx * itemH, behavior: "smooth" });
-              }
-            }}
-          >
-            {labels[p]}
-          </button>
-        ))}
-        <div className="time-wheel-pad" />
-      </div>
-      <div className="time-wheel-fade time-wheel-fade-bottom" />
-      <div className="time-wheel-highlight" aria-hidden />
-    </div>
-  );
 }
 
 /** Gear-scroll provider picker, same interaction model as Time/Timezone pickers. */
@@ -131,6 +69,14 @@ export function ProviderPicker({ value, onChange }: Props) {
     return () => document.removeEventListener("pointerdown", onDoc, true);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const id = window.requestAnimationFrame(() =>
+      focusFirstWheel(popupRef.current),
+    );
+    return () => window.cancelAnimationFrame(id);
+  }, [open]);
+
   function commit(next: AiProvider = draft) {
     onChange(next);
     setOpen(false);
@@ -153,11 +99,13 @@ export function ProviderPicker({ value, onChange }: Props) {
           {labels[draft]}
         </div>
         <div className="time-wheels provider-wheels">
-          <WheelList
+          <WheelColumn
             items={items}
             value={draft}
-            labels={labels}
             label={t("settings:aiProvider")}
+            className="provider-wheel-col"
+            itemClassName="provider-wheel-item"
+            format={(p) => labels[p]}
             onChange={(p) => {
               setDraft(p);
               playTick();

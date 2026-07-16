@@ -19,6 +19,7 @@ import {
   readModelsCache,
   seedModelsList,
 } from "../infra/aiModelsCache";
+import { scrollChildIntoContainer } from "./pickerScroll";
 import { playSound, playTick } from "./sounds";
 import { IconButton } from "./IconButton";
 import { IconRefresh } from "./icons";
@@ -215,17 +216,46 @@ function ModelAutocompleteImpl({
     playTick();
   }
 
-  function optionList(): string[] {
-    if (filtered.length > 0) return filtered;
-    return models;
-  }
+  // Same list as the portal UI — keyboard must not walk a longer hidden array.
+  const options = useMemo(() => {
+    const base =
+      filtered.length > 0
+        ? filtered
+        : models.length > 0
+          ? models.slice(0, 48)
+          : modelHintsForProvider(provider).slice(0, 48);
+    const q = text.trim();
+    if (!q) return base;
+    const has = base.some((m) => m.toLowerCase() === q.toLowerCase());
+    return has ? base : [q, ...base];
+  }, [filtered, models, text, provider]);
+
+  // Keep highlight in range when the option set shrinks.
+  useEffect(() => {
+    setActiveIdx((i) => {
+      if (options.length === 0) return 0;
+      return Math.min(i, options.length - 1);
+    });
+  }, [options]);
+
+  // Keyboard highlight must stay visible inside the scrollable dropdown.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const root = dropdownRef.current;
+    if (!root) return;
+    const el = root.querySelector<HTMLElement>(
+      `[data-model-ac-idx="${activeIdx}"]`,
+    );
+    if (!el) return;
+    scrollChildIntoContainer(root, el);
+  }, [activeIdx, open, options]);
 
   function onInputKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
       setOpen(false);
       return;
     }
-    const list = optionList();
+    const list = options;
     if (e.key === "ArrowDown") {
       e.preventDefault();
       if (list.length === 0) return;
@@ -238,6 +268,16 @@ function ModelAutocompleteImpl({
       if (list.length === 0) return;
       setOpen(true);
       setActiveIdx((i) => Math.max(0, i - 1));
+      return;
+    }
+    if (e.key === "Home" && open && list.length > 0) {
+      e.preventDefault();
+      setActiveIdx(0);
+      return;
+    }
+    if (e.key === "End" && open && list.length > 0) {
+      e.preventDefault();
+      setActiveIdx(list.length - 1);
       return;
     }
     if (e.key === "Enter" && open) {
@@ -296,21 +336,6 @@ function ModelAutocompleteImpl({
     }
   }
 
-  // When query matches nothing (e.g. custom grok-*), still show full list.
-  // Keep the typed value as the first row so a full custom id stays selectable.
-  const options = (() => {
-    const base =
-      filtered.length > 0
-        ? filtered
-        : models.length > 0
-          ? models.slice(0, 48)
-          : modelHintsForProvider(provider).slice(0, 48);
-    const q = text.trim();
-    if (!q) return base;
-    const has = base.some((m) => m.toLowerCase() === q.toLowerCase());
-    return has ? base : [q, ...base];
-  })();
-
   const dropdown =
     open && typeof document !== "undefined"
       ? createPortal(
@@ -344,6 +369,7 @@ function ModelAutocompleteImpl({
                   key={m}
                   type="button"
                   role="option"
+                  data-model-ac-idx={i}
                   aria-selected={m === text || i === activeIdx}
                   className={`model-ac-option ${
                     m === text || i === activeIdx ? "active" : ""

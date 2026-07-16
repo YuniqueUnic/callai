@@ -65,5 +65,7 @@
   "collapsedHint": "Collapsed",
   "thinkingLabel": "callai is thinking",
   "answerLabel": "Answer",
-  "deleteSelectedConfirm": "Delete {{count}} selected message(s)?"
+  "deleteSelectedConfirm": "Delete {{count}} selected message(s)?",
+  "deleteMessage": "Delete",
+  "deleteMessageConfirm": "Delete this message?"
 }

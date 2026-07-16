@@ -162,7 +162,41 @@ fn validate_args(base_url: &str, api_key: &str, model: Option<&str>) -> DomainRe
     Ok(())
 }
 
+/// Parse `/v1/models` JSON leniently — many OpenAI-compatible gateways omit
+/// required OpenAI fields such as `created` on some entries.
+pub fn parse_model_ids_from_list_body(body: &str) -> DomainResult<Vec<String>> {
+    let v: serde_json::Value = serde_json::from_str(body)
+        .map_err(|e| DomainError::new(ErrorCode::Internal, format!("models list json: {e}")))?;
+    let items = if let Some(arr) = v.get("data").and_then(|d| d.as_array()) {
+        arr.as_slice()
+    } else if let Some(arr) = v.as_array() {
+        arr.as_slice()
+    } else {
+        return Err(DomainError::new(
+            ErrorCode::Internal,
+            "models list: expected { data: [...] } or [...]",
+        ));
+    };
+
+    let mut ids: Vec<String> = Vec::with_capacity(items.len());
+    for item in items {
+        let Some(raw) = item.get("id").and_then(|x| x.as_str()) else {
+            continue;
+        };
+        let id = raw.rsplit('/').next().unwrap_or(raw).trim().to_string();
+        if !id.is_empty() {
+            ids.push(id);
+        }
+    }
+    ids.sort();
+    ids.dedup();
+    Ok(ids)
+}
+
 /// List model ids for the given provider endpoint.
+///
+/// Uses raw HTTP + lenient JSON so partial model objects (missing `created`,
+/// etc.) still yield ids — async-openai's Model type requires `created`.
 pub async fn list_models(
     provider: &str,
     base_url: &str,
@@ -171,25 +205,38 @@ pub async fn list_models(
     validate_args(base_url, api_key, None)?;
     let provider = provider.trim().to_ascii_lowercase();
     let base = normalize_api_base(base_url);
-    let client = build_client(&base, api_key.trim(), &provider)?;
-    let list = client.models().list().await.map_err(map_openai_err)?;
-    let mut ids: Vec<String> = list
-        .data
-        .into_iter()
-        .map(|m| {
-            // ids may be "org/model"
-            let id = m.id;
-            id.rsplit('/')
-                .next()
-                .unwrap_or(id.as_str())
-                .trim()
-                .to_string()
-        })
-        .filter(|s| !s.is_empty())
-        .collect();
-    ids.sort();
-    ids.dedup();
-    Ok(ids)
+    let http = build_http_client()?;
+    let url = format!("{}/models", base.trim_end_matches('/'));
+    let key = api_key.trim();
+
+    let mut req = http
+        .get(&url)
+        .header(reqwest::header::USER_AGENT, codex_user_agent())
+        .header("originator", CODEX_ORIGINATOR)
+        .bearer_auth(key);
+    if provider == "claude" || provider == "anthropic" {
+        req = req
+            .header("anthropic-version", "2023-06-01")
+            .header("x-api-key", key);
+    }
+
+    let resp = req
+        .send()
+        .await
+        .map_err(|e| DomainError::new(ErrorCode::Internal, format!("models list request: {e}")))?;
+    let status = resp.status();
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| DomainError::new(ErrorCode::Internal, format!("models list body: {e}")))?;
+    if !status.is_success() {
+        let snippet: String = body.chars().take(240).collect();
+        return Err(DomainError::new(
+            ErrorCode::Internal,
+            format!("models list HTTP {status}: {snippet}"),
+        ));
+    }
+    parse_model_ids_from_list_body(&body)
 }
 
 /// Non-streaming convenience wrapper.

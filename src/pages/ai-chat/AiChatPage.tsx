@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Drawer } from "animal-island-ui";
+import { Drawer, Modal } from "animal-island-ui";
 import type { ChatMsg } from "../../ai/chatHistory";
 import { ElementImage } from "../../ui/ElementImage";
 import { IconButton } from "../../ui/IconButton";
@@ -71,6 +71,15 @@ export function AiChatPage({
   const { t } = useTranslation(["ai", "common"]);
   const chat = useAiChat({ onAlarmCreated, onPluginCreated });
   const [detail, setDetail] = useState<DetailState | null>(null);
+  type DeleteConfirm =
+    | { kind: "one"; id: string }
+    | { kind: "many"; count: number }
+    | { kind: "all" };
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm | null>(
+    null,
+  );
+  const [deleting, setDeleting] = useState(false);
+
 
   useEffect(() => {
     if (!fixSeed?.trim()) return;
@@ -81,12 +90,12 @@ export function AiChatPage({
     requestAnimationFrame(() => chat.taRef.current?.focus());
   }, [fixSeed]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Preserve rounded tauri chrome (same fix path as logs drawer).
+  // Preserve rounded tauri chrome (same fix path as logs drawer / modals).
   useEffect(() => {
-    const open = detail != null;
+    const open = detail != null || deleteConfirm != null;
     document.body.classList.toggle("callai-drawer-open", open);
     return () => document.body.classList.remove("callai-drawer-open");
-  }, [detail]);
+  }, [detail, deleteConfirm]);
 
   async function copyText(text: string) {
     try {
@@ -144,7 +153,11 @@ export function AiChatPage({
           selectedCount={chat.selectedCount}
           onSelectAll={chat.selectAllLoaded}
           onCopy={() => void chat.copySelected()}
-          onDelete={() => void chat.deleteSelected()}
+          onDelete={() => {
+            if (chat.selectedCount <= 0) return;
+            playSound("soft");
+            setDeleteConfirm({ kind: "many", count: chat.selectedCount });
+          }}
           onCancel={chat.exitSelect}
         />
       ) : null}
@@ -174,6 +187,10 @@ export function AiChatPage({
           onAcceptAlarm={(id, draft) => void chat.acceptAlarm(id, draft)}
           onAcceptPlugin={(id, draft) => void chat.acceptPlugin(id, draft)}
           onDismiss={chat.dismissMsg}
+          onDelete={(id) => {
+            playSound("soft");
+            setDeleteConfirm({ kind: "one", id });
+          }}
           onPointerDown={chat.onBubblePointerDown}
           onPointerEnd={chat.clearLongPress}
           onBubbleClick={chat.onBubbleClick}
@@ -226,6 +243,43 @@ export function AiChatPage({
           </div>
         ) : null}
       </Drawer>
+
+      <Modal
+        open={deleteConfirm != null}
+        title={t("common:delete")}
+        typewriter={false}
+        onClose={() => {
+          if (deleting) return;
+          playSound("cancel");
+          setDeleteConfirm(null);
+        }}
+        onOk={() => {
+          if (deleting || !deleteConfirm) return;
+          playSound("warn");
+          void (async () => {
+            setDeleting(true);
+            try {
+              if (deleteConfirm.kind === "one") {
+                await chat.deleteMessage(deleteConfirm.id);
+              } else if (deleteConfirm.kind === "many") {
+                await chat.deleteSelected();
+              } else {
+                await chat.clearAllHistory();
+              }
+              setDeleteConfirm(null);
+            } finally {
+              setDeleting(false);
+            }
+          })();
+        }}
+      >
+        {deleteConfirm?.kind === "one"
+          ? t("ai:deleteMessageConfirm")
+          : deleteConfirm?.kind === "many"
+            ? t("ai:deleteSelectedConfirm", { count: deleteConfirm.count })
+            : t("ai:clearHistoryConfirm")}
+      </Modal>
+
     </div>
   );
 }

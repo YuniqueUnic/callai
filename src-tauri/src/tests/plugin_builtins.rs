@@ -5,9 +5,9 @@ use crate::infra::plugin::{ensure_builtin_plugins, PluginManager};
 #[test]
 fn builtin_catalog_is_complete_and_valid() {
     let drafts = list_builtin_drafts().expect("list drafts");
-    assert!(drafts.len() >= 4, "expected at least the shipped builtins");
+    assert!(drafts.len() >= 5, "expected at least the shipped builtins");
     let ids = catalog_ids();
-    for id in ["todo", "pomodoro", "meal-spin", "work-report"] {
+    for id in ["todo", "pomodoro", "meal-spin", "work-report", "ledger"] {
         assert!(ids.contains(&id), "missing catalog id {id}");
     }
     for d in &drafts {

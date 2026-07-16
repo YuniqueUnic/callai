@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
+import { WheelColumn, focusFirstWheel } from "./WheelColumn";
 import { playSound, playTick, unlockAudio } from "./sounds";
 
 interface Props {
@@ -25,67 +26,6 @@ function parse(value: string): { h: number; m: number } {
   return { h, m };
 }
 
-function WheelColumn({
-  items,
-  value,
-  onChange,
-  label,
-}: {
-  items: number[];
-  value: number;
-  onChange: (v: number) => void;
-  label: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const itemH = 36;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const idx = items.indexOf(value);
-    if (idx >= 0) el.scrollTop = idx * itemH;
-  }, [value, items]);
-
-  return (
-    <div className="time-wheel-col" aria-label={label}>
-      <div className="time-wheel-fade time-wheel-fade-top" />
-      <div
-        className="time-wheel-scroller"
-        ref={ref}
-        onScroll={() => {
-          const el = ref.current;
-          if (!el) return;
-          const idx = Math.round(el.scrollTop / itemH);
-          const next = items[Math.min(items.length - 1, Math.max(0, idx))];
-          if (next !== value) onChange(next);
-        }}
-      >
-        <div className="time-wheel-pad" />
-        {items.map((n) => (
-          <button
-            key={n}
-            type="button"
-            className={`time-wheel-item ${n === value ? "active" : ""}`}
-            onClick={() => {
-              onChange(n);
-              const el = ref.current;
-              if (el) {
-                const idx = items.indexOf(n);
-                el.scrollTo({ top: idx * itemH, behavior: "smooth" });
-              }
-            }}
-          >
-            {pad(n)}
-          </button>
-        ))}
-        <div className="time-wheel-pad" />
-      </div>
-      <div className="time-wheel-fade time-wheel-fade-bottom" />
-      <div className="time-wheel-highlight" aria-hidden />
-    </div>
-  );
-}
-
 export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
   const { t } = useTranslation("alarms");
   const [open, setOpen] = useState(false);
@@ -106,7 +46,6 @@ export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
     const rect = triggerRef.current.getBoundingClientRect();
     const width = Math.max(260, Math.min(320, rect.width + 120));
     let top = rect.bottom + 8;
-    // if near bottom, open above
     if (top + 240 > window.innerHeight) {
       top = Math.max(8, rect.top - 240);
     }
@@ -125,11 +64,18 @@ export function TimePicker({ value, onChange, onAdd, addLabel }: Props) {
       if (popupRef.current?.contains(node)) return;
       setOpen(false);
     };
-    // capture phase so card click/focus cannot steal and thrash the popup
     document.addEventListener("pointerdown", onDoc, true);
     return () => {
       document.removeEventListener("pointerdown", onDoc, true);
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const id = window.requestAnimationFrame(() =>
+      focusFirstWheel(popupRef.current),
+    );
+    return () => window.cancelAnimationFrame(id);
   }, [open]);
 
   function commit(nextH = h, nextM = m) {

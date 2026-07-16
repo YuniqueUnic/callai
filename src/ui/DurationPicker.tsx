@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
+import { WheelColumn, focusFirstWheel } from "./WheelColumn";
 import { playSound, playTick, unlockAudio } from "./sounds";
 
 interface Props {
@@ -12,8 +13,8 @@ interface Props {
   max?: number;
 }
 
-const MINUTES = Array.from({ length: 61 }, (_, i) => i); // 0–60
-const SECONDS = Array.from({ length: 60 }, (_, i) => i); // 0–59
+const MINUTES = Array.from({ length: 61 }, (_, i) => i);
+const SECONDS = Array.from({ length: 60 }, (_, i) => i);
 
 function clampTotal(n: number, min: number, max: number) {
   if (!Number.isFinite(n)) return min;
@@ -31,71 +32,9 @@ function pad(n: number) {
   return n.toString().padStart(2, "0");
 }
 
-/** Display like TimePicker: mm:ss (e.g. 00:20, 05:00). */
 function formatClock(total: number): string {
   const { m, s } = split(total);
   return `${pad(m)}:${pad(s)}`;
-}
-
-function WheelColumn({
-  items,
-  value,
-  onChange,
-  label,
-}: {
-  items: number[];
-  value: number;
-  onChange: (v: number) => void;
-  label: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const itemH = 36;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const idx = items.indexOf(value);
-    if (idx >= 0) el.scrollTop = idx * itemH;
-  }, [value, items]);
-
-  return (
-    <div className="time-wheel-col" aria-label={label}>
-      <div className="time-wheel-fade time-wheel-fade-top" />
-      <div
-        className="time-wheel-scroller"
-        ref={ref}
-        onScroll={() => {
-          const el = ref.current;
-          if (!el) return;
-          const idx = Math.round(el.scrollTop / itemH);
-          const next = items[Math.min(items.length - 1, Math.max(0, idx))];
-          if (next !== value) onChange(next);
-        }}
-      >
-        <div className="time-wheel-pad" />
-        {items.map((n) => (
-          <button
-            key={n}
-            type="button"
-            className={`time-wheel-item ${n === value ? "active" : ""}`}
-            onClick={() => {
-              onChange(n);
-              const el = ref.current;
-              if (el) {
-                const idx = items.indexOf(n);
-                el.scrollTo({ top: idx * itemH, behavior: "smooth" });
-              }
-            }}
-          >
-            {pad(n)}
-          </button>
-        ))}
-        <div className="time-wheel-pad" />
-      </div>
-      <div className="time-wheel-fade time-wheel-fade-bottom" />
-      <div className="time-wheel-highlight" aria-hidden />
-    </div>
-  );
 }
 
 export function DurationPicker({
@@ -146,6 +85,14 @@ export function DurationPicker({
     return () => {
       document.removeEventListener("pointerdown", onDoc, true);
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const id = window.requestAnimationFrame(() =>
+      focusFirstWheel(popupRef.current),
+    );
+    return () => window.cancelAnimationFrame(id);
   }, [open]);
 
   function commit(nextM = m, nextS = s) {

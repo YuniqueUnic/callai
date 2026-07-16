@@ -38,8 +38,12 @@ describe("composeSystemPrompt", () => {
     expect(s.endsWith("CONTRACT")).toBe(true);
   });
 
-  it("chat still gets capabilities + contract", () => {
+  it("chat gets capabilities but not JSON output contract", () => {
     const s = composeSystemPrompt(bundle, "RUNTIME", "chat");
-    expect(s).toBe(["SYSTEM", "RUNTIME", "CAPS", "CONTRACT"].join("\n\n"));
+    expect(s).toContain("SYSTEM");
+    expect(s).toContain("RUNTIME");
+    expect(s).toContain("CAPS");
+    expect(s).toContain("MODE: chat");
+    expect(s).not.toContain("CONTRACT");
   });
 });
