@@ -1,7 +1,7 @@
 {
   "id": "meal-spin",
   "name": "今天吃喝什么",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "吃/喝转盘。指针与结果对齐；mode 等可用闹钟环境变量覆盖。",
   "permissions": [
     "storage",

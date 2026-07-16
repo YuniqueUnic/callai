@@ -110,6 +110,43 @@ fn build_app_state() -> AppState {
             tracing::warn!(error = %e.message, "builtin plugin seed failed");
         }
     }
+    if let Err(e) = crate::infra::plugin::ensure_warmup_plugin(&plugins) {
+        tracing::debug!(error = %e.message, "warmup plugin seed skipped");
+    }
+    // Pre-compose host HTML (warm disk/template path) for common plugins.
+    {
+        let plugins_bg = Arc::clone(&plugins);
+        std::thread::Builder::new()
+            .name("callai-compose-prewarm".into())
+            .spawn(move || {
+                let mut ids: Vec<String> = plugins_bg
+                    .list()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|p| p.id)
+                    .collect();
+                ids.push("callai-warmup".into());
+                ids.sort();
+                ids.dedup();
+                for id in ids {
+                    let t0 = std::time::Instant::now();
+                    match plugins_bg.compose_host_html(&id) {
+                        Ok(html) => tracing::debug!(
+                            plugin_id = %id,
+                            bytes = html.len(),
+                            ms = t0.elapsed().as_millis() as u64,
+                            "compose prewarm ok"
+                        ),
+                        Err(e) => tracing::debug!(
+                            plugin_id = %id,
+                            error = %e.message,
+                            "compose prewarm skipped"
+                        ),
+                    }
+                }
+            })
+            .ok();
+    }
     let plugin_console = Arc::new(crate::infra::PluginConsoleStore::new());
     let mcp_logs =
         Arc::new(crate::infra::McpLogStore::open(paths.mcp_log_file()).expect("mcp log store"));
@@ -241,6 +278,22 @@ pub fn run() {
             tray_runtime::wire_close_to_hide(app);
             set_plugin_app_handle(app.handle().clone());
             tray_runtime::wire_failure_hook(app);
+
+            // One hidden warmup WebView kept alive for the session.
+            // Only the *first* plugin host is slow (WKWebView process); later opens are fast.
+            // Do NOT precreate a window per installed plugin (memory).
+            {
+                let handle = app.handle().clone();
+                std::thread::Builder::new()
+                    .name("callai-schedule-warmup".into())
+                    .spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(600));
+                        if let Err(e) = crate::infra::plugin::warmup_plugin_host(&handle) {
+                            tracing::debug!(error = %e.message, "plugin host warmup skipped");
+                        }
+                    })
+                    .ok();
+            }
 
             #[cfg(target_os = "macos")]
             {

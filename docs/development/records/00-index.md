@@ -37,6 +37,7 @@
 | 16 | [16 MCP Tools / Logs / In-App HTTP](./16-mcp-tools-and-logs.md) | 审计边界；compose_prompt；App supervisor；端口 33927；Host 不白名单 |
 | 17 | [17 内置插件 / Host Panel / Zip 包](./17-builtin-plugins-host-panel-and-zip-packages.md) | seed 内置；storage≡params；主机 FAB；zip 安装导出；SDK 减负 |
 | 18 | [18 市场 / 拖放 / 版本更新 / 反馈闭环](./18-plugin-marketplace-dnd-update-and-feedback-loop.md) | id+version 更新；Tauri DnD；overlay 圆角（用户确认）；进度/冲突态；host 隔离；**附录 A–K**（手测时间线·commits·超长 prompt 拆包） |
+| 19 | [19 时区 / Host 覆盖 / 插件 Warmup](./19-timezone-host-override-and-plugin-warmup.md) | 墙钟再闭合；alarm-only 覆盖；keep-alive 一扇 warmup；MCP 自测；偏差 V1–V3 |
 
 ### 路径 B · 只学「如何写 prompt」
 
@@ -49,7 +50,7 @@
 
 ### 路径 D · 只学执行语义与交互硬化
 
-`05` → `12`（**附录 A 墙钟** · **附录 B GMT 误判 / detect / 浇花 20:00**）→ `03`（CLI 对等），配合 `sleep`/`osascript`/`say` + **上海下午 daily 20:00 剩余 ~5h** 手测。
+`05` → `12`（附录 A/B）→ **`19`（三线闭合+warmup）** → `03`（CLI 对等），配合 `sleep`/`osascript`/`say` + **上海下午 daily 20:00 剩余 ~5h** 手测。
 
 ### 路径 E · 只学桌面窗口铬 / 自绘 titlebar
 
@@ -61,7 +62,7 @@
 
 ### 路径 G · 只学插件平台（作者 / 市场雏形）
 
-`15` §plugin dual-part → `16` §插件调试 tools → `17`（全文）→ `18`（市场/拖放/更新/偏差表 + **附录 A–K**）→ 打开 `plugin_sdk.prompt` 与 `templates/builtin_plugins/README.md`，手测 FAB / ENV / **Finder 拖 zip（圆角 overlay）** / 一键更新保 data。
+`15` §plugin dual-part → `16` → `17` → `18` → **`19`（时区/覆盖/warmup）** → 打开 `plugin_sdk.prompt` 与 `templates/builtin_plugins/README.md`，手测 FAB / ENV / **Finder 拖 zip（圆角 overlay）** / 一键更新保 data。
 
 ## 提交时间线（证据）
 

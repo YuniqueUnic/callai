@@ -115,3 +115,22 @@ fn restore_builtin_resets_ui_keeps_data() {
     assert!(s.contains("open") || s.contains("filter"), "kept data: {s}");
     let _ = find_spec("todo");
 }
+
+#[test]
+fn internal_warmup_seeded_but_hidden_from_list() {
+    use crate::infra::plugin::{ensure_warmup_plugin, is_internal_plugin};
+
+    assert!(is_internal_plugin("callai-warmup"));
+    assert!(!is_internal_plugin("meal-spin"));
+
+    let dir = tempfile::tempdir().unwrap();
+    let mgr = PluginManager::from_root(dir.path().join("plugins")).unwrap();
+    ensure_warmup_plugin(&mgr).expect("seed warmup");
+    assert!(mgr.get_summary("callai-warmup").is_ok());
+    // Hidden from UI list.
+    let list = mgr.list().unwrap();
+    assert!(list.iter().all(|p| p.id != "callai-warmup"));
+    // Second seed is idempotent.
+    ensure_warmup_plugin(&mgr).unwrap();
+    assert_eq!(mgr.list().unwrap().len(), 0);
+}

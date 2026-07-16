@@ -1,7 +1,7 @@
 {
   "id": "pomodoro",
   "name": "番茄时钟",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "番茄钟。settings/ENV：mode, focusMin, shortBreakMin, longBreakMin, cycles, autoStartBreak, soundNotify。",
   "permissions": [
     "storage",

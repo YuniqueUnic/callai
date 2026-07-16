@@ -1,0 +1,8 @@
+{
+  "id": "callai-warmup",
+  "name": "callai warmup",
+  "version": "0.1.0",
+  "description": "Internal host warmup (hidden).",
+  "permissions": [],
+  "ui": "ui.html"
+}

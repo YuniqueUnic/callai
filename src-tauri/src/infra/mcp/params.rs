@@ -28,6 +28,13 @@ pub struct InstallPluginParams {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct OpenPluginWindowParams {
+    pub id: String,
+    #[serde(default)]
+    pub params: Option<serde_json::Map<String, Value>>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PluginIdParams {
     pub id: String,
 }
@@ -111,4 +118,24 @@ pub struct ComposePromptParams {
     /// Include plugin SDK layer (default true for plugin/fix).
     #[serde(default)]
     pub sdk: Option<bool>,
+}
+
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct ListExecutionLogsParams {
+    #[serde(default)]
+    pub alarm_id: Option<String>,
+    /// Optional status filter: success|failed|running|canceled|timeout|retrying
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub query: Option<String>,
+    #[serde(default = "default_log_limit")]
+    pub limit: u32,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct SetAlarmEnabledParams {
+    pub id: String,
+    pub enabled: bool,
 }

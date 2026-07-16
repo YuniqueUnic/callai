@@ -213,4 +213,35 @@ impl CallaiMcp {
         Self::ok_json(&res.map_err(Self::map_err)?)
     }
 
+
+    #[rmcp::tool(
+        description = "Open/focus plugin host window. REQUIRES desktop `callai` GUI running (in-app MCP). Pure `mcp-server --http` without GUI returns app-handle error — then ask user to open app or use UI. Returns {action, ms, plugin_id}."
+    )]
+    fn open_plugin_window(
+        &self,
+        rmcp::handler::server::wrapper::Parameters(params): rmcp::handler::server::wrapper::Parameters<
+            OpenPluginWindowParams,
+        >,
+    ) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
+        use std::time::Instant;
+        if crate::infra::plugin::is_internal_plugin(&params.id) {
+            return Err(Self::map_err(crate::domain::DomainError::new(
+                crate::domain::ErrorCode::InvalidArgs,
+                "internal plugin cannot be opened",
+            )));
+        }
+        let map = params.params.clone().unwrap_or_default();
+        let args = json!({ "id": &params.id, "params": &map });
+        let t0 = Instant::now();
+        let res = crate::infra::plugin::open_plugin_from_app_handle(&params.id, &map).map(|action| {
+            json!({
+                "action": action,
+                "plugin_id": params.id,
+                "ms": t0.elapsed().as_millis() as u64,
+            })
+        });
+        self.audit("open_plugin_window", &args, &res);
+        Self::ok_json(&res.map_err(Self::map_err)?)
+    }
+
 }

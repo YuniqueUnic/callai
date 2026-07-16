@@ -18,6 +18,20 @@ pub fn set_app_handle(app: AppHandle) {
     let _ = APP.set(app);
 }
 
+/// Open/focus plugin window via process-global AppHandle (GUI app / in-app MCP).
+pub fn open_plugin_from_app_handle(
+    plugin_id: &str,
+    params: &Map<String, Value>,
+) -> DomainResult<&'static str> {
+    let Some(app) = APP.get() else {
+        return Err(DomainError::new(
+            ErrorCode::ExecutionFailed,
+            "app handle not ready (GUI not running)",
+        ));
+    };
+    open_plugin_window_with_params(app, plugin_id, params, Some(plugin_id))
+}
+
 pub fn is_builtin_plugin(binary: &str) -> bool {
     let b = binary.trim();
     b == BUILTIN_PLUGIN_BINARY || b.eq_ignore_ascii_case(BUILTIN_PLUGIN_ALIAS)
@@ -145,15 +159,23 @@ pub fn open_plugin_window_with_params(
         if let Err(e) = existing.eval(&script) {
             tracing::warn!(error = %e, plugin_id = id, "eval host-launch failed; focus only");
         }
+        // Precreated hosts are parked off-screen — bring back to a usable place.
+        if let Ok(pos) = existing.outer_position() {
+            if pos.x < -10_000 || pos.y < -10_000 {
+                let _ = existing.center();
+            }
+        }
         let _ = existing.unminimize();
         let _ = existing.show();
         let _ = existing.set_focus();
         let _ = existing.set_title(title);
+        tracing::info!(plugin_id = id, "plugin window focus");
         return Ok("focus_window");
     }
 
     use tauri::{WebviewUrl, WebviewWindowBuilder};
     let url = WebviewUrl::App(path.into());
+    let t0 = Instant::now();
     WebviewWindowBuilder::new(app, &label, url)
         .title(title.to_string())
         .inner_size(440.0, 720.0)
@@ -170,8 +192,124 @@ pub fn open_plugin_window_with_params(
                 format!("open plugin window: {e}"),
             )
         })?;
+    tracing::info!(
+        plugin_id = id,
+        ms = t0.elapsed().as_millis() as u64,
+        "plugin window created (WebviewWindowBuilder)"
+    );
     Ok("open_window")
 }
+
+
+/// Hidden internal plugin id used only to cold-start the plugin host WebView.
+pub const WARMUP_PLUGIN_ID: &str = "callai-warmup";
+
+pub fn is_internal_plugin(id: &str) -> bool {
+    let id = id.trim();
+    id == WARMUP_PLUGIN_ID || id.starts_with("callai-internal-")
+}
+
+/// Ensure the tiny hidden warmup plugin exists on disk (not listed in UI catalog).
+pub fn ensure_warmup_plugin(mgr: &crate::infra::plugin::PluginManager) -> DomainResult<()> {
+    if mgr.get_summary(WARMUP_PLUGIN_ID).is_ok() {
+        return Ok(());
+    }
+    let manifest_json =
+        include_str!("../../../templates/builtin_plugins/callai-warmup/manifest.json");
+    let ui_html = include_str!("../../../templates/builtin_plugins/callai-warmup/ui.html");
+    let mut manifest: crate::domain::PluginManifest =
+        serde_json::from_str(manifest_json).map_err(|e| {
+            DomainError::new(
+                ErrorCode::ConfigCorrupt,
+                format!("warmup manifest: {e}"),
+            )
+        })?;
+    manifest.id = WARMUP_PLUGIN_ID.into();
+    let draft = crate::domain::PluginDraft {
+        manifest,
+        ui_html: ui_html.to_string(),
+    };
+    draft.validate()?;
+    let meta = [
+        ("source", "internal"),
+        ("hidden", "1"),
+        ("user_edited_ui", "0"),
+    ];
+    let _ = mgr.write_plugin_files(&draft, None, &meta)?;
+    tracing::info!(plugin_id = WARMUP_PLUGIN_ID, "seeded internal warmup plugin");
+    Ok(())
+}
+
+/// Open a hidden plugin host window once, then destroy it.
+/// Warms WKWebView / PluginWindowApp / bridge / compose path so the first user
+/// open is not a multi-second cold start.
+pub fn warmup_plugin_host(app: &AppHandle) -> DomainResult<()> {
+    let label = format!("plugin-{WARMUP_PLUGIN_ID}");
+    if app.get_webview_window(&label).is_some() {
+        return Ok(());
+    }
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+    let path = plugin_window_path(WARMUP_PLUGIN_ID, &Map::new());
+    let url = WebviewUrl::App(path.into());
+    // Keep this window ALIVE (hidden). Closing it throws away the WKWebView
+    // process warm state — that was why the first *user* plugin open stayed slow.
+    let win = WebviewWindowBuilder::new(app, &label, url)
+        .title("callai warmup")
+        .inner_size(320.0, 400.0)
+        .min_inner_size(200.0, 44.0)
+        .resizable(false)
+        .decorations(false)
+        .transparent(true)
+        // Start visible briefly so the webview actually loads (some platforms
+        // defer loading for never-shown windows), then hide off the taskbar.
+        .visible(true)
+        .skip_taskbar(true)
+        .always_on_bottom(true)
+        .build()
+        .map_err(|e| {
+            DomainError::new(
+                ErrorCode::ExecutionFailed,
+                format!("warmup plugin window: {e}"),
+            )
+        })?;
+
+    // Park off-screen + hide after first paint so the user never sees it.
+    let app2 = app.clone();
+    let label2 = label.clone();
+    std::thread::Builder::new()
+        .name("callai-plugin-warmup-hide".into())
+        .spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(250));
+            if let Some(w) = app2.get_webview_window(&label2) {
+                let _ = w.set_position(tauri::PhysicalPosition::new(-32_000, -32_000));
+                let _ = w.hide();
+                let _ = w.set_ignore_cursor_events(true);
+            }
+            // Give host JS / iframe / compose a bit more time while hidden.
+            std::thread::sleep(std::time::Duration::from_millis(2200));
+            // Do NOT close — keep the webview process warm for the session.
+            if let Some(w) = app2.get_webview_window(&label2) {
+                let _ = w.hide();
+                tracing::info!(
+                    label = %label2,
+                    "plugin host warmup ready (kept hidden, not destroyed)"
+                );
+            }
+        })
+        .map_err(|e| {
+            DomainError::new(
+                ErrorCode::ExecutionFailed,
+                format!("spawn warmup hider: {e}"),
+            )
+        })?;
+
+    // Touch compose path once on the main side as well (disk + template).
+    let _ = win;
+    tracing::info!("plugin host warmup window opened (will stay hidden)");
+    Ok(())
+}
+
+
 
 pub fn run_builtin_plugin(
     args: &[String],

@@ -338,7 +338,6 @@ function usePluginSettings(api, storageKey, defaults) {
     if (!api) return;
     let alive = true;
     function alarmOnly(src) {
-      // Prefer explicit alarm layer; never treat saved settings as "闹钟覆盖".
       if (src && typeof src === "object" && src.alarm && typeof src.alarm === "object") {
         return src.alarm;
       }
@@ -376,29 +375,6 @@ function usePluginSettings(api, storageKey, defaults) {
   }, [saved, saveSettings]);
 
   return { saved, override, effective, ready, saveSettings, patchSettings };
-}
-
-function OverrideBanner({ override, keys }) {
-  // Alarm runtime overrides only — soft chip, not a warning strip.
-  // Full list lives in host settings (clock badge on host bar).
-  const entries = Object.entries(override || {}).filter(([k, v]) => {
-    if (v == null || v === "") return false;
-    if (keys && keys.length && !keys.includes(k)) return false;
-    return true;
-  });
-  if (!entries.length) return null;
-  const summary =
-    entries.length <= 2
-      ? entries.map(([k, v]) => k + "=" + String(v)).join(" · ")
-      : entries.length + " 项临时参数";
-  return (
-    <span
-      className="tag soft"
-      title={"本次闹钟临时参数（不写回设置）\n" + entries.map(([k, v]) => k + "=" + String(v)).join("\n")}
-    >
-      闹钟临时 · {summary}
-    </span>
-  );
 }
 
 function IconBtn({ className, onClick, title, children, disabled }) {
@@ -515,8 +491,7 @@ function App() {
       <div className="banner">
         <span className="tag">{kindLabel(kind)}</span>
         <span className="meta grow">周期 {nowLabel || "…"}</span>
-        <OverrideBanner override={s.override} keys={["kind","placeholderHints","notifyOnSave"]} />
-        <IconBtn className="ghost" title={showSettings ? "收起设置" : "设置"} onClick={() => setShowSettings((v) => !v)}>
+<IconBtn className="ghost" title={showSettings ? "收起设置" : "设置"} onClick={() => setShowSettings((v) => !v)}>
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="2"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6.2 6.2l1.6 1.6M16.2 16.2l1.6 1.6M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
         </IconBtn>
       </div>

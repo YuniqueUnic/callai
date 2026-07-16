@@ -48,21 +48,85 @@ callai mcp-server --http --host 127.0.0.1 --port 33927 --token "$TOKEN"
 Settings → MCP also shows the endpoint and stdio/http commands.  
 Toggle **Enable HTTP MCP** records intent in settings; the long-running process is still started via CLI `mcp-server --http` (or a future in-app supervisor).
 
-## Tools
+## Tools (see full table below)
+
+
+
+## Tools (current)
 
 | Tool | Description |
 |------|-------------|
-| `list_alarms` | List alarms |
-| `create_alarm` | Create from AlarmDraft JSON |
-| `get_alarm` | Get by id |
-| `delete_alarm` | Delete by id |
-| `run_alarm` | Run immediately |
-| `list_plugins` | List plugins |
-| `install_plugin` | Install PluginDraft |
-| `delete_plugin` | Delete plugin + data |
-| `plugin_invoke` | Unified plugin invoke |
-| `list_mcp_logs` | Audit log (max 500) |
-| `get_prompt` | Embedded prompt template (`system`, `capabilities`, `output_contract`, `alarm_generate`, `plugin_generate`, `ai2ui`, `animal_island_style`) (`system`, `alarm_generate`, `plugin_generate`, `ai2ui`, **`animal_island_style`**) |
+| `list_alarms` / `get_alarm` | List / get alarms |
+| `create_alarm` / `update_alarm` / `delete_alarm` | Alarm CRUD from AlarmDraft JSON |
+| `set_alarm_enabled` | Enable/disable without delete |
+| `run_alarm` | Run immediately; returns ExecutionLog |
+| `list_execution_logs` | Alarm run logs (stdout/stderr/status); filter `alarm_id`/`status`/`limit` |
+| `list_plugins` / `get_plugin` | Installed plugins (**excludes** internal `callai-warmup`) |
+| `install_plugin` / `delete_plugin` | PluginDraft install / remove |
+| `plugin_invoke` | Host bridge: `storage.*` / `timer.*` / `notification.*` |
+| `plugin_history` | Per-plugin invoke history from data.db |
+| `plugin_console` | Ring buffer from plugin window (`errors_only` for fix) |
+| `get_plugin_source` / `set_plugin_source` | Read/write `ui.html` for AI fix loop |
+| `list_builtin_catalog` / `restore_builtin` / `upgrade_builtins` | Builtin lifecycle |
+| `open_plugin_window` | Open/focus GUI host (**requires desktop app AppHandle**) |
+| `list_prompts` / `get_prompt` / `compose_prompt` | Prompt stack for generation |
+| `get_runtime_context` | OS/locale/timezone for wall-clock schedules |
+| `list_mcp_logs` / `clear_mcp_logs` | MCP audit only (not plugin UI logs) |
+
+## Agent workflow (Codex / Claude / Grok)
+
+### A. Create & run alarm
+
+```text
+1. get_runtime_context          # timezone.resolved for wall-clock times
+2. compose_prompt(kind=alarm)   # optional LLM system stack
+3. create_alarm({ draft: AlarmDraft })
+4. run_alarm({ id })
+5. list_execution_logs({ alarm_id, limit: 10 })
+6. set_alarm_enabled / update_alarm / delete_alarm as needed
+```
+
+AlarmDraft times are **wall-clock** in settings timezone (see `timezone.resolved`). Do **not** UTC-convert「晚上 8 点」.
+
+### B. Install / invoke plugin
+
+```text
+1. list_plugins / list_builtin_catalog
+2. install_plugin({ draft: { manifest, ui_html } })
+3. plugin_invoke(storage.set/get, …)
+4. plugin_history({ id })
+```
+
+### C. Debug & fix plugin UI
+
+```text
+1. open_plugin_window({ id })     # only if desktop GUI is running
+2. plugin_console({ id, errors_only: true })
+3. get_plugin_source({ id })
+4. compose_prompt(kind=fix) + LLM
+5. set_plugin_source({ id, html })  # full ui.html document
+6. open_plugin_window again to verify
+```
+
+### D. Transport notes for agents
+
+| Mode | When | open_plugin_window |
+|------|------|--------------------|
+| `callai mcp-server` (stdio) | Codex/Claude spawn | No GUI → **fails** with app-handle error (expected) |
+| `callai mcp-server --http` | Long-running, shared DB | Same unless GUI also running |
+| Desktop app with MCP enabled | In-app HTTP supervisor | **Works** (has AppHandle) |
+
+For headless agent loops, prefer CRUD + invoke + logs + set_plugin_source; ask the user to open the app for visual verify, or run desktop + HTTP MCP together.
+
+### E. E2E status (2026-07-16)
+
+HTTP MCP against shared app DB:
+
+- 25–27 tools listed; alarm CRUD + run + execution logs + enable/disable OK  
+- plugin list/get/install/delete/invoke/history/source/console OK  
+- `callai-warmup` never appears in `list_plugins`  
+- `open_plugin_window` correctly errors without GUI  
+
 
 ## Shared data
 

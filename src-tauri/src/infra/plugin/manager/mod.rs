@@ -179,6 +179,10 @@ impl PluginManager {
             if crate::domain::validate_plugin_id(id).is_err() {
                 continue;
             }
+            // Hidden internal hosts (e.g. callai-warmup) never appear in the UI list.
+            if crate::infra::plugin::is_internal_plugin(id) {
+                continue;
+            }
             match self.get_summary(id) {
                 Ok(s) => out.push(s),
                 Err(_) => continue,
