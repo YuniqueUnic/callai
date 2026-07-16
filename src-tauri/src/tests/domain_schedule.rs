@@ -127,6 +127,7 @@ fn resolve_system_timezone_is_valid() {
 
 #[test]
 fn probe_system_tz_and_daily_20_remaining() {
+    use chrono::Timelike;
     let tz = detect_system_timezone();
     eprintln!("detect_system_timezone = {}", tz.name());
     let s = ScheduleSpec::Daily {
@@ -135,17 +136,33 @@ fn probe_system_tz_and_daily_20_remaining() {
     let now = chrono::Utc::now();
     let next = s.next_trigger_after_in_tz(now, tz).unwrap().expect("next");
     let mins = (next - now).num_minutes();
+    let local = now.with_timezone(&tz);
+    let next_local = next.with_timezone(&tz);
     eprintln!("now_utc={now}");
     eprintln!("next_utc={next}");
     eprintln!("mins_remaining={mins} hours={:.2}", mins as f64 / 60.0);
-    eprintln!("next_in_tz={}", next.with_timezone(&tz));
-    eprintln!("next_shanghai={}", next.with_timezone(&Shanghai));
-    // On Asia/Shanghai host ~15:00, daily 20:00 should be ~5h not ~13h
-    if tz.name() == "Asia/Shanghai" || tz.name() == "Asia/Chongqing" {
+    eprintln!("next_in_tz={next_local}");
+    // Wall-clock 20:00 in system TZ — never UTC-shifted.
+    assert_eq!(next_local.hour(), 20);
+    assert_eq!(next_local.minute(), 0);
+    // Before 20:00 local → still today (remaining < 20h). After 20:00 → tomorrow (< 24h+1m).
+    if local.hour() < 20 || (local.hour() == 20 && local.minute() == 0 && local.second() == 0) {
+        // Strictly before the trigger: next is later today.
+        if local.hour() < 20 {
+            assert!(
+                mins >= 0 && mins < 20 * 60,
+                "before 20:00 local, expected next within <20h, got {mins} min (local={local})"
+            );
+            assert_eq!(next_local.date_naive(), local.date_naive());
+        }
+    } else {
         assert!(
-            mins < 8 * 60,
-            "expected <8h to 20:00 Shanghai from afternoon, got {mins} min (tz={})",
-            tz.name()
+            mins > 0 && mins <= 24 * 60 + 1,
+            "after 20:00 local, expected next tomorrow within ~24h, got {mins} min (local={local})"
+        );
+        assert!(
+            next_local.date_naive() > local.date_naive(),
+            "after 20:00, next should be next calendar day"
         );
     }
 }
