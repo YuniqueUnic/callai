@@ -1,4 +1,5 @@
 mod ai_chat_store;
+mod ai_models_list;
 mod backup_prune;
 mod domain_alarm;
 mod domain_argv;

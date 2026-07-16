@@ -25,6 +25,7 @@ interface Props {
   onAcceptAlarm: (id: string, draft: AlarmDraft) => void;
   onAcceptPlugin: (id: string, draft: PluginDraft) => void;
   onDismiss: (id: string) => void;
+  onDelete: (id: string) => void;
   onPointerDown: (id: string, e: ReactPointerEvent) => void;
   onPointerEnd: () => void;
   onBubbleClick: (id: string) => void;
@@ -48,6 +49,7 @@ export function AiChatStream({
   onAcceptAlarm,
   onAcceptPlugin,
   onDismiss,
+  onDelete,
   onPointerDown,
   onPointerEnd,
   onBubbleClick,
@@ -121,6 +123,7 @@ export function AiChatStream({
                 onAcceptAlarm={onAcceptAlarm}
                 onAcceptPlugin={onAcceptPlugin}
                 onDismiss={onDismiss}
+                onDelete={onDelete}
                 onPointerDown={onPointerDown}
                 onPointerEnd={onPointerEnd}
                 onClick={onBubbleClick}

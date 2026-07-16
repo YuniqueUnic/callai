@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "animal-island-ui";
+import { WheelColumn, focusFirstWheel } from "./WheelColumn";
 import { playSound, playTick, unlockAudio } from "./sounds";
 
 interface Props {
@@ -11,7 +12,6 @@ interface Props {
   onChange: (tz: string) => void;
 }
 
-/** Curated IANA list (scrollable). "system" is injected at top. */
 const ZONES: string[] = [
   "UTC",
   "Pacific/Honolulu",
@@ -46,73 +46,11 @@ function zoneLabel(tz: string, detected: string | undefined, systemLabel: string
   return tz;
 }
 
-function WheelList({
-  items,
-  value,
-  onChange,
-  label,
-}: {
-  items: string[];
-  value: string;
-  onChange: (v: string) => void;
-  label: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const itemH = 36;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const idx = Math.max(0, items.indexOf(value));
-    el.scrollTop = idx * itemH;
-  }, [value, items]);
-
-  return (
-    <div className="time-wheel-col timezone-wheel-col" aria-label={label}>
-      <div className="time-wheel-fade time-wheel-fade-top" />
-      <div
-        className="time-wheel-scroller"
-        ref={ref}
-        onScroll={() => {
-          const el = ref.current;
-          if (!el) return;
-          const idx = Math.round(el.scrollTop / itemH);
-          const next = items[Math.min(items.length - 1, Math.max(0, idx))];
-          if (next !== value) onChange(next);
-        }}
-      >
-        <div className="time-wheel-pad" />
-        {items.map((z) => (
-          <button
-            key={z}
-            type="button"
-            className={`time-wheel-item timezone-wheel-item ${z === value ? "active" : ""}`}
-            onClick={() => {
-              onChange(z);
-              const el = ref.current;
-              if (el) {
-                const idx = items.indexOf(z);
-                el.scrollTo({ top: idx * itemH, behavior: "smooth" });
-              }
-            }}
-          >
-            {z === "system" ? "system" : z}
-          </button>
-        ))}
-        <div className="time-wheel-pad" />
-      </div>
-      <div className="time-wheel-fade time-wheel-fade-bottom" />
-      <div className="time-wheel-highlight" aria-hidden />
-    </div>
-  );
-}
-
 export function TimezonePicker({ value, detected, onChange }: Props) {
   const { t } = useTranslation(["settings", "common"]);
   const [open, setOpen] = useState(false);
   const items = useMemo(() => {
     const list = ["system", ...ZONES];
-    // ensure detected appears for scroll target even if not in curated list
     if (detected && !list.includes(detected)) {
       list.splice(1, 0, detected);
     }
@@ -159,6 +97,14 @@ export function TimezonePicker({ value, detected, onChange }: Props) {
     return () => document.removeEventListener("pointerdown", onDoc, true);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const id = window.requestAnimationFrame(() =>
+      focusFirstWheel(popupRef.current),
+    );
+    return () => window.cancelAnimationFrame(id);
+  }, [open]);
+
   function commit(next = draft) {
     onChange(next);
     setOpen(false);
@@ -187,10 +133,13 @@ export function TimezonePicker({ value, detected, onChange }: Props) {
             : draft}
         </div>
         <div className="time-wheels timezone-wheels">
-          <WheelList
+          <WheelColumn
             items={items}
             value={draft}
             label={t("settings:timezone")}
+            className="timezone-wheel-col"
+            itemClassName="timezone-wheel-item"
+            format={(z) => (z === "system" ? "system" : z)}
             onChange={(z) => {
               setDraft(z);
               playTick();

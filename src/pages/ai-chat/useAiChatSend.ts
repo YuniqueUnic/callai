@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiSettings } from "../../domain/types";
 import { client } from "../../infra/client";
@@ -7,7 +7,8 @@ import {
   chatReply,
   generateAlarmDraft,
   generatePluginDraft,
-  guessIntent,
+  isFreeformProseResponse,
+  resolveSendIntent,
   type AiIntent,
 } from "../../ai/generate";
 import { splitStreamingOutput } from "../../ai/splitModelOutput";
@@ -66,6 +67,9 @@ export function useAiChatSend(opts: {
   onPluginCreated: (pluginId: string) => void;
 }) {
   const { t } = useTranslation(["ai", "alarms"]);
+  // Always read latest segmented intent (avoid stale closure if any).
+  const intentRef = useRef(opts.intent);
+  intentRef.current = opts.intent;
 
   function formatError(e: unknown): string {
     let msg = "";
@@ -95,9 +99,8 @@ export function useAiChatSend(opts: {
       toast.warning({ message: t("ai:needConfig") });
       return;
     }
-    const resolvedIntent =
-      overrideIntent ??
-      (opts.intent === "chat" ? guessIntent(text) : opts.intent);
+    // Explicit segmented control always wins; never re-route chat→alarm/plugin.
+    const resolvedIntent = resolveSendIntent(intentRef.current, overrideIntent);
     const isRetry = overrideText != null;
 
     opts.setBusy(true);
@@ -254,8 +257,33 @@ export function useAiChatSend(opts: {
       void persistMsg(finalMsg);
       playSound("confirm");
     } catch (e) {
-      const errText = formatError(e);
       const raw = e instanceof AiParseError ? e.raw : "";
+      // Alarm/plugin parse failed but model clearly answered in chat prose → show text.
+      if (
+        e instanceof AiParseError &&
+        raw.trim() &&
+        isFreeformProseResponse(raw)
+      ) {
+        const split = splitStreamingOutput(raw);
+        const reply = (split.body || raw).trim();
+        if (reply) {
+          const textMsg: ChatMsg = {
+            id: genId,
+            role: "assistant",
+            kind: "text",
+            content: reply,
+            createdAt: nowIso(),
+            thinking: split.thinking || undefined,
+          };
+          opts.setMessages((m) =>
+            m.map((msg) => (msg.id === genId ? textMsg : msg)),
+          );
+          void persistMsg(textMsg);
+          playSound("confirm");
+          return;
+        }
+      }
+      const errText = formatError(e);
       const thinking = raw
         ? splitStreamingOutput(raw).thinking || undefined
         : undefined;
@@ -266,7 +294,11 @@ export function useAiChatSend(opts: {
         content: errText,
         createdAt: nowIso(),
         retryText: text,
-        retryIntent: resolvedIntent,
+        // Retry freeform failures as chat; keep structured retries on real draft errors.
+        retryIntent:
+          e instanceof AiParseError && isFreeformProseResponse(raw)
+            ? "chat"
+            : resolvedIntent,
         raw,
         thinking,
       };

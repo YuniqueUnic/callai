@@ -164,6 +164,7 @@ export function useAiChat(opts: {
     onBubbleClick: selection.onBubbleClick,
     copySelected: selection.copySelected,
     deleteSelected: selection.deleteSelected,
+    deleteMessage: selection.deleteMessage,
     clearAllHistory: selection.clearAllHistory,
     selectAllLoaded: selection.selectAllLoaded,
     send: sendApi.send,

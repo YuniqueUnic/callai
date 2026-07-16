@@ -10,6 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Input } from "animal-island-ui";
+import { scrollChildIntoContainer } from "./pickerScroll";
 import { playTick } from "./sounds";
 
 export function filterSuggest(
@@ -93,6 +94,24 @@ function SuggestInputImpl({
   useEffect(() => {
     setActiveIdx(0);
   }, [text, options]);
+
+  useEffect(() => {
+    setActiveIdx((i) => {
+      if (list.length === 0) return 0;
+      return Math.min(i, list.length - 1);
+    });
+  }, [list]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const root = dropdownRef.current;
+    if (!root) return;
+    const el = root.querySelector<HTMLElement>(
+      `[data-suggest-idx="${activeIdx}"]`,
+    );
+    if (!el) return;
+    scrollChildIntoContainer(root, el);
+  }, [activeIdx, open, list]);
 
   const placeDropdown = () => {
     const el = inputWrapRef.current ?? wrapRef.current;
@@ -198,6 +217,16 @@ function SuggestInputImpl({
       setActiveIdx((i) => Math.max(0, i - 1));
       return;
     }
+    if (e.key === "Home" && open && list.length > 0) {
+      e.preventDefault();
+      setActiveIdx(0);
+      return;
+    }
+    if (e.key === "End" && open && list.length > 0) {
+      e.preventDefault();
+      setActiveIdx(list.length - 1);
+      return;
+    }
     if (e.key === "Enter" && open && list.length > 0) {
       e.preventDefault();
       const pick = list[Math.min(activeIdx, list.length - 1)];
@@ -240,6 +269,7 @@ function SuggestInputImpl({
                   key={`${m}-${i}`}
                   type="button"
                   role="option"
+                  data-suggest-idx={i}
                   aria-selected={m === text || i === activeIdx}
                   className={`model-ac-option ${
                     m === text || i === activeIdx ? "active" : ""

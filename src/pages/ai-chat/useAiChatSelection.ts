@@ -103,12 +103,31 @@ export function useAiChatSelection(opts: {
     }
   }
 
+
+  async function deleteMessage(id: string) {
+    if (!id) return;
+    try {
+      await client.deleteAiChatMessages([id]);
+      opts.setMessages((m) => m.filter((msg) => msg.id !== id));
+      setSelected((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      toast.success({ message: t("ai:deleted") });
+      playSound("cancel");
+    } catch (e) {
+      toast.error({
+        message: String((e as { message?: string })?.message ?? e),
+      });
+      playSound("warn");
+    }
+  }
+
   async function deleteSelected() {
     const ids = [...selected];
     if (ids.length === 0) return;
-    if (!window.confirm(t("ai:deleteSelectedConfirm", { count: ids.length }))) {
-      return;
-    }
     try {
       await client.deleteAiChatMessages(ids);
       opts.setMessages((m) => m.filter((msg) => !selected.has(msg.id)));
@@ -124,7 +143,6 @@ export function useAiChatSelection(opts: {
   }
 
   async function clearAllHistory() {
-    if (!window.confirm(t("ai:clearHistoryConfirm"))) return;
     try {
       await client.clearAiChatMessages();
       opts.setMessages([]);
@@ -159,6 +177,7 @@ export function useAiChatSelection(opts: {
     onBubbleClick,
     copySelected,
     deleteSelected,
+    deleteMessage,
     clearAllHistory,
     selectAllLoaded,
   };

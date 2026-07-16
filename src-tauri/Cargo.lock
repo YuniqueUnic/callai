@@ -468,7 +468,7 @@ dependencies = [
 
 [[package]]
 name = "callai"
-version = "0.2.8"
+version = "0.3.0"
 dependencies = [
  "async-openai",
  "auto-launch",

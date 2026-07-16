@@ -403,11 +403,19 @@ export function composeSystemPrompt(
       bundle.outputContract,
     ]);
   }
+  // Chat: do NOT attach alarm/plugin JSON output_contract — it steers models into drafts.
   return joinPromptLayers([
     bundle.system,
     runtime,
     bundle.capabilities,
-    bundle.outputContract,
+    [
+      "MODE: chat",
+      "Reply in natural language only (light markdown ok).",
+      "Do not emit a whole-message JSON object.",
+      "Do not wrap the entire answer in ```json.",
+      "Do not produce AlarmDraft or PluginDraft unless the user clearly asks you to generate one and the UI intent is alarm/plugin.",
+      "Ideation, lists, tips, and Q&A stay free text.",
+    ].join("\n"),
   ]);
 }
 
@@ -497,7 +505,8 @@ export async function chatReply(
   const transcript = history
     .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
     .join("\n");
-  const text = await completeTextWithContinue(
+  // Free-text chat: no JSON continue-loop (that path is for alarm/plugin drafts).
+  const text = await completeText(
     ai,
     composeSystemPrompt(bundle, runtime, "chat"),
     `${transcript}\nUser: ${userMessage}\nAssistant:`,
@@ -505,13 +514,45 @@ export async function chatReply(
     handlers,
   );
   const split = splitModelOutput(text);
+  const reply = (split.body || text).trim();
+  if (!reply) {
+    throw new AiParseError("AI response is empty", text);
+  }
   return {
-    reply: (split.body || text).trim(),
+    reply,
     thinking: split.thinking,
     raw: text,
   };
 }
 
+/**
+ * True when model output is free-form chat/prose, not a draft JSON payload.
+ * Used to salvage "not JSON" failures instead of showing a hard parse error.
+ */
+export function isFreeformProseResponse(raw: string): boolean {
+  const s = (raw ?? "").trim();
+  if (s.length < 4) return false;
+  // Whole reply is a JSON object (or fenced json object) → draft path, not freeform.
+  if (/^\s*\{/.test(s)) return false;
+  if (/```json\s*\{/i.test(s)) return false;
+  // No object brace at all → pure prose (common chat answers).
+  if (!s.includes("{")) return true;
+  // Braces appear mid-prose (examples/code) but no leading draft JSON.
+  return s.length >= 40;
+}
+
+/**
+ * Map composer intent + optional retry override to the generation pipeline.
+ * Explicit UI selection always wins — chat must stay free-text, not JSON.
+ */
+export function resolveSendIntent(
+  selected: AiIntent,
+  override?: AiIntent,
+): AiIntent {
+  return override ?? selected;
+}
+
+/** Soft keyword guess (tests / future auto mode only). Not used when user picks a mode. */
 export function guessIntent(message: string): AiIntent {
   const m = message.toLowerCase();
   if (

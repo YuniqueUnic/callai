@@ -130,3 +130,64 @@ body > .model-ac-dropdown-portal {
   background: rgba(40, 36, 30, 0.98) !important;
   border-color: rgba(255, 249, 230, 0.18) !important;
 }
+
+/* Island Input is wrapper(span pill) + inner input.
+   Painting both creates end/middle color mismatch (半圆 vs 中间).
+   Paint only the pill; keep the field transparent. */
+.model-ac-input-wrap [class*="animal-wrapper"] {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  background: var(--callai-input-bg, #fff8ea) !important;
+  background-color: var(--callai-input-bg, #fff8ea) !important;
+  border: 2px solid var(--callai-input-border, #c4a574) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+.model-ac-input-wrap [class*="animal-wrapper"] input,
+.model-ac-input-wrap [class*="animal-input"],
+.model-ac-input-wrap input {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  color: var(--callai-input-ink, #1f1408) !important;
+  -webkit-text-fill-color: var(--callai-input-ink, #1f1408) !important;
+  caret-color: var(--callai-input-ink, #1f1408) !important;
+}
+
+.model-ac-input-wrap input::placeholder,
+.model-ac-input-wrap [class*="animal-input"]::placeholder {
+  color: color-mix(in srgb, var(--callai-input-ink, #1f1408) 48%, transparent) !important;
+  -webkit-text-fill-color: color-mix(
+    in srgb,
+    var(--callai-input-ink, #1f1408) 48%,
+    transparent
+  ) !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .model-ac-input-wrap [class*="animal-wrapper"] {
+  background: #fff8ea !important;
+  background-color: #fff8ea !important;
+  border-color: #c4a574 !important;
+}
+
+[data-theme="dark"] .model-ac-input-wrap [class*="animal-wrapper"] input,
+[data-theme="dark"] .model-ac-input-wrap [class*="animal-input"],
+[data-theme="dark"] .model-ac-input-wrap input {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+  caret-color: #1f1408 !important;
+}

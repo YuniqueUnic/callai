@@ -39,7 +39,7 @@
   <a href="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml"><img src="https://github.com/YuniqueUnic/callai/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-0.3.0?logo=github" alt="version 0.2.1" /><!-- x-release-please-version -->
+  <img src="https://img.shields.io/badge/version-0.3.0?logo=github" alt="version 0.3.0" /><!-- x-release-please-version -->
   <img src="https://img.shields.io/badge/Tauri-2-ffc131?logo=tauri&logoColor=white" alt="Tauri 2" />
   <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust&logoColor=white" alt="Rust" />
   <img src="https://img.shields.io/badge/Bun-React-fbf0df?logo=bun&logoColor=black" alt="Bun React" />
@@ -97,13 +97,13 @@
 | --- | --- | --- |
 | Homebrew | `brew tap YuniqueUnic/homebrew-callai && brew install --cask callai-app` | `brew tap YuniqueUnic/homebrew-callai && brew install callai` |
 | Scoop | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai` | `scoop bucket add callai https://github.com/YuniqueUnic/scoop-callai && scoop install callai-cli` |
-| winget | community PR (GUI only; one app per PR) → then `winget install YuniqueUnic.Callai` · local: `winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai/0.2.1` | separate PR for CLI → `winget install YuniqueUnic.Callai.CLI` · local: `--manifest .../Callai.CLI/0.2.1` |
+| winget | community PR (GUI only; one app per PR) → then `winget install YuniqueUnic.Callai` · local: `winget install --manifest packaging/winget/manifests/y/YuniqueUnic/Callai/0.3.0` | separate PR for CLI → `winget install YuniqueUnic.Callai.CLI` · local: `--manifest .../Callai.CLI/0.3.0` |
 
 Full matrix, refresh scripts, and upstream submission notes: **[packaging/README.md](./packaging/README.md)**.
 
 ```bash
 # refresh manifests after a GitHub Release
-./packaging/scripts/generate_from_release.sh v0.2.1
+./packaging/scripts/generate_from_release.sh v0.3.0
 just packaging-validate
 ```
 
@@ -233,14 +233,51 @@ curl -sf http://localhost:8080/health || osascript -e 'display notification "本
 
 | | Feature | Notes |
 | :---: | --- | --- |
-| <img src="docs/assets/elements/create-alarm.png" height="48" alt="create" /> | **Alarm = task** | Create an alarm and configure binary, args, schedule in one flow |
-| <img src="docs/assets/elements/set-time.png" height="48" alt="schedule" /> | **Cozy schedules** | Human-friendly times + cron-style rules |
-| <img src="docs/assets/elements/running.png" height="48" alt="run" /> | **Desktop + CLI** | Tauri app and headless `run` / `daemon` share the same data |
-| <img src="docs/assets/elements/theme-light.png" height="48" alt="theme" /> | **Theme + i18n** | Light / dark / system · zh-CN + en |
+| <img src="docs/assets/elements/create-alarm.png" height="48" alt="create" /> | **Alarm = task** | Binary + args + schedule + ENV; wall-clock times in your timezone |
+| <img src="docs/assets/elements/set-time.png" height="48" alt="schedule" /> | **Cozy schedules** | Daily / weekly / monthly + cron · per-alarm sound & notification |
+| <img src="docs/assets/elements/task-checklist.png" height="48" alt="ai" /> | **AI assistant** | Alarm / plugin / chat modes · streaming · draft apply · history |
+| <img src="docs/assets/elements/sprout-fresh.png" height="48" alt="plugins" /> | **Plugins** | Built-in mini-apps + zip install/export · host theme & settings bar |
+| <img src="docs/assets/elements/running.png" height="48" alt="run" /> | **Desktop + CLI + MCP** | GUI, headless `run`/`daemon`, and MCP (stdio / HTTP) for agents |
+| <img src="docs/assets/elements/theme-light.png" height="48" alt="theme" /> | **Theme + i18n** | Light / dark / system · zh-CN + en · Animal Island UI |
 | <img src="docs/assets/elements/logs-clipboard.png" height="48" alt="logs" /> | **Logs & retries** | Local history, soft retries, failure notifications |
 | <img src="docs/assets/elements/notify-badge.png" height="48" alt="tray" /> | **Tray native** | macOS template tray icon (light/dark adaptive) |
 | <img src="docs/assets/elements/sync-refresh.png" height="48" alt="updater" /> | **Auto-update** | Tauri updater via GitHub Releases (`latest.json`) |
 | <img src="docs/assets/elements/multi-device.png" height="48" alt="cross platform" /> | **Cross-platform** | macOS · Windows · Linux builds via CI |
+
+
+## Plugins & AI
+
+### Built-in plugins
+
+Shipped once into the user plugins dir (deletable; not re-seeded after delete). Same runtime as user plugins: `__callai_plugin__` + ENV overrides.
+
+| id | Name | What it does |
+| --- | --- | --- |
+| `todo` | TODO | Lightweight tasks + due notes |
+| `pomodoro` | Pomodoro | Focus / short / long breaks + notify |
+| `meal-spin` | Meal spin | Food/drink wheel; ENV `mode=food\|drink` |
+| `work-report` | Work report | Daily / weekly / monthly notes |
+| `ledger` | Island ledger | Calendar + vertical timeline · categories · period totals |
+
+Sources: [`src-tauri/templates/builtin_plugins/`](./src-tauri/templates/builtin_plugins/). Develop guide: [builtin README](./src-tauri/templates/builtin_plugins/README.md).
+
+### Plugin platform (short)
+
+- **settings ≡ params** — one key space in `storage`; alarm ENV same-key overrides apply **this open only** (not written back).
+- **Host bar** — theme / notifications / settings / alarm-override chip (no need to reimplement in each `ui.html`).
+- **Zip packages** — install (pick file / drag-drop), export bare or with data; update by `manifest.id` + semver; silent downgrade blocked.
+- **Registry prep** — local registry schema docs under `docs/` for a future GitHub marketplace.
+
+### AI assistant
+
+- Modes: **Alarm draft** · **Plugin draft** · **Chat** (free text; not forced JSON).
+- Streaming via Tauri proxy (OpenAI-compatible chat/responses).
+- Apply drafts into alarms / plugins; multi-select history with confirm delete.
+
+### MCP for agents
+
+- `callai mcp-server` (stdio) and HTTP MCP for Codex / Claude / other agent CLIs.
+- Tools for alarms, plugins, logs, prompts — see [`docs/mcp.md`](./docs/mcp.md).
 
 ## Download & first launch (unsigned builds)
 
@@ -336,10 +373,11 @@ cargo build --manifest-path src-tauri/Cargo.toml
 ```
 src/                 # UI + frontend domain + Tauri bridge
 src-tauri/
-  src/domain/        # pure Rust rules
+  src/domain/        # pure Rust rules (alarms, plugins, schedules, timezone)
   src/app/           # use-cases + ports
-  src/infra/         # sqlite / process / toml / scheduler
-  src/commands.rs    # Tauri commands + CLI entry
+  src/infra/         # sqlite / process / toml / scheduler / plugin host / MCP / AI client
+  src/commands/      # Tauri commands
+  templates/         # builtin plugins + host panel + prompts
 ```
 
 Dependency rule: **UI → domain ← infra**. Domain stays free of React, HTTP, and filesystem details.
@@ -380,9 +418,11 @@ python3 scripts/brand/make_tray_template.py --help
 ```
 
 ## Docs
-- [Development records (teaching)](./docs/development/README.md) — AI coding 实战过程
 
 - [PRODUCT.md](./PRODUCT.md) · [DESIGN.md](./DESIGN.md) · [usecases/](./usecases/)
+- [MCP guide](./docs/mcp.md) · [Plugin registry notes](./docs/plugin-registry.md) (if present)
+- [Builtin plugins](./src-tauri/templates/builtin_plugins/README.md)
+- [Development records (teaching)](./docs/development/README.md)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) · [SECURITY.md](./SECURITY.md)
 
 ## Links

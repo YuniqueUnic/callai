@@ -1,0 +1,33 @@
+{
+  "id": "ledger",
+  "name": "小岛记账",
+  "version": "0.1.4",
+  "description": "日历 + 时间线记账。settings/ENV：view, currency(CNY/USD/…), defaultCategory, showIncome。",
+  "permissions": [
+    "storage",
+    "timer",
+    "notification",
+    "history"
+  ],
+  "ui": "ui.html",
+  "params": {
+    "view": {
+      "description": "日/周/月/年",
+      "default": "month",
+      "enum": ["day", "week", "month", "year"]
+    },
+    "currency": {
+      "description": "币种代码（默认 CNY 人民币）",
+      "default": "CNY",
+      "enum": ["CNY", "USD", "EUR", "GBP", "JPY", "HKD", "TWD", "KRW", "SGD", "AUD", "CAD", "CHF", "INR", "THB", "RUB", "VND", "MYR"]
+    },
+    "defaultCategory": {
+      "description": "默认支出分类",
+      "default": "餐饮"
+    },
+    "showIncome": {
+      "description": "显示收入入口",
+      "default": true
+    }
+  }
+}

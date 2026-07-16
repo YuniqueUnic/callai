@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>小岛记账</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+:root {
+  --primary: #19c8b9;
+  --primary-hover: #3dd4c6;
+  --primary-active: #11a89b;
+  --primary-bg: #e6f9f6;
+  --text: #794f27;
+  --text-body: #725d42;
+  --text-secondary: #9f927d;
+  --text-muted: #8a7b66;
+  --bg: #f8f8f0;
+  --bg-content: rgb(247, 243, 223);
+  --border: #c4b89e;
+  --border-hover: #a89878;
+  --border-strong: #9f927d;
+  --success: #6fba2c;
+  --success-active: #5a9e1e;
+  --warning: #f5c31c;
+  --error: #e05a5a;
+  --error-active: #c94444;
+  --income: #2a9d6e;
+  --expense: #d45a4a;
+  --shadow: 0 6px 0 rgba(121, 79, 39, 0.12);
+  --shadow-sm: 0 3px 0 rgba(121, 79, 39, 0.1);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(25,200,185,.10), transparent 28%),
+    radial-gradient(circle at 88% 0%, rgba(245,195,28,.12), transparent 26%),
+    var(--bg);
+  color: var(--text-body);
+  font-family: var(--font);
+  font-weight: 500;
+}
+#root { min-height: 100%; }
+.app {
+  padding: 16px 14px 28px;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 100%;
+}
+.header h1 {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text);
+  font-weight: 900;
+}
+.header p { margin: 4px 0 0; font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.card {
+  background: var(--bg-content);
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+.card.soft { border-width: 2px; box-shadow: var(--shadow-sm); }
+.stack { display: flex; flex-direction: column; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.btn {
+  appearance: none;
+  border: 3px solid var(--border-strong);
+  background: #fffdf6;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, background .15s ease;
+}
+.btn:hover { background: #fff8e8; }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.btn.primary { background: var(--primary); border-color: var(--primary-active); color: #fff; }
+.btn.ghost { background: transparent; box-shadow: none; border-width: 2px; padding: 6px 10px; }
+.btn.icon { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border-radius: 12px; }
+.btn.sm { padding: 6px 10px; font-size: 12px; border-width: 2px; }
+.btn.danger { background: #ffe8e8; border-color: #e8a0a0; color: var(--error-active); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+.input, .select, .textarea {
+  width: 100%;
+  border: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text);
+  background: #fffdf8;
+  outline: none;
+}
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(25,200,185,.18);
+}
+.meta { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 800;
+  border: 2px solid rgba(17,168,155,.25);
+  background: var(--primary-bg); color: var(--primary-active);
+}
+.tag.exp { background: #ffe8e4; color: #b43a2e; border-color: rgba(212,90,74,.3); }
+.tag.inc { background: #e4f7ef; color: #1a7a52; border-color: rgba(42,157,110,.3); }
+.seg {
+  display: flex; gap: 4px; background: #efe8d4;
+  padding: 4px; border-radius: 999px; border: 2px solid var(--border);
+}
+.seg button {
+  flex: 1; border: 0; background: transparent; border-radius: 999px;
+  padding: 7px 6px; font: inherit; font-weight: 800; font-size: 12px;
+  color: var(--text-secondary); cursor: pointer;
+}
+.seg button.on {
+  background: #fffdf8; color: var(--text); box-shadow: var(--shadow-sm);
+  border: 2px solid var(--border);
+}
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.sum-cell {
+  background: #fffdf8;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.sum-cell .lab { font-size: 11px; font-weight: 800; color: var(--text-secondary); }
+.sum-cell .val {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  word-break: break-all;
+}
+.sum-cell.exp .val { color: var(--expense); }
+.sum-cell.inc .val { color: var(--income); }
+.sum-cell.bal .val { color: var(--primary-active); }
+.nav-period {
+  display: flex; align-items: center; gap: 8px; justify-content: space-between;
+}
+.nav-period .title {
+  flex: 1; text-align: center; font-weight: 900; color: var(--text); font-size: 14px;
+}
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal .dow {
+  text-align: center; font-size: 11px; font-weight: 800; color: var(--text-secondary); padding: 2px 0;
+}
+.cal .cell {
+  aspect-ratio: auto;
+  /* same height whether selected or not — room for 支/收/余 always */
+  min-height: 74px;
+  border: 2px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: 12px;
+  background: #fffdf8;
+  font: inherit;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  padding: 4px 2px 4px;
+  overflow: visible;
+}
+.cal .cell.muted {
+  background: color-mix(in srgb, #fffdf8 78%, var(--bg));
+  border-color: color-mix(in srgb, var(--border) 35%, transparent);
+}
+.cal .cell.muted .day-num {
+  color: var(--text-muted);
+}
+.cal .cell.today {
+  border-color: rgba(25,200,185,.55);
+  background: #eefaf7;
+}
+.cal .cell.on {
+  border-color: var(--primary-active);
+  background: #fffdf8;
+  box-shadow: var(--shadow-sm);
+}
+.cal .cell .day-num {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--text);
+  flex: 0 0 auto;
+}
+/* Always same typography as active — never hide / shrink when not .on */
+.cal .cell .cell-sums,
+.cal .cell.on .cell-sums,
+.cal .cell.today .cell-sums,
+.cal .cell.muted .cell-sums {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+  font-size: 9px !important;
+  font-weight: 900;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  padding: 0 1px;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.cal .cell .cell-exp,
+.cal .cell.muted .cell-exp,
+.cal .cell.today .cell-exp,
+.cal .cell.on .cell-exp {
+  color: #b83228 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+  display: block !important;
+}
+.cal .cell .cell-inc,
+.cal .cell.muted .cell-inc,
+.cal .cell.today .cell-inc,
+.cal .cell.on .cell-inc {
+  color: #157a4e !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+  display: block !important;
+}
+.cal .cell .cell-bal,
+.cal .cell.muted .cell-bal,
+.cal .cell.today .cell-bal,
+.cal .cell.on .cell-bal {
+  color: #0a8a7e !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+  display: block !important;
+}
+.cal .cell .cell-lab {
+  font-size: 8px;
+  font-weight: 800;
+  margin-right: 1px;
+  opacity: 1;
+  color: inherit;
+}
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.year-cell {
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: #fffdf8;
+  padding: 10px 8px;
+  cursor: pointer;
+  text-align: center;
+  font: inherit;
+  font-weight: 800;
+  color: var(--text);
+}
+.year-cell.on { border-color: var(--primary-active); box-shadow: var(--shadow-sm); background: var(--primary-bg); }
+.year-cell .m { font-size: 13px; }
+.year-cell .a { font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.timeline {
+  display: flex; flex-direction: column; gap: 0;
+  max-height: 38vh; overflow: auto;
+  padding-left: 4px;
+}
+.tl-day {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 8px;
+  position: relative;
+}
+.tl-day + .tl-day { margin-top: 4px; }
+.tl-rail {
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 4px;
+}
+.tl-date {
+  font-size: 11px; font-weight: 900; color: var(--text);
+  text-align: center; line-height: 1.2;
+}
+.tl-date .d { font-size: 16px; display: block; }
+.tl-line {
+  flex: 1; width: 3px; min-height: 12px;
+  background: linear-gradient(180deg, var(--primary), rgba(196,184,158,.5));
+  border-radius: 999px; margin-top: 6px;
+}
+.tl-items { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; }
+.tl-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+  padding: 10px 11px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: #fffdf8;
+}
+.tl-item .name { font-weight: 800; color: var(--text); font-size: 13px; word-break: break-word; }
+.tl-item .sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.tl-item .amt {
+  font-weight: 900; font-variant-numeric: tabular-nums; font-size: 14px; white-space: nowrap;
+}
+.tl-item .amt.exp { color: var(--expense); }
+.tl-item .amt.inc { color: var(--income); }
+.tl-actions { display: flex; gap: 4px; margin-top: 6px; }
+.empty {
+  text-align: center; padding: 18px 10px; color: var(--text-secondary);
+  font-weight: 700; font-size: 13px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.form-grid .full { grid-column: 1 / -1; }
+.cat-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.cat-chip {
+  border: 2px solid var(--border);
+  background: #fffdf8;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font: inherit; font-weight: 800; font-size: 12px;
+  color: var(--text-secondary); cursor: pointer;
+}
+.cat-chip.on {
+  border-color: var(--primary-active);
+  background: var(--primary-bg);
+  color: var(--primary-active);
+}
+.loading { padding: 40px; text-align: center; color: var(--text-secondary); font-weight: 800; }
+.amount-field {
+  display: flex; align-items: stretch;
+  border: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fffdf8;
+  overflow: hidden;
+}
+.amount-field:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(25,200,185,.18);
+}
+.amount-field .amount-input {
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.amount-field .amount-unit {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 44px;
+  padding: 0 12px;
+  font-weight: 900;
+  font-size: 15px;
+  color: var(--text);
+  background: #efe8d4;
+  border-left: 2px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.settings-row label {
+  font-size: 12px; font-weight: 800; color: var(--text-secondary);
+  display: block; margin-bottom: 4px;
+}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react-classic">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+async function waitCallai(timeoutMs) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < (timeoutMs || 2500)) {
+    if (window.callai && (window.callai.ready || window.callai.storage || window.callai.invoke)) {
+      return window.callai;
+    }
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  const mem = {};
+  return {
+    ready: false,
+    launchParams: {},
+    getLaunchParams() { return this.launchParams || {}; },
+    storage: {
+      async get(k) {
+        if (k in mem) return mem[k];
+        try {
+          const raw = localStorage.getItem("callai-preview:" + k);
+          return raw == null ? null : JSON.parse(raw);
+        } catch (e) { return null; }
+      },
+      async set(k, v) {
+        mem[k] = v;
+        try { localStorage.setItem("callai-preview:" + k, JSON.stringify(v)); } catch (e) {}
+      },
+    },
+    timer: {
+      async now() {
+        const d = new Date();
+        return { iso: d.toISOString(), now: d.toISOString(), ts: d.getTime() };
+      },
+    },
+    notification: {
+      async show(a, b) {
+        const title = typeof a === "string" ? a : (a && a.title) || "callai";
+        const body = typeof a === "string" ? (b || "") : (a && a.body) || "";
+        console.info("[notify]", title, body);
+      },
+    },
+  };
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+}
+
+function asBool(v, fallback) {
+  if (v === true || v === "1" || v === "true" || v === "yes") return true;
+  if (v === false || v === "0" || v === "false" || v === "no") return false;
+  return fallback;
+}
+
+function pad2(n) { return String(n).padStart(2, "0"); }
+
+function ymd(d) {
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+
+function parseYmd(s) {
+  const p = String(s || "").split("-").map(Number);
+  if (p.length < 3 || !p[0]) return new Date();
+  return new Date(p[0], p[1] - 1, p[2], 12, 0, 0, 0);
+}
+
+function startOfWeek(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0, 0);
+  const day = x.getDay(); // 0 Sun
+  x.setDate(x.getDate() - day);
+  return x;
+}
+
+function addDays(d, n) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0, 0);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+function daysInMonth(y, m0) {
+  return new Date(y, m0 + 1, 0).getDate();
+}
+
+const CURRENCIES = [
+  { code: "CNY", symbol: "¥", label: "人民币 ¥" },
+  { code: "USD", symbol: "$", label: "美元 $" },
+  { code: "EUR", symbol: "€", label: "欧元 €" },
+  { code: "GBP", symbol: "£", label: "英镑 £" },
+  { code: "JPY", symbol: "円", label: "日元 円" },
+  { code: "HKD", symbol: "HK$", label: "港币 HK$" },
+  { code: "TWD", symbol: "NT$", label: "新台币 NT$" },
+  { code: "KRW", symbol: "₩", label: "韩元 ₩" },
+  { code: "SGD", symbol: "S$", label: "新币 S$" },
+  { code: "AUD", symbol: "A$", label: "澳元 A$" },
+  { code: "CAD", symbol: "C$", label: "加元 C$" },
+  { code: "CHF", symbol: "Fr", label: "瑞郎 Fr" },
+  { code: "INR", symbol: "₹", label: "印度卢比 ₹" },
+  { code: "THB", symbol: "฿", label: "泰铢 ฿" },
+  { code: "RUB", symbol: "₽", label: "卢布 ₽" },
+  { code: "VND", symbol: "₫", label: "越南盾 ₫" },
+  { code: "MYR", symbol: "RM", label: "令吉 RM" },
+];
+function resolveCurrency(raw) {
+  const s = String(raw || "CNY").trim();
+  if (!s) return CURRENCIES[0];
+  const hit = CURRENCIES.find((c) => c.code === s || c.symbol === s || c.label === s);
+  if (hit) return hit;
+  return { code: s, symbol: s, label: s };
+}
+function fmtMoney(currency, n) {
+  const v = Number(n) || 0;
+  const abs = Math.abs(v).toFixed(2).replace(/\.00$/, "");
+  const sym = resolveCurrency(currency).symbol || "¥";
+  return sym + abs;
+}
+/** Compact amount for calendar cells */
+function fmtCompact(currency, n) {
+  const sym = resolveCurrency(currency).symbol || "¥";
+  const v = Math.abs(Number(n) || 0);
+  if (v >= 100000) return sym + Math.round(v / 10000) + "万";
+  if (v >= 10000) {
+    const w = (v / 10000).toFixed(1).replace(/\.0$/, "");
+    return sym + w + "万";
+  }
+  if (Math.abs(v - Math.round(v)) < 0.005) return sym + String(Math.round(v));
+  return sym + v.toFixed(0);
+}
+
+const EXPENSE_CATS = ["餐饮", "交通", "购物", "居住", "娱乐", "医疗", "学习", "其他"];
+const INCOME_CATS = ["工资", "奖金", "兼职", "理财", "其他收入"];
+const VIEW_OPTS = [
+  { id: "day", label: "日" },
+  { id: "week", label: "周" },
+  { id: "month", label: "月" },
+  { id: "year", label: "年" },
+];
+
+const DATA_KEY = "ledger:entries";
+const SETTINGS_KEY = "settings";
+const DEFAULTS = {
+  view: "month",
+  currency: "CNY",
+  defaultCategory: "餐饮",
+  showIncome: true,
+};
+
+function usePluginSettings(api, storageKey, defaults) {
+  const [saved, setSaved] = useState(defaults);
+  const [override, setOverride] = useState({});
+  const [ready, setReady] = useState(false);
+
+  const applyOverride = useCallback((p) => {
+    setOverride(p && typeof p === "object" && !Array.isArray(p) ? p : {});
+  }, []);
+
+  useEffect(() => {
+    if (!api) return;
+    let alive = true;
+    function alarmOnly() {
+      if (api.getAlarmLaunchParams) return api.getAlarmLaunchParams() || {};
+      return api.launchParams || {};
+    }
+    (async () => {
+      const raw = (await api.storage.get(storageKey)) || {};
+      if (!alive) return;
+      setSaved(Object.assign({}, defaults, raw));
+      applyOverride(alarmOnly());
+      setReady(true);
+    })();
+    function onLaunch(ev) {
+      const d = ev && ev.detail;
+      if (d && d.alarm) applyOverride(d.alarm);
+      else applyOverride(alarmOnly());
+    }
+    window.addEventListener("callai:launch-params", onLaunch);
+    return () => {
+      alive = false;
+      window.removeEventListener("callai:launch-params", onLaunch);
+    };
+  }, [api, storageKey, applyOverride]);
+
+  const effective = useMemo(
+    () => Object.assign({}, defaults, saved, override),
+    [defaults, saved, override],
+  );
+
+  const saveSettings = useCallback(async (next) => {
+    const merged = Object.assign({}, defaults, next);
+    setSaved(merged);
+    if (api) await api.storage.set(storageKey, merged);
+  }, [api, storageKey, defaults]);
+
+  const patchSettings = useCallback(async (partial) => {
+    await saveSettings(Object.assign({}, saved, partial));
+  }, [saved, saveSettings]);
+
+  return { saved, override, effective, ready, saveSettings, patchSettings };
+}
+
+function periodRange(view, cursor) {
+  const y = cursor.getFullYear();
+  const m = cursor.getMonth();
+  const d = cursor.getDate();
+  if (view === "day") {
+    const s = new Date(y, m, d, 0, 0, 0, 0);
+    const e = new Date(y, m, d, 23, 59, 59, 999);
+    return { start: s, end: e, label: ymd(s) };
+  }
+  if (view === "week") {
+    const s = startOfWeek(cursor);
+    const e = addDays(s, 6);
+    e.setHours(23, 59, 59, 999);
+    return { start: s, end: e, label: ymd(s) + " ~ " + ymd(e) };
+  }
+  if (view === "year") {
+    const s = new Date(y, 0, 1, 0, 0, 0, 0);
+    const e = new Date(y, 11, 31, 23, 59, 59, 999);
+    return { start: s, end: e, label: String(y) + " 年" };
+  }
+  const s = new Date(y, m, 1, 0, 0, 0, 0);
+  const e = new Date(y, m + 1, 0, 23, 59, 59, 999);
+  return { start: s, end: e, label: y + "年" + pad2(m + 1) + "月" };
+}
+
+function inRange(entry, start, end) {
+  const t = parseYmd(entry.date).getTime();
+  return t >= start.getTime() && t <= end.getTime();
+}
+
+function sumEntries(list) {
+  let expense = 0;
+  let income = 0;
+  list.forEach((e) => {
+    const a = Math.abs(Number(e.amount) || 0);
+    if (e.type === "income") income += a;
+    else expense += a;
+  });
+  return { expense, income, balance: income - expense };
+}
+
+function groupByDate(list) {
+  const map = {};
+  list.forEach((e) => {
+    if (!map[e.date]) map[e.date] = [];
+    map[e.date].push(e);
+  });
+  Object.keys(map).forEach((k) => {
+    map[k].sort((a, b) => String(b.time || "").localeCompare(String(a.time || "")));
+  });
+  return Object.keys(map)
+    .sort((a, b) => b.localeCompare(a))
+    .map((date) => ({ date, items: map[date] }));
+}
+
+function App() {
+  const [api, setApi] = useState(null);
+  const [entries, setEntries] = useState([]);
+  const [cursor, setCursor] = useState(() => new Date());
+  const [selectedDay, setSelectedDay] = useState(() => ymd(new Date()));
+  const [type, setType] = useState("expense");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState(DEFAULTS.defaultCategory);
+  const [note, setNote] = useState("");
+  const [entryDate, setEntryDate] = useState(() => ymd(new Date()));
+  const [entryTime, setEntryTime] = useState(() => {
+    const d = new Date();
+    return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  });
+  const [editingId, setEditingId] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const c = await waitCallai();
+      if (!alive) return;
+      setApi(c);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const settings = usePluginSettings(api, SETTINGS_KEY, DEFAULTS);
+  const view = ["day", "week", "month", "year"].includes(settings.effective.view)
+    ? settings.effective.view
+    : "month";
+  const currencyMeta = resolveCurrency(settings.effective.currency || "CNY");
+  const currency = currencyMeta.symbol;
+  const currencyCode = currencyMeta.code;
+  const showIncome = asBool(settings.effective.showIncome, true);
+
+  useEffect(() => {
+    if (!settings.ready) return;
+    const cat = String(settings.effective.defaultCategory || "餐饮");
+    setCategory(cat);
+  }, [settings.ready, settings.effective.defaultCategory]);
+
+  useEffect(() => {
+    if (!api || !settings.ready) return;
+    let alive = true;
+    (async () => {
+      const raw = (await api.storage.get(DATA_KEY)) || [];
+      if (!alive) return;
+      setEntries(Array.isArray(raw) ? raw : []);
+    })();
+    return () => { alive = false; };
+  }, [api, settings.ready]);
+
+  const range = useMemo(() => periodRange(view, cursor), [view, cursor]);
+  const periodEntries = useMemo(
+    () => entries.filter((e) => inRange(e, range.start, range.end)),
+    [entries, range],
+  );
+  const totals = useMemo(() => sumEntries(periodEntries), [periodEntries]);
+
+  // Full ledger map so every calendar cell can show 支/收/余 (not only selected day).
+  const dayMap = useMemo(() => {
+    const m = {};
+    entries.forEach((e) => {
+      if (!e || !e.date) return;
+      if (!m[e.date]) m[e.date] = { expense: 0, income: 0 };
+      const a = Math.abs(Number(e.amount) || 0);
+      if (e.type === "income") m[e.date].income += a;
+      else m[e.date].expense += a;
+    });
+    Object.keys(m).forEach((k) => {
+      m[k].balance = m[k].income - m[k].expense;
+    });
+    return m;
+  }, [entries]);
+
+  const timelineSource = useMemo(() => {
+    if (view === "day") {
+      return periodEntries.filter((e) => e.date === selectedDay);
+    }
+    if (view === "year") {
+      // year timeline: by month summary as pseudo items? show latest 40 entries
+      return periodEntries
+        .slice()
+        .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
+        .slice(0, 40);
+    }
+    return periodEntries;
+  }, [view, periodEntries, selectedDay]);
+
+  const timelineGroups = useMemo(() => groupByDate(timelineSource), [timelineSource]);
+
+  const cats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
+
+  async function persist(next) {
+    setEntries(next);
+    if (api) await api.storage.set(DATA_KEY, next);
+  }
+
+  function shiftCursor(dir) {
+    const d = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 12, 0, 0, 0);
+    if (view === "day") d.setDate(d.getDate() + dir);
+    else if (view === "week") d.setDate(d.getDate() + dir * 7);
+    else if (view === "year") d.setFullYear(d.getFullYear() + dir);
+    else d.setMonth(d.getMonth() + dir);
+    setCursor(d);
+    setSelectedDay(ymd(d));
+  }
+
+  function goToday() {
+    const now = new Date();
+    setCursor(now);
+    setSelectedDay(ymd(now));
+    setEntryDate(ymd(now));
+  }
+
+  async function setView(v) {
+    await settings.patchSettings({ view: v });
+  }
+
+  function startEdit(e) {
+    setEditingId(e.id);
+    setType(e.type === "income" ? "income" : "expense");
+    setAmount(String(Math.abs(Number(e.amount) || 0)));
+    setCategory(e.category || DEFAULTS.defaultCategory);
+    setNote(e.note || "");
+    setEntryDate(e.date);
+    setEntryTime(e.time || "12:00");
+  }
+
+  function resetForm() {
+    setEditingId(null);
+    setAmount("");
+    setNote("");
+    setType("expense");
+    setCategory(String(settings.effective.defaultCategory || "餐饮"));
+    setEntryDate(selectedDay || ymd(new Date()));
+    const d = new Date();
+    setEntryTime(pad2(d.getHours()) + ":" + pad2(d.getMinutes()));
+  }
+
+  async function saveEntry() {
+    const a = Math.abs(parseFloat(String(amount).replace(/,/g, "")));
+    if (!a || Number.isNaN(a)) return;
+    setBusy(true);
+    try {
+      const row = {
+        id: editingId || uid(),
+        amount: Math.round(a * 100) / 100,
+        type: type === "income" ? "income" : "expense",
+        category: category || (type === "income" ? "其他收入" : "其他"),
+        note: String(note || "").trim(),
+        date: entryDate || ymd(new Date()),
+        time: entryTime || "12:00",
+        createdAt: new Date().toISOString(),
+      };
+      let next;
+      if (editingId) {
+        next = entries.map((e) => (e.id === editingId ? Object.assign({}, e, row) : e));
+      } else {
+        next = [row].concat(entries);
+      }
+      await persist(next);
+      if (api && api.notification && settings.effective) {
+        // optional soft notify only when user saved and notifications allowed via host
+      }
+      resetForm();
+      setSelectedDay(row.date);
+      setCursor(parseYmd(row.date));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeEntry(id) {
+    if (!id) return;
+    if (!window.confirm("删除这条账目？")) return;
+    setBusy(true);
+    try {
+      await persist(entries.filter((e) => e.id !== id));
+      if (editingId === id) resetForm();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const calCells = useMemo(() => {
+    if (view === "year") return null;
+    if (view === "week") {
+      const s = startOfWeek(cursor);
+      return Array.from({ length: 7 }, (_, i) => addDays(s, i));
+    }
+    // month / day: full month grid
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth();
+    const first = new Date(y, m, 1, 12, 0, 0, 0);
+    const startPad = first.getDay();
+    const dim = daysInMonth(y, m);
+    const cells = [];
+    for (let i = 0; i < startPad; i++) {
+      cells.push(addDays(first, i - startPad));
+    }
+    for (let d = 1; d <= dim; d++) {
+      cells.push(new Date(y, m, d, 12, 0, 0, 0));
+    }
+    while (cells.length % 7 !== 0) {
+      const last = cells[cells.length - 1];
+      cells.push(addDays(last, 1));
+    }
+    return cells;
+  }, [view, cursor]);
+
+  const monthMarks = useMemo(() => {
+    if (view !== "year") return null;
+    const y = cursor.getFullYear();
+    return Array.from({ length: 12 }, (_, m0) => {
+      const s = new Date(y, m0, 1, 0, 0, 0, 0);
+      const e = new Date(y, m0 + 1, 0, 23, 59, 59, 999);
+      const list = entries.filter((x) => inRange(x, s, e));
+      const t = sumEntries(list);
+      return { m0, label: m0 + 1 + "月", expense: t.expense, income: t.income, count: list.length };
+    });
+  }, [view, cursor, entries]);
+
+  if (!api || !settings.ready) {
+    return <div className="loading">小岛在翻账本…</div>;
+  }
+
+  const todayStr = ymd(new Date());
+
+  return (
+    <div className="app">
+      <header className="header row wrap">
+        <div className="grow">
+          <h1>小岛记账</h1>
+          <p>日历 · 时间线 · 分类汇总。币种默认人民币，可在记一笔卡片内切换。</p>
+        </div>
+        <span className="tag">{view}</span>
+      </header>
+
+      <div className="card stack">
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <strong style={{ color: "var(--text)", fontWeight: 900 }}>
+            {editingId ? "编辑账目" : "记一笔"}
+          </strong>
+          {editingId ? (
+            <button type="button" className="btn sm ghost" onClick={resetForm}>取消</button>
+          ) : null}
+        </div>
+
+        <div className="seg">
+          <button type="button" className={type === "expense" ? "on" : ""} onClick={() => {
+            setType("expense");
+            setCategory(String(settings.effective.defaultCategory || "餐饮"));
+          }}>支出</button>
+          {showIncome ? (
+            <button type="button" className={type === "income" ? "on" : ""} onClick={() => {
+              setType("income");
+              setCategory("工资");
+            }}>收入</button>
+          ) : null}
+        </div>
+
+        <div className="form-grid">
+          <div className="amount-field">
+            <input
+              className="input amount-input"
+              inputMode="decimal"
+              placeholder="金额"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+            <span className="amount-unit" title={currencyMeta.label}>{currency}</span>
+          </div>
+          <input
+            className="input"
+            type="time"
+            value={entryTime}
+            onChange={(e) => setEntryTime(e.target.value)}
+          />
+          <input
+            className="input full"
+            type="date"
+            value={entryDate}
+            onChange={(e) => setEntryDate(e.target.value)}
+          />
+          <input
+            className="input full"
+            placeholder="备注（可选）"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+
+        <div className="cat-row">
+          {cats.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={"cat-chip" + (category === c ? " on" : "")}
+              onClick={() => setCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <button type="button" className="btn primary" disabled={busy} onClick={saveEntry}>
+          {editingId ? "保存修改" : "记入账本"}
+        </button>
+
+        <div className="settings-row">
+          <label htmlFor="ledger-currency">记账币种（settings / ENV: currency）</label>
+          <select
+            id="ledger-currency"
+            className="select"
+            value={currencyCode}
+            onChange={(e) => settings.patchSettings({ currency: e.target.value })}
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="card soft stack">
+        <div className="seg">
+          {VIEW_OPTS.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              className={view === v.id ? "on" : ""}
+              onClick={() => setView(v.id)}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="nav-period">
+          <button type="button" className="btn icon ghost" title="上一段" onClick={() => shiftCursor(-1)}>‹</button>
+          <div className="title">{range.label}</div>
+          <button type="button" className="btn icon ghost" title="下一段" onClick={() => shiftCursor(1)}>›</button>
+          <button type="button" className="btn sm ghost" onClick={goToday}>今天</button>
+        </div>
+
+        <div className="summary">
+          <div className="sum-cell exp">
+            <div className="lab">支出</div>
+            <div className="val">{fmtMoney(currencyCode, totals.expense)}</div>
+          </div>
+          <div className="sum-cell inc">
+            <div className="lab">收入</div>
+            <div className="val">{fmtMoney(currencyCode, totals.income)}</div>
+          </div>
+          <div className="sum-cell bal">
+            <div className="lab">结余</div>
+            <div className="val">{fmtMoney(currencyCode, totals.balance)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card stack">
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <strong style={{ color: "var(--text)", fontWeight: 900 }}>
+            {view === "year" ? "月份总览" : "日历"}
+          </strong>
+          <span className="meta">{periodEntries.length} 笔 · {currencyMeta.label}</span>
+        </div>
+
+        {view === "year" ? (
+          <div className="year-grid">
+            {(monthMarks || []).map((mm) => (
+              <button
+                key={mm.m0}
+                type="button"
+                className={"year-cell" + (cursor.getMonth() === mm.m0 ? " on" : "")}
+                onClick={() => {
+                  const d = new Date(cursor.getFullYear(), mm.m0, 1, 12, 0, 0, 0);
+                  setCursor(d);
+                  setSelectedDay(ymd(d));
+                  setView("month");
+                }}
+              >
+                <div className="m">{mm.label}</div>
+                <div className="a">
+                  {mm.count ? ("支 " + fmtMoney(currencyCode, mm.expense)) : "—"}
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="cal">
+            {["日", "一", "二", "三", "四", "五", "六"].map((w) => (
+              <div key={w} className="dow">{w}</div>
+            ))}
+            {(calCells || []).map((d) => {
+              const key = ymd(d);
+              const inMonth = d.getMonth() === cursor.getMonth();
+              const mark = dayMap[key];
+              const isSel = key === selectedDay;
+              const isToday = key === todayStr;
+              const exp = mark ? mark.expense : 0;
+              const inc = mark ? mark.income : 0;
+              const bal = mark ? mark.balance : 0;
+              const hasMoney = exp > 0 || inc > 0;
+              // Always paint 支/收/余 on days with ledger data (selected or not).
+              return (
+                <button
+                  key={key + String(inMonth)}
+                  type="button"
+                  className={
+                    "cell" +
+                    (inMonth || view === "week" ? "" : " muted") +
+                    (isToday ? " today" : "") +
+                    (isSel ? " on" : "") +
+                    (hasMoney ? " has-money" : "")
+                  }
+                  title={
+                    hasMoney
+                      ? "支出 " + fmtMoney(currencyCode, exp) +
+                        " · 收入 " + fmtMoney(currencyCode, inc) +
+                        " · 结余 " + fmtMoney(currencyCode, bal)
+                      : key
+                  }
+                  onClick={() => {
+                    setSelectedDay(key);
+                    setCursor(d);
+                    setEntryDate(key);
+                  }}
+                >
+                  <span className="day-num">{d.getDate()}</span>
+                  {hasMoney ? (
+                    <span className="cell-sums" aria-hidden={false}>
+                      <span className="cell-exp">
+                        <span className="cell-lab">支</span>
+                        {exp > 0 ? "-" + fmtCompact(currencyCode, exp) : "—"}
+                      </span>
+                      <span className="cell-inc">
+                        <span className="cell-lab">收</span>
+                        {inc > 0 ? "+" + fmtCompact(currencyCode, inc) : "—"}
+                      </span>
+                      <span className="cell-bal">
+                        <span className="cell-lab">余</span>
+                        {fmtCompact(currencyCode, bal)}
+                      </span>
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="card stack">
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <strong style={{ color: "var(--text)", fontWeight: 900 }}>时间线</strong>
+          <span className="meta">
+            {view === "day" ? selectedDay : "按日纵向排列"}
+          </span>
+        </div>
+        {timelineGroups.length === 0 ? (
+          <div className="empty">这段时间还没有账目，记一笔吧～</div>
+        ) : (
+          <div className="timeline">
+            {timelineGroups.map((g) => {
+              const d = parseYmd(g.date);
+              return (
+                <div key={g.date} className="tl-day">
+                  <div className="tl-rail">
+                    <div className="tl-date">
+                      <span className="d">{d.getDate()}</span>
+                      {pad2(d.getMonth() + 1)}月
+                    </div>
+                    <div className="tl-line" />
+                  </div>
+                  <div className="tl-items">
+                    {g.items.map((e) => (
+                      <div key={e.id} className="tl-item">
+                        <div>
+                          <div className="name">
+                            <span className={"tag " + (e.type === "income" ? "inc" : "exp")}>
+                              {e.category}
+                            </span>{" "}
+                            {e.note || (e.type === "income" ? "收入" : "支出")}
+                          </div>
+                          <div className="sub">
+                            {e.time || "--:--"} · {e.date}
+                          </div>
+                          <div className="tl-actions">
+                            <button type="button" className="btn sm ghost" onClick={() => startEdit(e)}>编辑</button>
+                            <button type="button" className="btn sm danger" onClick={() => removeEntry(e.id)}>删</button>
+                          </div>
+                        </div>
+                        <div className={"amt " + (e.type === "income" ? "inc" : "exp")}>
+                          {(e.type === "income" ? "+" : "-") + fmtMoney(currencyCode, e.amount)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <p className="meta" style={{ textAlign: "center" }}>
+        数据在插件 storage。ENV 可覆盖 view / currency / defaultCategory / showIncome。
+      </p>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+  </script>
+</body>
+</html>

@@ -424,3 +424,71 @@
     margin-left: 0;
   }
 }
+
+/* Model picker in composer HUD: one solid pill, no end/middle color split */
+.ai-composer-model-slot .model-ac-input-wrap,
+.ai-composer-hud .model-ac-input-wrap {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.ai-composer-model-slot .model-ac-input-wrap [class*="animal-wrapper"],
+.ai-composer-hud .model-ac-input-wrap [class*="animal-wrapper"] {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 10px !important;
+  box-sizing: border-box !important;
+  background: #fff8ea !important;
+  background-color: #fff8ea !important;
+  border: 2px solid #c4a574 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+.ai-composer-model-slot .model-ac-input-wrap [class*="animal-wrapper"] input,
+.ai-composer-model-slot .model-ac-input-wrap [class*="animal-input"],
+.ai-composer-model-slot .model-ac-input-wrap input,
+.ai-composer-hud .model-ac-input-wrap [class*="animal-wrapper"] input,
+.ai-composer-hud .model-ac-input-wrap [class*="animal-input"],
+.ai-composer-hud .model-ac-input-wrap input {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 28px !important;
+  height: 28px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  font-size: 0.82rem !important;
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+  caret-color: #1f1408 !important;
+}
+
+/* Defeat edit-page dark rules that recolor only .animal-input (not the pill ends) */
+[data-theme="dark"] .ai-page .ai-composer-model-slot .model-ac-input-wrap [class*="animal-input"],
+[data-theme="dark"] .ai-page .ai-composer-model-slot .model-ac-input-wrap input,
+[data-theme="dark"] .edit-page.ai-page .ai-composer-model-slot .model-ac-input-wrap [class*="animal-input"],
+[data-theme="dark"] .edit-page.ai-page .ai-composer-model-slot .model-ac-input-wrap input {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+}
+
+[data-theme="dark"] .ai-page .ai-composer-model-slot .model-ac-input-wrap [class*="animal-wrapper"],
+[data-theme="dark"] .edit-page.ai-page .ai-composer-model-slot .model-ac-input-wrap [class*="animal-wrapper"] {
+  background: #fff8ea !important;
+  background-color: #fff8ea !important;
+  border-color: #c4a574 !important;
+}

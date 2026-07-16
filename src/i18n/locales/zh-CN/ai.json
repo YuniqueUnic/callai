@@ -65,5 +65,7 @@
   "collapsedHint": "内容已收起",
   "thinkingLabel": "阔爱在想",
   "answerLabel": "回复",
-  "deleteSelectedConfirm": "确定删除选中的 {{count}} 条消息？"
+  "deleteSelectedConfirm": "确定删除选中的 {{count}} 条消息？",
+  "deleteMessage": "删除",
+  "deleteMessageConfirm": "确定删除这条消息？"
 }

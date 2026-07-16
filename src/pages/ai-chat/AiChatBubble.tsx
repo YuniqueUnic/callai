@@ -29,6 +29,7 @@ interface Props {
   onAcceptAlarm: (id: string, draft: AlarmDraft) => void;
   onAcceptPlugin: (id: string, draft: PluginDraft) => void;
   onDismiss: (id: string) => void;
+  onDelete: (id: string) => void;
   onPointerDown: (id: string, e: ReactPointerEvent) => void;
   onPointerEnd: () => void;
   onClick: (id: string) => void;
@@ -133,6 +134,7 @@ export function AiChatBubble({
   onAcceptAlarm,
   onAcceptPlugin,
   onDismiss,
+  onDelete,
   onPointerDown,
   onPointerEnd,
   onClick,
@@ -317,18 +319,14 @@ export function AiChatBubble({
             />
           </StopRow>
         ) : null}
-        {m.role === "assistant" &&
-        (m.kind === "alarm_draft" || m.kind === "plugin_draft") &&
-        !m.applied ? (
-          <StopRow>
-            <IconButton
-              label={t("ai:discardDraft")}
-              icon={<IconTrash size={14} />}
-              sfx="cancel"
-              onClick={() => onDismiss(m.id)}
-            />
-          </StopRow>
-        ) : null}
+        <StopRow>
+          <IconButton
+            label={t("ai:deleteMessage")}
+            icon={<IconTrash size={14} />}
+            sfx="cancel"
+            onClick={() => onDelete(m.id)}
+          />
+        </StopRow>
       </div>
     );
   })();

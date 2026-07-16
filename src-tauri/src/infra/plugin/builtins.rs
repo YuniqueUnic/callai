@@ -50,6 +50,11 @@ pub static CATALOG: &[BuiltinPluginSpec] = &[
         manifest_json: include_str!("../../../templates/builtin_plugins/work-report/manifest.json"),
         ui_html: include_str!("../../../templates/builtin_plugins/work-report/ui.html"),
     },
+    BuiltinPluginSpec {
+        id: "ledger",
+        manifest_json: include_str!("../../../templates/builtin_plugins/ledger/manifest.json"),
+        ui_html: include_str!("../../../templates/builtin_plugins/ledger/ui.html"),
+    },
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

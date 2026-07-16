@@ -58,9 +58,116 @@ html.callai-theme-dark #callai-host-root #callai-host-bar:focus-within,
 html.callai-theme-dark #callai-host-root #callai-host-bar.is-dragging {
   opacity: 1;
 }
-/* Host modal stays parchment island plate in dark (matches animal-island Modal). */
+/* Host modal dark — full island dark plate (not invert filter; host is outside body) */
 html.callai-theme-dark #callai-host-modal-backdrop {
-  background: rgba(40, 30, 20, 0.55);
+  background: rgba(12, 12, 14, 0.62);
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-modal-plate {
+  background: #2a2620 !important;
+  color: #e8dfd0 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-modal-title,
+html.callai-theme-dark #callai-host-root #callai-host-modal h2.ch-modal-title {
+  color: #f5ebe0 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-modal-x {
+  color: rgba(245, 235, 224, 0.65) !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-modal-x:hover,
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-modal-x:focus-visible {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f5ebe0 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-meta,
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-hint {
+  color: #b8a894 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-label {
+  color: #f0e6d8 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-tabs-card {
+  background: #322c24 !important;
+  border-color: #5a5248 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-tabs {
+  background: #241f1a !important;
+  border-color: #5a5248 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-tabs button {
+  color: #c4b8a8 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-tabs button:hover {
+  background: rgba(25, 200, 185, 0.16) !important;
+  color: #f5ebe0 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-tabs button.on {
+  background: #0cc0b5 !important;
+  color: #fff9e3 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-tabs-card > .ch-modal-body {
+  background: #2a2620 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-btn {
+  background: #3a342c !important;
+  border-color: #6a6254 !important;
+  color: #e8dfd0 !important;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25) !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-btn:hover {
+  color: #5ee0d2 !important;
+  border-color: #19c8b9 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-btn.primary {
+  background: #ffcc00 !important;
+  border-color: #ffcc00 !important;
+  color: #2a1c0e !important;
+  box-shadow: 0 4px 0 0 #b89400 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-btn.primary:hover {
+  background: #ffd633 !important;
+  border-color: #ffd633 !important;
+  color: #2a1c0e !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-btn.ghost {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: rgba(232, 223, 208, 0.75) !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f5ebe0 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-input {
+  background: #1e1b17 !important;
+  border-color: #6a6254 !important;
+  color: #f5ebe0 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-input::placeholder {
+  color: #8a7f70 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-input:hover {
+  border-color: #8a7f70 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-input:focus {
+  border-color: #ffcc00 !important;
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.18) !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-seg {
+  background: #1e1b17 !important;
+  border-color: #6a6254 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-seg button {
+  color: #b8a894 !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-seg button.on {
+  background: #0cc0b5 !important;
+  color: #fff !important;
+}
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-override-row,
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-override-k,
+html.callai-theme-dark #callai-host-root #callai-host-modal .ch-override-v {
+  color: #e8dfd0 !important;
+  border-color: #5a5248 !important;
 }
 
 

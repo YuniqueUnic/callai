@@ -44,6 +44,7 @@ builtin_plugins/
 | `pomodoro` | 番茄时钟 | focus / break timer with notifications |
 | `meal-spin` | 今天吃喝什么 | food/drink wheel; alarm `mode` / ENV page override |
 | `work-report` | 工作汇报 | daily / weekly / monthly report notes |
+| `ledger` | 小岛记账 | calendar + timeline ledger with categories & totals |
 
 ## 参数模型（settings ≡ launch / ENV 同名覆盖）
 

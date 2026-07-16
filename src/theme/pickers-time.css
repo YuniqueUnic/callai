@@ -75,6 +75,17 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.time-wheel-scroller:focus {
+  outline: none;
+}
+
+.time-wheel-scroller:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--callai-primary) 55%, transparent);
+  outline-offset: -2px;
+  border-radius: 10px;
+}
+
+
 .time-wheel-pad {
   height: 72px;
 }
