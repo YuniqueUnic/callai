@@ -1,12 +1,34 @@
 {
   "id": "meal-spin",
   "name": "今天吃喝什么",
-  "version": "0.4.0",
-  "description": "吃/喝转盘。设置 mode；闹钟 ENV mode=drink 打开喝什么页。",
+  "version": "0.6.0",
+  "description": "吃/喝转盘。settings/ENV 同名覆盖：mode, spinSeconds, autoNotify, lockMode。",
   "permissions": [
     "storage",
     "timer",
     "notification"
   ],
-  "ui": "ui.html"
+  "ui": "ui.html",
+  "params": {
+    "mode": {
+      "description": "food 或 drink",
+      "default": "food",
+      "enum": [
+        "food",
+        "drink"
+      ]
+    },
+    "spinSeconds": {
+      "description": "转动秒数",
+      "default": 4
+    },
+    "autoNotify": {
+      "description": "转完后通知",
+      "default": true
+    },
+    "lockMode": {
+      "description": "锁定 mode 切换",
+      "default": false
+    }
+  }
 }

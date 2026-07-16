@@ -198,16 +198,43 @@
   overflow: visible !important;
 }
 
-/* Open Select: lift owning card above later siblings */
+/* Open Select: lift owning card above later siblings (task/schedule cards).
+   animal-island Select dropdown is position:absolute inside the card — not portaled. */
 .edit-page .form-panel:has([aria-expanded="true"]),
 .edit-page .form-stack > [class*="animal-card"]:has([aria-expanded="true"]),
 .form-panel:has([aria-expanded="true"]) {
-  z-index: 90 !important;
+  z-index: 200 !important;
+  overflow: visible !important;
 }
 
-/* Library Select yellow popup */
+/* Template field: local stacking boost even if :has on card fails */
+.edit-page .field-template {
+  position: relative;
+  z-index: 2;
+}
+.edit-page .field-template:has([aria-expanded="true"]),
+.edit-page .field-template:has([class*="animal-open"]) {
+  z-index: 210 !important;
+}
+
+/* Later form panels stay under an open select card */
+.edit-page .form-panel:not(:has([aria-expanded="true"])) {
+  z-index: 1;
+}
+
+/* Cards must not clip absolute yellow dropdown */
+.edit-page .form-panel,
+.edit-page .form-panel [class*="animal-card"],
+.edit-page [class*="animal-card"].form-panel,
+.edit-page .field-template [class*="animal-wrapper"] {
+  overflow: visible !important;
+}
+
+/* Library Select yellow popup — above card content */
+.edit-page [class*="animal-dropdown"],
 [class*="animal-dropdown"] {
-  z-index: 120 !important;
+  z-index: 250 !important;
+  position: absolute !important;
 }
 
 /* Portaled callai tooltips (body) */

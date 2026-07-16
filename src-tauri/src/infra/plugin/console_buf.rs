@@ -87,11 +87,6 @@ impl PluginConsoleStore {
         list_rev_take(&rings.errors, limit, PLUGIN_ERROR_LOG_MAX)
     }
 
-    pub fn clear(&self, plugin_id: &str) {
-        let mut map = self.inner.lock().unwrap();
-        map.remove(plugin_id);
-    }
-
     pub fn clear_console(&self, plugin_id: &str) {
         let mut map = self.inner.lock().unwrap();
         if let Some(rings) = map.get_mut(plugin_id) {

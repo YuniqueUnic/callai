@@ -30,7 +30,7 @@ export function PluginImportConflictModal({
       <p className="meta" style={{ marginTop: 0 }}>
         {t("plugins:importConflictHint", {
           defaultValue:
-            "检测到同名插件 id。选择：覆盖（替换 UI）、另存为新 id、或取消。",
+            "要覆盖原来的界面、另存成新插件，还是先取消？",
         })}
       </p>
       {pluginId ? (

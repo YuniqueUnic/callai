@@ -17,6 +17,7 @@ import {
 import { PluginLogsPanel } from "./PluginLogsPanel";
 import { PluginExportModal } from "./plugins/PluginExportModal";
 import { PluginImportConflictModal } from "./plugins/PluginImportConflictModal";
+import { PluginRestoreModal } from "./plugins/PluginRestoreModal";
 import { usePluginZip } from "./plugins/usePluginZip";
 import type { BuiltinCatalogItem } from "./plugins/types";
 import { PluginListCard } from "./plugins/PluginListCard";
@@ -48,6 +49,11 @@ export function PluginsPage({
   const [confirmDelete, setConfirmDelete] = useState<PluginSummary | null>(
     null,
   );
+  const [confirmRestore, setConfirmRestore] = useState<PluginSummary | null>(
+    null,
+  );
+  const [restoreWipeData, setRestoreWipeData] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [logTarget, setLogTarget] = useState<PluginSummary | null>(null);
   const [consoleLines, setConsoleLines] = useState<
     { level: string; args: string[]; t: number }[]
@@ -97,6 +103,7 @@ export function PluginsPage({
     toastSuccess: (o) => toast.success(o),
     toastError: (o) => toast.error(o),
     playConfirm: () => playSound("confirm"),
+    playWarn: () => playSound("warn"),
   });
 
   useEffect(() => {
@@ -262,6 +269,33 @@ export function PluginsPage({
     }
   }
 
+  async function restoreBuiltin(p: PluginSummary, wipeData: boolean) {
+    setRestoring(true);
+    try {
+      await client.restoreBuiltinPlugin(p.id, wipeData);
+      setConfirmRestore(null);
+      setRestoreWipeData(false);
+      await refresh();
+      window.dispatchEvent(new CustomEvent("callai:plugins-changed"));
+      playSound("soft");
+      toast.success({
+        message: wipeData
+          ? t("plugins:restoredWithWipe", {
+              defaultValue: "已恢复内置并清空数据",
+            })
+          : t("plugins:restored", {
+              defaultValue: "已从内置目录恢复 UI",
+            }),
+      });
+    } catch (e) {
+      toast.error({
+        message: String((e as { message?: string })?.message ?? e),
+      });
+    } finally {
+      setRestoring(false);
+    }
+  }
+
   return (
     <div className="page plugins-page">
       <header className="soft-header plugins-hero">
@@ -293,6 +327,7 @@ export function PluginsPage({
                     return;
                   const up = await client.upgradeBuiltinPlugins();
                   await refresh();
+                  playSound(up.length > 0 ? "confirm" : "soft");
                   toast.success({
                     message: t("plugins:upgraded", {
                       defaultValue: "已更新 {{n}} 个内置插件",
@@ -344,6 +379,7 @@ export function PluginsPage({
               f.type.includes("zip"),
           );
           if (!z) {
+            playSound("warn");
             toast.error({
               message: t("plugins:dropZipOnly", {
                 defaultValue: "请拖入 .zip 插件包",
@@ -351,6 +387,7 @@ export function PluginsPage({
             });
             return;
           }
+          playSound("soft");
           void z.arrayBuffer().then((buf) =>
             zip.beginImportBytes(new Uint8Array(buf)),
           );
@@ -368,14 +405,20 @@ export function PluginsPage({
           <button
             type="button"
             className={pluginView === "installed" ? "on" : ""}
-            onClick={() => setPluginView("installed")}
+            onClick={() => {
+              playSound("soft");
+              setPluginView("installed");
+            }}
           >
             {t("plugins:tabInstalled", { defaultValue: "已安装" })}
           </button>
           <button
             type="button"
             className={pluginView === "registry" ? "on" : ""}
-            onClick={() => setPluginView("registry")}
+            onClick={() => {
+              playSound("soft");
+              setPluginView("registry");
+            }}
           >
             {t("plugins:tabRegistry", { defaultValue: "市场" })}
           </button>
@@ -419,23 +462,8 @@ export function PluginsPage({
                 onFix={() => void fixPluginWithAi(p)}
                 onExport={() => zip.setExportTarget(p)}
                 onRestore={() => {
-                  void (async () => {
-                    try {
-                      await client.restoreBuiltinPlugin(p.id, false);
-                      await refresh();
-                      toast.success({
-                        message: t("plugins:restored", {
-                          defaultValue: "已从内置目录恢复 UI",
-                        }),
-                      });
-                    } catch (e) {
-                      toast.error({
-                        message: String(
-                          (e as { message?: string })?.message ?? e,
-                        ),
-                      });
-                    }
-                  })();
+                  setRestoreWipeData(false);
+                  setConfirmRestore(p);
                 }}
                 onDelete={() => setConfirmDelete(p)}
               />
@@ -542,8 +570,12 @@ export function PluginsPage({
         open={!!confirmDelete}
         title={t("common:delete")}
         typewriter={false}
-        onClose={() => setConfirmDelete(null)}
+        onClose={() => {
+          playSound("cancel");
+          setConfirmDelete(null);
+        }}
         onOk={() => {
+          playSound("warn");
           if (confirmDelete) void remove(confirmDelete);
         }}
       >
@@ -554,6 +586,23 @@ export function PluginsPage({
           </div>
         ) : null}
       </Modal>
+
+      <PluginRestoreModal
+        target={confirmRestore}
+        wipeData={restoreWipeData}
+        restoring={restoring}
+        onWipeChange={setRestoreWipeData}
+        onClose={() => {
+          if (restoring) return;
+          setConfirmRestore(null);
+          setRestoreWipeData(false);
+        }}
+        onConfirm={() => {
+          if (confirmRestore && !restoring) {
+            void restoreBuiltin(confirmRestore, restoreWipeData);
+          }
+        }}
+      />
 
       <PluginExportModal
         target={zip.exportTarget}

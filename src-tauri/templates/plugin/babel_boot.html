@@ -1,6 +1,28 @@
 <script>
-/* callai: force classic JSX for UMD React (no import statements) */
+/* callai: classic JSX for UMD React; register once; hush Babel sandbox noise */
 (function () {
+  if (window.__callaiBabelBoot) return;
+  window.__callaiBabelBoot = true;
+
+  try {
+    var origWarn = console.warn;
+    console.warn = function () {
+      var msg = arguments[0];
+      if (typeof msg === "string") {
+        if (msg.indexOf("in-browser Babel transformer") !== -1) return;
+        if (
+          msg.indexOf("already registered") !== -1 &&
+          msg.toLowerCase().indexOf("preset") !== -1
+        ) {
+          return;
+        }
+      }
+      return origWarn.apply(console, arguments);
+    };
+  } catch (e) {
+    /* ignore */
+  }
+
   function register() {
     if (
       !window.Babel ||
@@ -9,6 +31,7 @@
     ) {
       return;
     }
+    if (window.__callaiReactClassicPreset) return;
     try {
       window.Babel.registerPreset("react-classic", {
         presets: [
@@ -16,10 +39,14 @@
         ],
       });
     } catch (e) {
-      /* already registered */
+      /* concurrent / already present */
     }
+    window.__callaiReactClassicPreset = true;
   }
+
   register();
-  document.addEventListener("DOMContentLoaded", register);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", register, { once: true });
+  }
 })();
 </script>

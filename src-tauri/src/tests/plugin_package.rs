@@ -14,6 +14,7 @@ fn export_import_roundtrip_bare_and_with_data() {
             description: "zip".into(),
             permissions: vec![PluginPermission::Storage],
             ui: "ui.html".into(),
+            params: Default::default(),
         },
         ui_html: "<html><body>pack</body></html>".into(),
     };
@@ -62,6 +63,7 @@ fn conflict_fail_and_overwrite() {
             description: String::new(),
             permissions: vec![PluginPermission::Storage],
             ui: "ui.html".into(),
+            params: Default::default(),
         },
         ui_html: "<html>v1</html>".into(),
     };

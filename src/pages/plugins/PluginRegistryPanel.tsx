@@ -46,7 +46,7 @@ export function PluginRegistryPanel({ installedIds, onInstalled }: Props) {
     if (typeof client.fetchPluginRegistry !== "function") {
       setError(
         t("plugins:registryDesktopOnly", {
-          defaultValue: "Registry browse requires desktop app",
+          defaultValue: "市场需要在桌面应用里打开",
         }),
       );
       return;
@@ -104,7 +104,7 @@ export function PluginRegistryPanel({ installedIds, onInstalled }: Props) {
       <Card className="form-panel plugin-registry-toolbar">
         <div className="field">
           <label>
-            {t("plugins:registryUrl", { defaultValue: "Registry URL" })}
+            {t("plugins:registryUrl", { defaultValue: "市场地址" })}
           </label>
           <Input
             value={url}
@@ -114,7 +114,7 @@ export function PluginRegistryPanel({ installedIds, onInstalled }: Props) {
         </div>
         <div className="row-actions" style={{ marginTop: 10, gap: 8 }}>
           <IconButton
-            label={t("plugins:registryRefresh", { defaultValue: "刷新目录" })}
+            label={t("plugins:registryRefresh", { defaultValue: "刷新" })}
             icon={<IconOpen size={16} />}
             variant="primary"
             sfx="soft"
@@ -124,8 +124,7 @@ export function PluginRegistryPanel({ installedIds, onInstalled }: Props) {
         </div>
         <p className="meta" style={{ marginTop: 8 }}>
           {t("plugins:registryHint", {
-            defaultValue:
-              "GitHub raw registry.json。条目需提供 https zip_url（callai 插件包）。",
+            defaultValue: "填入市场目录地址，即可浏览可安装的插件。",
           })}
         </p>
       </Card>
@@ -139,15 +138,14 @@ export function PluginRegistryPanel({ installedIds, onInstalled }: Props) {
           </p>
           <p className="meta">
             {t("plugins:registryEmptyHint", {
-              defaultValue:
-                "若默认仓库尚不存在，可填本地/自建 registry URL，或参考 docs/plugin-registry.md。",
+              defaultValue: "可以换一个市场地址再试试。",
             })}
           </p>
         </Card>
       ) : !index || index.plugins.length === 0 ? (
         <Card className="form-panel">
           <p className="meta">
-            {t("plugins:registryEmpty", { defaultValue: "目录为空" })}
+            {t("plugins:registryEmpty", { defaultValue: "市场里暂时空空的" })}
           </p>
         </Card>
       ) : (

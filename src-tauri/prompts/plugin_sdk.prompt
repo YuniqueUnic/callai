@@ -12,20 +12,40 @@ Talk to the host **only** through `window.callai`.
 ### 0.1 One persistence layer
 
 - **`callai.storage` is the only durable store** for plugin configuration and user data.
-- **settings ≡ params** — different English words, same keys, same storage.
-- **launch / alarm / ENV overrides** are **not** a second product system.
-  They are **same-key overlays for this open only** (they do **not** write storage unless the user explicitly saves in your UI).
+- **settings ≡ params** — different English words, same keys, same storage object (usually key `"settings"`).
+- **Alarm Task → ENV is the only place users configure runtime overrides** when scheduling a plugin.
+  ENV does **not** write storage; it only overlays same-named keys for **this open**.
 
 ```text
-effective(key) = defaults < storage value < same-key override (this open)
+effective(key) = defaults < storage.settings < same-key override (this open)
 ```
 
-Override sources (later wins), merged into `callai.getLaunchParams()`:
+Override sources for `callai.getLaunchParams()` (later wins):
 
-1. Host panel params (optional convenience editor)
-2. `alarm.plugin.params`
-3. argv `key=value` after plugin id
-4. ENV: `CALLAI_PLUGIN_PARAMS` JSON, `CALLAI_PLUGIN_PARAM_<key>`, `CALLAI_PLUGIN_MODE` / `CALLAI_PLUGIN_PAGE`
+1. Host panel optional param sheet (same storage keys; convenience only)
+2. argv `key=value` after plugin id
+3. **Alarm Task → ENV direct keys** — e.g. `mode=drink` (key name = your settings key)
+
+There are **no** `CALLAI_PLUGIN_MODE` / `CALLAI_PLUGIN_PARAM_*` aliases.
+Do **not** invent a second alarm form for params. Users put overrides only in **ENV**.
+
+### 0.1b `manifest.json` `params` (optional declare)
+
+Declare initial keys so the host can autocomplete ENV keys and document the contract:
+
+```json
+{
+  "id": "meal-spin",
+  "params": {
+    "mode": { "description": "food | drink", "default": "food", "enum": ["food", "drink"] },
+    "spinSeconds": { "default": 4 }
+  }
+}
+```
+
+- **Optional.** Missing `params` is fine.
+- Host also **discovers keys** from live `storage.settings` for autocomplete.
+- Declared keys are a better DX for agents and first-run; discovery covers growth without re-manifest.
 
 ### 0.2 Host already owns common chrome
 
@@ -147,8 +167,8 @@ Use **one key name** everywhere:
 | Use | Example |
 | --- | --- |
 | storage | `{ mode: "food" }` |
-| alarm params | `{ "mode": "drink" }` |
-| ENV | `CALLAI_PLUGIN_PARAM_mode=drink` or `CALLAI_PLUGIN_MODE=drink` |
+| Task ENV | `mode=drink` (same key name) |
+| argv | `meal-spin` + `mode=drink` |
 
 ---
 

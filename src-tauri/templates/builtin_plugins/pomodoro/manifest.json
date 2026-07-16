@@ -1,12 +1,47 @@
 {
   "id": "pomodoro",
   "name": "番茄时钟",
-  "version": "0.4.0",
-  "description": "番茄钟。设置 mode/时长；闹钟 ENV 同名覆盖即可换模式。",
+  "version": "0.6.0",
+  "description": "番茄钟。settings/ENV：mode, focusMin, shortBreakMin, longBreakMin, cycles, autoStartBreak, soundNotify。",
   "permissions": [
     "storage",
     "timer",
     "notification"
   ],
-  "ui": "ui.html"
+  "ui": "ui.html",
+  "params": {
+    "mode": {
+      "description": "focus/short/long",
+      "default": "focus",
+      "enum": [
+        "focus",
+        "short",
+        "long"
+      ]
+    },
+    "focusMin": {
+      "description": "专注分钟",
+      "default": 25
+    },
+    "shortBreakMin": {
+      "description": "短休分钟",
+      "default": 5
+    },
+    "longBreakMin": {
+      "description": "长休分钟",
+      "default": 15
+    },
+    "cycles": {
+      "description": "循环数",
+      "default": 4
+    },
+    "autoStartBreak": {
+      "description": "自动开始休息",
+      "default": true
+    },
+    "soundNotify": {
+      "description": "结束通知",
+      "default": true
+    }
+  }
 }

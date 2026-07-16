@@ -90,7 +90,9 @@ pub fn plugin_get_console(
 
 #[tauri::command]
 pub fn plugin_clear_console(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    state.plugin_console.clear(&id);
+    // Clear both console + error rings (frontend "清空 Console" expects a full wipe).
+    state.plugin_console.clear_console(&id);
+    state.plugin_console.clear_errors(&id);
     Ok(())
 }
 

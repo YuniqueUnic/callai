@@ -1,13 +1,32 @@
 {
   "id": "work-report",
   "name": "工作汇报",
-  "version": "0.4.0",
-  "description": "日/周/月报。设置 kind；闹钟 ENV kind=weekly 打开周报。",
+  "version": "0.6.0",
+  "description": "日/周/月报。settings/ENV：kind, placeholderHints, notifyOnSave。",
   "permissions": [
     "storage",
     "timer",
     "notification",
     "history"
   ],
-  "ui": "ui.html"
+  "ui": "ui.html",
+  "params": {
+    "kind": {
+      "description": "daily/weekly/monthly",
+      "default": "daily",
+      "enum": [
+        "daily",
+        "weekly",
+        "monthly"
+      ]
+    },
+    "placeholderHints": {
+      "description": "占位提示",
+      "default": true
+    },
+    "notifyOnSave": {
+      "description": "保存后通知",
+      "default": true
+    }
+  }
 }

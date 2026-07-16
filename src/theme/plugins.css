@@ -573,11 +573,27 @@ html.tauri:has(.plugin-win-shell) #root::-webkit-scrollbar {
   background: #1c1915 !important;
   color: #f5efe4 !important;
   border-color: #5a5246 !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+  /* NEVER outer drop-shadow: paints square "ears" outside radius on transparent host */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35) !important;
+  clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
+  -webkit-clip-path: inset(0 round var(--callai-window-radius, 16px)) !important;
+  overflow: hidden !important;
+}
+html.tauri .plugin-win-shell.is-content-dark.app-shell.has-titlebar {
+  background: #1c1915 !important;
+  border-color: #5a5246 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35) !important;
 }
 .plugin-win-shell.is-content-dark > .titlebar,
 .plugin-win-shell.is-content-dark > .titlebar.is-plugin-titlebar,
-.plugin-win-shell.is-content-dark > .titlebar.is-plugin-compact {
+.plugin-win-shell.is-content-dark > .titlebar.is-plugin-compact,
+html.tauri .plugin-win-shell.is-content-dark > .titlebar,
+html[data-theme="dark"] .plugin-win-shell.is-content-dark > .titlebar {
+  /* Beat global titlebar transparent HUD so plugin chrome stays solid dark */
   background: #1c1915 !important;
   background-color: #1c1915 !important;
   background-image: none !important;
@@ -597,11 +613,6 @@ html.tauri:has(.plugin-win-shell) #root::-webkit-scrollbar {
   color: #a89f8e !important;
   opacity: 0.95;
 }
-.plugin-win-shell.is-content-dark > .titlebar .titlebar-pill {
-  background: #2a2620 !important;
-  color: #f5efe4 !important;
-  border-color: #5a5246 !important;
-}
 .plugin-win-shell.is-content-dark > .titlebar .titlebar-btn:not(.is-traffic) {
   background: #3a342c !important;
   border-color: #5a5246 !important;
@@ -609,11 +620,6 @@ html.tauri:has(.plugin-win-shell) #root::-webkit-scrollbar {
 }
 .plugin-win-shell.is-content-dark > .titlebar .titlebar-btn:not(.is-traffic):hover {
   background: #4a433a !important;
-}
-.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic) {
-  background: #19c8b9 !important;
-  border-color: #11a89b !important;
-  color: #fff !important;
 }
 .plugin-win-shell.is-content-dark > .titlebar .titlebar-close:not(.is-traffic):hover {
   background: #c94444 !important;
@@ -638,31 +644,137 @@ html.tauri:has(.plugin-win-shell.is-content-dark) #root {
 }
 
 /* Pin / fullscreen badges + active extras: high contrast on dark plugin chrome */
-.plugin-win-shell.is-content-dark > .titlebar .titlebar-pill {
-  background: #19c8b9 !important;
-  color: #062a26 !important;
-  border: 1px solid #0d8a7e !important;
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-pill,
+html[data-theme="dark"] .plugin-win-shell.is-content-dark > .titlebar .titlebar-pill {
+  background: #5ee0d2 !important;
+  color: #042f2b !important;
+  -webkit-text-fill-color: #042f2b !important;
+  border: 2px solid #9ff5eb !important;
   font-weight: 900 !important;
   letter-spacing: 0.02em;
+  text-shadow: none !important;
+  opacity: 1 !important;
 }
-.plugin-win-shell.is-content-dark > .titlebar .titlebar-pill.is-focus {
-  background: #f5c31c !important;
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-pill.is-focus,
+html[data-theme="dark"] .plugin-win-shell.is-content-dark > .titlebar .titlebar-pill.is-focus {
+  background: #ffd666 !important;
   color: #3a2800 !important;
-  border-color: #d4a40f !important;
+  -webkit-text-fill-color: #3a2800 !important;
+  border-color: #ffe9a0 !important;
 }
-.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic) {
-  background: #19c8b9 !important;
-  border-color: #0d8a7e !important;
-  color: #062a26 !important;
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic),
+html[data-theme="dark"] .plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic) {
+  background: #5ee0d2 !important;
+  border-color: #9ff5eb !important;
+  color: #042f2b !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25) !important;
 }
-.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic) svg {
-  color: #062a26 !important;
-  stroke: #062a26 !important;
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic) svg,
+html[data-theme="dark"] .plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic) svg {
+  color: #042f2b !important;
+  stroke: #042f2b !important;
 }
 .plugin-win-shell.is-content-dark > .titlebar .titlebar-extras .titlebar-btn:not(.is-traffic) {
   color: #f5efe4 !important;
 }
 .plugin-win-shell.is-content-dark > .titlebar .titlebar-extras .titlebar-btn.is-active:not(.is-traffic) {
-  color: #062a26 !important;
+  color: #042f2b !important;
+}
+
+/* Extra guard: transparent host corners stay clear in dark plugin windows */
+html.tauri:has(.plugin-win-shell.is-content-dark) #root,
+html.tauri:has(.plugin-win-shell.is-content-dark) .cursor-root {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* ── Plugin confirm modals (restore / export style cards) ──
+   Portaled on parchment plate (see dark-overlays). Use brown ink, not page dark tokens. */
+.plugin-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #5a3d1e;
+}
+.plugin-confirm-lead {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #5a3d1e;
+}
+.plugin-confirm-target {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 2px solid color-mix(in srgb, #b89f7e 70%, transparent);
+  background: #fffaf0;
+  box-shadow: 0 3px 0 rgba(121, 79, 39, 0.08);
+}
+.plugin-confirm-name {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #4a3118;
+  letter-spacing: 0.01em;
+}
+.plugin-confirm-meta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #7a6548;
+  word-break: break-all;
+}
+.plugin-confirm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 2px dashed color-mix(in srgb, #b89f7e 65%, transparent);
+  background: color-mix(in srgb, #fffaf0 88%, #efe6d4);
+}
+.plugin-confirm-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.plugin-confirm-row-title {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #4a3118;
+}
+.plugin-confirm-row-hint {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #7a6548 !important;
+}
+.plugin-confirm-actions {
+  margin-top: 4px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Ensure dark app theme does not wash these island cards */
+[data-theme="dark"] .plugin-confirm,
+[data-theme="dark"] .plugin-confirm-lead,
+[data-theme="dark"] .plugin-confirm-name,
+[data-theme="dark"] .plugin-confirm-row-title {
+  color: #4a3118 !important;
+}
+[data-theme="dark"] .plugin-confirm-meta,
+[data-theme="dark"] .plugin-confirm-row-hint,
+[data-theme="dark"] .plugin-confirm .meta {
+  color: #7a6548 !important;
+}
+[data-theme="dark"] .plugin-confirm-target {
+  background: #fffaf0 !important;
+  border-color: rgba(184, 159, 126, 0.7) !important;
+}
+[data-theme="dark"] .plugin-confirm-row {
+  background: #f7f1e4 !important;
+  border-color: rgba(184, 159, 126, 0.65) !important;
 }
 

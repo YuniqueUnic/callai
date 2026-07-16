@@ -28,7 +28,7 @@ export function PluginExportModal({
       <p className="meta" style={{ marginTop: 0 }}>
         {t("plugins:exportHint", {
           defaultValue:
-            "裸包仅含 manifest + UI（适合分享/市场）；含数据会附带 data.db（设置与本地记录）。",
+            "可以只带走界面，方便分享；也可以连同你的记录一起打包。",
         })}
       </p>
       {target ? (
@@ -42,7 +42,7 @@ export function PluginExportModal({
         style={{ marginTop: 16, gap: 10, flexWrap: "wrap" }}
       >
         <IconButton
-          label={t("plugins:exportBare", { defaultValue: "导出裸包" })}
+          label={t("plugins:exportBare", { defaultValue: "只导出界面" })}
           icon={<IconDownload size={16} />}
           variant="primary"
           sfx="confirm"
@@ -51,7 +51,7 @@ export function PluginExportModal({
         />
         <IconButton
           label={t("plugins:exportWithData", {
-            defaultValue: "导出（含数据）",
+            defaultValue: "连同记录导出",
           })}
           icon={<IconDownload size={16} />}
           sfx="soft"

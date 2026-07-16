@@ -18,7 +18,8 @@
 
   var prefs = Object.assign({}, defaults);
   var hostParams = {};
-  var panelPos = null; // {x,y} or null → default bottom-right
+  var panelPos = null; // anchors: snapX/snapY + xFrac/yFrac
+  var dragOrient = null; // "vertical"|"horizontal" while dragging
   var dragging = false;
   var dragOffset = { x: 0, y: 0 };
   var moved = false;
@@ -105,60 +106,172 @@
   }
 
 
+  function viewport() {
+    return {
+      vw: window.innerWidth || 360,
+      vh: window.innerHeight || 640,
+    };
+  }
+
   function barSize() {
     var bar = $("callai-host-bar");
     if (!bar) return { w: BAR_W_FALLBACK, h: BAR_H };
     var r = bar.getBoundingClientRect();
     return {
-      w: Math.max(80, Math.round(r.width) || BAR_W_FALLBACK),
+      w: Math.max(40, Math.round(r.width) || BAR_W_FALLBACK),
       h: Math.max(40, Math.round(r.height) || BAR_H),
     };
   }
 
-  function clampPos(x, y) {
-    var vw = window.innerWidth || 360;
-    var vh = window.innerHeight || 640;
-    var s = barSize();
-    x = Math.max(MARGIN, Math.min(vw - s.w - MARGIN, x));
-    y = Math.max(MARGIN, Math.min(vh - s.h - MARGIN, y));
-    return { x: x, y: y };
+  /** Vertical only when docked to left/right mid-edge (no top/bottom snap). */
+  function isVerticalDock(pos) {
+    return !!(pos && pos.snapX && !pos.snapY);
   }
 
-  function snapPos(x, y) {
-    var vw = window.innerWidth || 360;
-    var vh = window.innerHeight || 640;
+  function applyOrientation() {
+    var bar = $("callai-host-bar");
+    if (!bar) return;
+    var vertical =
+      dragOrient != null
+        ? dragOrient === "vertical"
+        : isVerticalDock(panelPos);
+    bar.classList.toggle("is-vertical", vertical);
+  }
+
+  function writeFracs(pos, s, vw, vh) {
+    var freeW = Math.max(1, vw - s.w - 2 * MARGIN);
+    var freeH = Math.max(1, vh - s.h - 2 * MARGIN);
+    pos.xFrac = (pos.x - MARGIN) / freeW;
+    pos.yFrac = (pos.y - MARGIN) / freeH;
+    if (pos.xFrac < 0) pos.xFrac = 0;
+    if (pos.xFrac > 1) pos.xFrac = 1;
+    if (pos.yFrac < 0) pos.yFrac = 0;
+    if (pos.yFrac > 1) pos.yFrac = 1;
+    return pos;
+  }
+
+  function defaultPos() {
+    var v = viewport();
+    applyOrientation();
     var s = barSize();
-    var cx = x + s.w / 2;
-    var cy = y + s.h / 2;
-    var toL = cx;
-    var toR = vw - cx;
-    var toT = cy;
-    var toB = vh - cy;
-    var min = Math.min(toL, toR, toT, toB);
-    if (min <= SNAP * 2) {
-      if (min === toL) x = MARGIN;
-      else if (min === toR) x = vw - s.w - MARGIN;
-      if (min === toT) y = MARGIN;
-      else if (min === toB) y = vh - s.h - MARGIN;
+    return writeFracs(
+      {
+        x: v.vw - s.w - MARGIN,
+        y: v.vh - s.h - MARGIN - 8,
+        snapX: "right",
+        snapY: "bottom",
+      },
+      s,
+      v.vw,
+      v.vh,
+    );
+  }
+
+  /**
+   * Resolve pixel position from anchors (snapX/snapY) + free-axis fractions.
+   * Keeps edge docking stable across window resizes.
+   */
+  function resolvePos() {
+    var v = viewport();
+    applyOrientation();
+    var s = barSize();
+    var pos = panelPos;
+    if (!pos) pos = defaultPos();
+
+    var x;
+    var y;
+    if (pos.snapX === "left") x = MARGIN;
+    else if (pos.snapX === "right") x = v.vw - s.w - MARGIN;
+    else if (pos.xFrac != null && isFinite(pos.xFrac)) {
+      x = MARGIN + pos.xFrac * Math.max(0, v.vw - s.w - 2 * MARGIN);
+    } else {
+      x = pos.x != null ? Number(pos.x) : MARGIN;
     }
-    if (toL < SNAP) x = MARGIN;
-    if (toR < SNAP) x = vw - s.w - MARGIN;
-    if (toT < SNAP) y = MARGIN;
-    if (toB < SNAP) y = vh - s.h - MARGIN;
-    return clampPos(x, y);
+
+    if (pos.snapY === "top") y = MARGIN;
+    else if (pos.snapY === "bottom") y = v.vh - s.h - MARGIN;
+    else if (pos.yFrac != null && isFinite(pos.yFrac)) {
+      y = MARGIN + pos.yFrac * Math.max(0, v.vh - s.h - 2 * MARGIN);
+    } else {
+      y = pos.y != null ? Number(pos.y) : MARGIN;
+    }
+
+    x = Math.max(MARGIN, Math.min(v.vw - s.w - MARGIN, x));
+    y = Math.max(MARGIN, Math.min(v.vh - s.h - MARGIN, y));
+
+    var out = {
+      x: x,
+      y: y,
+      snapX: pos.snapX === "left" || pos.snapX === "right" ? pos.snapX : null,
+      snapY: pos.snapY === "top" || pos.snapY === "bottom" ? pos.snapY : null,
+      xFrac: pos.xFrac,
+      yFrac: pos.yFrac,
+    };
+    return writeFracs(out, s, v.vw, v.vh);
+  }
+
+  function clampPos(x, y) {
+    var v = viewport();
+    var s = barSize();
+    x = Math.max(MARGIN, Math.min(v.vw - s.w - MARGIN, x));
+    y = Math.max(MARGIN, Math.min(v.vh - s.h - MARGIN, y));
+    return { x: x, y: y, snapX: null, snapY: null };
+  }
+
+  /** After drag: dock to nearest edges and set orientation. */
+  function snapPos(x, y) {
+    var v = viewport();
+    // Measure with current orientation, then re-resolve after dock orientation changes.
+    var s = barSize();
+    var toL = x;
+    var toR = v.vw - (x + s.w);
+    var toT = y;
+    var toB = v.vh - (y + s.h);
+
+    var snapX = null;
+    var snapY = null;
+    if (toL <= SNAP) snapX = "left";
+    else if (toR <= SNAP) snapX = "right";
+    if (toT <= SNAP) snapY = "top";
+    else if (toB <= SNAP) snapY = "bottom";
+
+    // If near a side but not a corner, prefer single-axis dock (enables vertical bar).
+    var sideOnly = Math.min(toL, toR);
+    var topBotOnly = Math.min(toT, toB);
+    if (sideOnly <= SNAP * 2 && sideOnly + 8 < topBotOnly) {
+      snapY = null;
+      if (toL <= toR) snapX = "left";
+      else snapX = "right";
+    } else if (topBotOnly <= SNAP * 2 && topBotOnly + 8 < sideOnly) {
+      snapX = null;
+      if (toT <= toB) snapY = "top";
+      else snapY = "bottom";
+    }
+
+    panelPos = {
+      x: x,
+      y: y,
+      snapX: snapX,
+      snapY: snapY,
+      xFrac: null,
+      yFrac: null,
+    };
+    // Orientation may change size (horizontal ↔ vertical); resolve twice.
+    applyOrientation();
+    panelPos = resolvePos();
+    applyOrientation();
+    panelPos = resolvePos();
+    return panelPos;
   }
 
   function placeBar() {
     var bar = $("callai-host-bar");
     if (!bar) return;
-    var pos = panelPos;
-    var s = barSize();
-    if (!pos || pos.x == null || pos.y == null) {
-      var vw = window.innerWidth || 360;
-      var vh = window.innerHeight || 640;
-      pos = { x: vw - s.w - MARGIN, y: vh - s.h - MARGIN - 8 };
-    }
-    pos = clampPos(pos.x, pos.y);
+    applyOrientation();
+    var pos = resolvePos();
+    // If orientation flipped size, resolve again with true bar metrics.
+    applyOrientation();
+    pos = resolvePos();
     panelPos = pos;
     bar.style.left = pos.x + "px";
     bar.style.top = pos.y + "px";
@@ -225,7 +338,7 @@
     if (!keys.length) {
       var empty = document.createElement("div");
       empty.className = "ch-hint";
-      empty.textContent = "暂无参数。此处编辑插件 storage 的 settings（与闹钟同名覆盖同一套 key）。";
+      empty.textContent = "还没有参数，点下面加一个吧。";
       box.appendChild(empty);
     }
     keys.forEach(function (k) {
@@ -297,28 +410,28 @@
       "</div>" +
       '<div id="callai-host-modal-backdrop" role="dialog" aria-modal="true">' +
       '<div id="callai-host-modal">' +
-      "<h2>插件控制台</h2>" +
-      '<p class="ch-meta">拖动手柄移动；主题/通知一键切换；设置打开完整控制台。</p>' +
+      "<h2>小设置</h2>" +
+      '<p class="ch-meta">拖动手柄挪位置。在这里改参数、外观和通知。</p>' +
       '<div id="callai-host-tabs">' +
       '<button type="button" id="ch-tab-params" class="on">参数</button>' +
       '<button type="button" id="ch-tab-theme">主题</button>' +
       '<button type="button" id="ch-tab-notify">通知</button>' +
       "</div>" +
       '<div id="ch-panel-params" class="ch-panel on">' +
-      '<p class="ch-hint">直接读写 storage.settings；闹钟 ENV/params 同名覆盖优先于已存值。</p>' +
+      '<p class="ch-hint">这里保存的是插件自己的参数。闹钟里的同名项只会临时生效这一次。</p>' +
       '<div id="ch-params-list"></div>' +
-      '<div class="ch-actions"><button type="button" class="ch-btn" id="ch-param-add">+ 参数</button></div>' +
+      '<div class="ch-actions"><button type="button" class="ch-btn" id="ch-param-add">加一个</button></div>' +
       "</div>" +
       '<div id="ch-panel-theme" class="ch-panel">' +
       '<div class="ch-row"><span class="ch-label">外观</span>' +
       '<div class="ch-seg"><button type="button" id="ch-theme-light" class="on">浅色</button>' +
       '<button type="button" id="ch-theme-dark">深色</button></div></div>' +
-      '<p class="ch-hint">深色使用 invert + hue-rotate，图片/视频自动二次反色以保持可读。</p>' +
+      '<p class="ch-hint">选一个舒服的外观就好。</p>' +
       "</div>" +
       '<div id="ch-panel-notify" class="ch-panel">' +
       '<div class="ch-row"><span class="ch-label">允许通知</span>' +
       '<button type="button" class="ch-btn primary" id="ch-notify-toggle">开</button></div>' +
-      '<p class="ch-hint">关闭后本插件 callai.notification.show 将被静默。</p>' +
+      '<p class="ch-hint">关掉后，这个插件不会再打扰你。</p>' +
       "</div>" +
       '<div class="ch-actions"><button type="button" class="ch-btn primary" id="ch-close">完成</button></div>' +
       "</div></div>";
@@ -379,6 +492,7 @@
       e.preventDefault();
       dragging = true;
       moved = false;
+      dragOrient = isVerticalDock(panelPos) ? "vertical" : "horizontal";
       bar.classList.add("is-dragging");
       handle.setPointerCapture(e.pointerId);
       var rect = bar.getBoundingClientRect();
@@ -390,7 +504,16 @@
       moved = true;
       var x = e.clientX - dragOffset.x;
       var y = e.clientY - dragOffset.y;
-      panelPos = clampPos(x, y);
+      // Free drag — keep current orientation until release snap.
+      var free = clampPos(x, y);
+      panelPos = {
+        x: free.x,
+        y: free.y,
+        snapX: null,
+        snapY: null,
+        xFrac: null,
+        yFrac: null,
+      };
       placeBar();
     });
     function endDrag(e) {
@@ -400,14 +523,17 @@
       try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
       if (panelPos) {
         panelPos = snapPos(panelPos.x, panelPos.y);
+        dragOrient = null;
         placeBar();
         savePanel();
+      } else {
+        dragOrient = null;
       }
     }
     handle.addEventListener("pointerup", endDrag);
     handle.addEventListener("pointercancel", endDrag);
     window.addEventListener("resize", function () {
-      if (panelPos) panelPos = snapPos(panelPos.x, panelPos.y);
+      // Keep snap/frac anchors — never re-pick nearest edge (avoids jump to center).
       placeBar();
     });
     syncBarButtons();
@@ -439,10 +565,25 @@
         } else {
           hostParams = {};
         }
-        panelPos =
-          arr[2] && typeof arr[2] === "object" && arr[2].x != null
-            ? { x: Number(arr[2].x), y: Number(arr[2].y) }
-            : null;
+        if (arr[2] && typeof arr[2] === "object") {
+          var raw = arr[2];
+          panelPos = {
+            x: raw.x != null ? Number(raw.x) : null,
+            y: raw.y != null ? Number(raw.y) : null,
+            xFrac: raw.xFrac != null ? Number(raw.xFrac) : null,
+            yFrac: raw.yFrac != null ? Number(raw.yFrac) : null,
+            snapX:
+              raw.snapX === "left" || raw.snapX === "right" ? raw.snapX : null,
+            snapY:
+              raw.snapY === "top" || raw.snapY === "bottom" ? raw.snapY : null,
+          };
+          // Legacy only {x,y}: recover snaps from proximity once.
+          if (panelPos.x != null && panelPos.y != null && !panelPos.snapX && !panelPos.snapY && panelPos.xFrac == null) {
+            panelPos = snapPos(panelPos.x, panelPos.y);
+          }
+        } else {
+          panelPos = null;
+        }
         applyTheme();
         placeBar();
         // notify plugin that host params layer is ready

@@ -36,6 +36,7 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
   const [newTime, setNewTime] = useState("09:00");
   const [saving, setSaving] = useState(false);
   const [argsText, setArgsText] = useState("callai warmup {{date}}");
+  const [envKeySuggestions, setEnvKeySuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     void unlockAudio();
@@ -92,6 +93,8 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
         params: {},
       };
       const next = { ...base, ...partial };
+      // UI no longer edits plugin.params — keep empty so ENV is sole override surface.
+      next.params = {};
       // keep args[0] = plugin_id for runners without plugin field
       const args = [...(d.args || [])];
       if (next.plugin_id) {
@@ -106,6 +109,34 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
       };
     });
   }
+
+  const pluginIdForEnv =
+    draft.plugin?.plugin_id ||
+    (isPluginAlarm ? draft.args[0] || "" : "") ||
+    "";
+
+  useEffect(() => {
+    const id = pluginIdForEnv.trim();
+    if (!id) {
+      setEnvKeySuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const summary = await client.getPlugin(id);
+        if (cancelled) return;
+        setEnvKeySuggestions(
+          Array.isArray(summary.param_keys) ? summary.param_keys : [],
+        );
+      } catch {
+        if (!cancelled) setEnvKeySuggestions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pluginIdForEnv]);
 
   function updateScheduleTimes(times: string[]) {
     setDraft((d) => {
@@ -130,6 +161,10 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
   async function save() {
     const next: AlarmDraft = {
       ...draft,
+      // ENV is the only runtime param surface; drop legacy plugin.params on save.
+      plugin: draft.plugin
+        ? { ...draft.plugin, params: {} }
+        : draft.plugin,
       args: argsText
         .split("\n")
         .map((s) => s.trim())
@@ -292,10 +327,8 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           setArgsText={setArgsText}
           binaryPath={binaryPath}
           preview={preview}
+          envKeySuggestions={envKeySuggestions}
         />
-
-
-        
 
         {isPluginAlarm ? (
           <EditPluginSection
@@ -303,12 +336,6 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
             popup={draft.plugin?.popup !== false}
             suppressWhenFullscreen={
               draft.plugin?.suppress_when_fullscreen !== false
-            }
-            params={
-              (draft.plugin?.params as Record<
-                string,
-                string | number | boolean | null
-              >) || {}
             }
             onPatch={patchPlugin}
           />

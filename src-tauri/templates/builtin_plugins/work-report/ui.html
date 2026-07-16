@@ -219,6 +219,39 @@ html, body {
   margin: 0; font-size: 14px; font-weight: 900; color: var(--text); letter-spacing: 0.02em;
 }
 
+.btn-icon {
+  width: 36px; height: 36px; padding: 0;
+  display: inline-grid; place-items: center;
+  border-radius: 12px !important;
+  flex-shrink: 0;
+}
+.btn-icon svg { width: 18px; height: 18px; display: block; }
+.btn-icon.danger { background: #ffe8e8; border-color: #e8a0a0; color: var(--error); }
+.btn-icon.primary { background: var(--primary); border-color: var(--primary-active); color: #fff; }
+.wheel-labels {
+  position: absolute; inset: 0; pointer-events: none;
+  transition: transform 4s cubic-bezier(.15,.8,.1,1);
+}
+.wheel-label {
+  position: absolute; left: 50%; top: 50%;
+  width: 0; height: 0;
+  transform-origin: 0 0;
+}
+.wheel-label > span {
+  display: block;
+  min-width: 56px;
+  max-width: 88px;
+  margin-left: -28px;
+  margin-top: -96px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.45), 0 0 6px rgba(0,0,0,.25);
+  word-break: break-all;
+}
+
   </style>
 </head>
 <body>
@@ -280,15 +313,6 @@ function asBool(v, fallback) {
   return fallback;
 }
 
-/**
- * Plugin settings model (single namespace):
- *   effective = defaults + saved settings + same-name overrides from alarm
- *
- * Overrides come from host launchParams (built from alarm.plugin.params +
- * argv key=value + ENV CALLAI_PLUGIN_PARAM_* / CALLAI_PLUGIN_MODE / CALLAI_PLUGIN_PARAMS).
- * Overrides are one-shot for this open — they do not write back to storage
- * unless the plugin UI explicitly saves.
- */
 function usePluginSettings(api, storageKey, defaults) {
   const [saved, setSaved] = useState(defaults);
   const [override, setOverride] = useState({});
@@ -332,14 +356,7 @@ function usePluginSettings(api, storageKey, defaults) {
     await saveSettings(Object.assign({}, saved, partial));
   }, [saved, saveSettings]);
 
-  return {
-    saved,       // persisted plugin settings
-    override,    // same-key overrides from alarm (ENV/params) for this open
-    effective,   // what the UI should use
-    ready,
-    saveSettings,
-    patchSettings,
-  };
+  return { saved, override, effective, ready, saveSettings, patchSettings };
 }
 
 function OverrideBanner({ override, keys }) {
@@ -356,14 +373,25 @@ function OverrideBanner({ override, keys }) {
   );
 }
 
+function IconBtn({ className, onClick, title, children, disabled }) {
+  return (
+    <button
+      type="button"
+      className={"btn btn-icon " + (className || "")}
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+}
+
 
 const DATA_KEY = "work-report:entries";
-const SETTINGS_KEY = "work-report:settings";
-const DEFAULTS = {
-  kind: "daily", // daily | weekly | monthly
-  placeholderHints: true,
-  notifyOnSave: true,
-};
+const SETTINGS_KEY = "settings";
+const DEFAULTS = { kind: "daily", placeholderHints: true, notifyOnSave: true };
 
 function periodKey(kind, d) {
   const y = d.getFullYear();
@@ -460,9 +488,9 @@ function App() {
         <span className="tag">{kindLabel(kind)}</span>
         <span className="meta grow">周期 {nowLabel || "…"}</span>
         <OverrideBanner override={s.override} keys={["kind","placeholderHints","notifyOnSave"]} />
-        <button className="btn ghost" onClick={() => setShowSettings((v) => !v)}>
-          {showSettings ? "收起设置" : "设置"}
-        </button>
+        <IconBtn className="ghost" title={showSettings ? "收起设置" : "设置"} onClick={() => setShowSettings((v) => !v)}>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="2"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6.2 6.2l1.6 1.6M16.2 16.2l1.6 1.6M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+        </IconBtn>
       </div>
 
       <div className="seg">
@@ -490,7 +518,6 @@ function App() {
       {showSettings ? (
         <div className="card soft stack">
           <h3 className="section-title">插件设置</h3>
-          <p className="meta">ENV 示例：CALLAI_PLUGIN_PARAM_kind=weekly</p>
           <div className="settings-grid">
             <span className="field-label">kind</span>
             <select className="select" style={{ width: 120 }} value={s.saved.kind}
@@ -514,7 +541,9 @@ function App() {
       ) : null}
 
       <div className="card soft stack">
-        <h3 className="section-title">最近记录</h3>
+        <div className="row">
+          <h3 className="section-title grow">最近记录</h3>
+        </div>
         <div className="list" style={{ maxHeight: "28vh" }}>
           {history.length === 0 && <div className="empty">还没有记录</div>}
           {history.map((h) => (
@@ -524,6 +553,17 @@ function App() {
                 <div className="item-title">{h.key}</div>
                 <div className="item-note">{(h.text || "").slice(0, 80) || "（空）"}</div>
               </div>
+              <IconBtn className="ghost danger" title="删除本条"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const bucket = { ...(entries[kind] || {}) };
+                  delete bucket[h.key];
+                  const next = { ...entries, [kind]: bucket };
+                  setEntries(next);
+                  if (api) api.storage.set(DATA_KEY, next);
+                }}>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7M8 7l.7 12a1.5 1.5 0 0 0 1.5 1.4h4.6a1.5 1.5 0 0 0 1.5-1.4L17 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </IconBtn>
             </div>
           ))}
         </div>

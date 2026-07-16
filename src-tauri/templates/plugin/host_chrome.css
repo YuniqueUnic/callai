@@ -329,3 +329,33 @@ html.callai-theme-dark #callai-host-modal-backdrop {
   margin: 0 2px;
   flex-shrink: 0;
 }
+
+/* Vertical dock (left / right mid-edge): stack handle + actions */
+#callai-host-bar.is-vertical {
+  flex-direction: column;
+  height: auto;
+  width: 44px;
+  min-height: 44px;
+  padding: 4px 4px 6px;
+  gap: 4px;
+}
+#callai-host-bar.is-vertical .ch-bar-handle {
+  width: 28px;
+  height: 18px;
+}
+#callai-host-bar.is-vertical .ch-bar-handle svg {
+  transform: rotate(90deg);
+}
+#callai-host-bar.is-vertical .ch-bar-sep {
+  width: 20px;
+  height: 1px;
+  margin: 2px 0;
+}
+#callai-host-bar.is-vertical .ch-bar-btn {
+  width: 36px;
+  height: 36px;
+}
+#callai-host-bar.is-vertical.is-dragging {
+  transform: translateX(1px);
+}
+
