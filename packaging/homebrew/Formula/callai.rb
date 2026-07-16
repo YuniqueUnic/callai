@@ -1,24 +1,24 @@
 class Callai < Formula
   desc "Cozy AI window-warming alarm (CLI / daemon)"
   homepage "https://github.com/YuniqueUnic/callai"
-  version "0.2.8"
+  version "0.3.0"
   license "MIT"
 
   on_macos do
     on_arm do
       url "https://github.com/YuniqueUnic/callai/releases/download/v#{version}/callai-cli-aarch64-apple-darwin"
-      sha256 "f4ba4bca91bad80ef2f1752dae54dcbb5748eb2a6a6298a75b6d0cdd1a15cc1c"
+      sha256 "49a4516c6b6237fcae48167e83c5900c9613c542ecc7b6e315d32ccd29b614be"
     end
     on_intel do
       url "https://github.com/YuniqueUnic/callai/releases/download/v#{version}/callai-cli-x86_64-apple-darwin"
-      sha256 "a5eea290f980546122149d2642e2a631b65865ef929a09a205a8fc54f0e862e5"
+      sha256 "5c35d087780b7c2aa9a0fb65fd4c6edde3a8cdf8dde61e9a9dafc1906289d0f3"
     end
   end
 
   on_linux do
     on_intel do
       url "https://github.com/YuniqueUnic/callai/releases/download/v#{version}/callai-cli-x86_64-unknown-linux-gnu"
-      sha256 "17bcc740c5f790b4b9cdd6f13ee4034a90bd9b5fb6d3ba6c86292ee805bfef14"
+      sha256 "615b9ccc833a42ee2dd70ce5cf8e4aa1eea9435d3d1596fec7470ed75d9afe09"
     end
   end
 
