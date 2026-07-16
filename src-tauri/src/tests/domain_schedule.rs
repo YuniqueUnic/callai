@@ -150,7 +150,7 @@ fn probe_system_tz_and_daily_20_remaining() {
         // Strictly before the trigger: next is later today.
         if local.hour() < 20 {
             assert!(
-                mins >= 0 && mins < 20 * 60,
+                (0..20 * 60).contains(&mins),
                 "before 20:00 local, expected next within <20h, got {mins} min (local={local})"
             );
             assert_eq!(next_local.date_naive(), local.date_naive());
