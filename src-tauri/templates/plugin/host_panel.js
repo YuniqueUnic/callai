@@ -312,8 +312,12 @@
     ["params", "theme", "notify"].forEach(function (t) {
       var btn = $("ch-tab-" + t);
       var panel = $("ch-panel-" + t);
-      if (btn) btn.classList.toggle("on", t === name);
-      if (panel) panel.classList.toggle("on", t === name);
+      var on = t === name;
+      if (btn) {
+        btn.classList.toggle("on", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+      }
+      if (panel) panel.classList.toggle("on", on);
     });
   }
 
@@ -326,8 +330,10 @@
   function syncNotifyBtn() {
     var btn = $("ch-notify-toggle");
     if (!btn) return;
-    btn.textContent = prefs.notifications ? "开" : "关";
-    btn.classList.toggle("primary", !!prefs.notifications);
+    var on = !!prefs.notifications;
+    btn.classList.toggle("is-on", on);
+    btn.setAttribute("aria-checked", on ? "true" : "false");
+    btn.title = on ? "通知开" : "通知关";
   }
 
   function renderParamsEditor() {
@@ -353,9 +359,10 @@
       iv.placeholder = "value";
       iv.value = hostParams[k] == null ? "" : String(hostParams[k]);
       var del = document.createElement("button");
-      del.className = "ch-btn ghost";
+      del.className = "ch-btn ghost ch-btn-icon";
       del.type = "button";
-      del.textContent = "删";
+      del.setAttribute("aria-label", "删除");
+      del.textContent = "×";
       function commit() {
         var nk = ik.value.trim();
         var nv = iv.value;
@@ -408,39 +415,57 @@
       '<path d="M10 19a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
       "</svg></button>" +
       "</div>" +
-      '<div id="callai-host-modal-backdrop" role="dialog" aria-modal="true">' +
-      '<div id="callai-host-modal">' +
-      "<h2>小设置</h2>" +
-      '<p class="ch-meta">拖动手柄挪位置。在这里改参数、外观和通知。</p>' +
-      '<div id="callai-host-tabs">' +
-      '<button type="button" id="ch-tab-params" class="on">参数</button>' +
-      '<button type="button" id="ch-tab-theme">主题</button>' +
-      '<button type="button" id="ch-tab-notify">通知</button>' +
+      '<svg id="callai-host-modal-clip-svg" style="position:absolute;width:0;height:0" aria-hidden="true" focusable="false">' +
+      "<defs>" +
+      '<clipPath id="animal-modal-clip" clipPathUnits="objectBoundingBox">' +
+      '<path d="M0.501,0.005 L0.501,0.005 L0.523,0.005 L0.549,0.006 C0.704,0.01,0.796,0.017,0.825,0.027 L0.827,0.028 C0.872,0.045,0.939,0.044,0.978,0.17 C1,0.254,1,0.365,0.99,0.505 L0.988,0.513 C0.979,0.558,0.971,0.598,0.965,0.633 C0.956,0.689,0.979,0.77,0.964,0.865 C0.953,0.928,0.921,0.966,0.869,0.979 C0.821,0.986,0.773,0.992,0.726,0.995 L0.712,0.996 L0.694,0.997 C0.648,1,0.586,1,0.507,1 L0.501,1 L0.464,1 C0.385,1,0.325,0.998,0.283,0.995 C0.234,0.992,0.184,0.987,0.133,0.979 C0.081,0.966,0.05,0.928,0.039,0.865 C0.023,0.77,0.047,0.689,0.037,0.633 C0.031,0.595,0.023,0.552,0.013,0.505 C-0.006,0.365,-0.002,0.254,0.024,0.17 C0.064,0.045,0.13,0.045,0.174,0.028 L0.175,0.028 C0.204,0.017,0.303,0.009,0.474,0.005 L0.501,0.005"/>' +
+      "</clipPath></defs></svg>" +
+      '<div id="callai-host-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="ch-modal-title">' +
+      '<div id="callai-host-modal" class="ch-modal-shell">' +
+      '<div class="ch-modal-plate">' +
+      '<div class="ch-modal-header">' +
+      '<h2 id="ch-modal-title" class="ch-modal-title">小设置</h2>' +
+      '<button type="button" class="ch-modal-x" id="ch-modal-x" title="关闭" aria-label="关闭">×</button>' +
       "</div>" +
-      '<div id="ch-panel-params" class="ch-panel on">' +
+      '<p class="ch-meta">拖动手柄挪位置。在这里改参数、外观和通知。</p>' +
+      '<div class="ch-tabs-card">' +
+      '<div id="callai-host-tabs" class="ch-tabs" role="tablist">' +
+      '<button type="button" role="tab" id="ch-tab-params" class="on" aria-selected="true">参数</button>' +
+      '<button type="button" role="tab" id="ch-tab-theme" aria-selected="false">主题</button>' +
+      '<button type="button" role="tab" id="ch-tab-notify" aria-selected="false">通知</button>' +
+      "</div>" +
+      '<div class="ch-modal-body">' +
+      '<div id="ch-panel-params" class="ch-panel on" role="tabpanel">' +
       '<p class="ch-hint">这里保存的是插件自己的参数。闹钟里的同名项只会临时生效这一次。</p>' +
       '<div id="ch-params-list"></div>' +
-      '<div class="ch-actions"><button type="button" class="ch-btn" id="ch-param-add">加一个</button></div>' +
-      "</div>" +
-      '<div id="ch-panel-theme" class="ch-panel">' +
+      '<div class="ch-actions ch-actions-inline">' +
+      '<button type="button" class="ch-btn" id="ch-param-add">加一个</button>' +
+      "</div></div>" +
+      '<div id="ch-panel-theme" class="ch-panel" role="tabpanel">' +
       '<div class="ch-row"><span class="ch-label">外观</span>' +
-      '<div class="ch-seg"><button type="button" id="ch-theme-light" class="on">浅色</button>' +
+      '<div class="ch-seg" role="group" aria-label="外观">' +
+      '<button type="button" id="ch-theme-light" class="on">浅色</button>' +
       '<button type="button" id="ch-theme-dark">深色</button></div></div>' +
       '<p class="ch-hint">选一个舒服的外观就好。</p>' +
       "</div>" +
-      '<div id="ch-panel-notify" class="ch-panel">' +
+      '<div id="ch-panel-notify" class="ch-panel" role="tabpanel">' +
       '<div class="ch-row"><span class="ch-label">允许通知</span>' +
-      '<button type="button" class="ch-btn primary" id="ch-notify-toggle">开</button></div>' +
+      '<button type="button" class="ch-switch" id="ch-notify-toggle" role="switch" aria-checked="true" title="通知开关">' +
+      '<span class="ch-switch-track" aria-hidden="true"><span class="ch-switch-handle"></span></span>' +
+      "</button></div>" +
       '<p class="ch-hint">关掉后，这个插件不会再打扰你。</p>' +
+      "</div></div></div>" +
+      '<div class="ch-modal-footer">' +
+      '<button type="button" class="ch-btn primary" id="ch-close">完成</button>' +
       "</div>" +
-      '<div class="ch-actions"><button type="button" class="ch-btn primary" id="ch-close">完成</button></div>' +
-      "</div></div>";
+      "</div></div></div>";
     document.documentElement.appendChild(root);
 
     $("ch-tab-params").onclick = function () { setTab("params"); };
     $("ch-tab-theme").onclick = function () { setTab("theme"); };
     $("ch-tab-notify").onclick = function () { setTab("notify"); };
     $("ch-close").onclick = closeModal;
+    $("ch-modal-x").onclick = closeModal;
     $("callai-host-modal-backdrop").addEventListener("click", function (e) {
       if (e.target === $("callai-host-modal-backdrop")) closeModal();
     });

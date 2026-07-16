@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Card, Drawer, Modal, Table } from "animal-island-ui";
 import { ElementImage } from "../ui/ElementImage";
 import type { PluginHistoryEntry, PluginSummary } from "../domain/types";
 import { client } from "../infra/client";
 import { isTauri } from "../infra/tauriApi";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { toast } from "../ui/toast";
 import { playSound } from "../ui/sounds";
 import { IconButton } from "../ui/IconButton";
@@ -18,10 +20,16 @@ import { PluginLogsPanel } from "./PluginLogsPanel";
 import { PluginExportModal } from "./plugins/PluginExportModal";
 import { PluginImportConflictModal } from "./plugins/PluginImportConflictModal";
 import { PluginRestoreModal } from "./plugins/PluginRestoreModal";
+import { PluginImportProgressModal } from "./plugins/PluginImportProgressModal";
 import { usePluginZip } from "./plugins/usePluginZip";
 import type { BuiltinCatalogItem } from "./plugins/types";
 import { PluginListCard } from "./plugins/PluginListCard";
-import { PluginRegistryPanel } from "./plugins/PluginRegistryPanel";
+import {
+  PluginRegistryPanel,
+  buildMarketUpdates,
+  type RegistryIndex,
+} from "./plugins/PluginRegistryPanel";
+import type { MarketUpdateInfo } from "../domain/pluginVersion";
 
 interface Props {
   onOpenAi: () => void;
@@ -66,6 +74,8 @@ export function PluginsPage({
   const [pluginView, setPluginView] = useState<"installed" | "registry">(
     "installed",
   );
+  const [marketIndex, setMarketIndex] = useState<RegistryIndex | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     const open = logTarget != null;
@@ -104,15 +114,73 @@ export function PluginsPage({
     toastError: (o) => toast.error(o),
     playConfirm: () => playSound("confirm"),
     playWarn: () => playSound("warn"),
+    getInstalledVersion: (id) => plugins.find((p) => p.id === id)?.version,
   });
+
+  const installedVersions = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of plugins) m.set(p.id, p.version);
+    return m;
+  }, [plugins]);
+
+  const marketUpdates = useMemo(
+    () => buildMarketUpdates(marketIndex, installedVersions),
+    [marketIndex, installedVersions],
+  );
+
+  async function updateFromMarket(id: string, info: MarketUpdateInfo) {
+    if (typeof client.importPluginZipUrl !== "function") return;
+    setUpdatingId(id);
+    try {
+      const summary = await client.importPluginZipUrl(
+        info.zip_url,
+        "overwrite",
+        false,
+        false,
+      );
+      if (summary) {
+        playSound("confirm");
+        toast.success({
+          message: t("plugins:updated", {
+            defaultValue: "已更新 {{name}} → v{{version}}",
+            name: summary.name,
+            version: summary.version,
+          }),
+        });
+        await refresh();
+      }
+    } catch (e) {
+      playSound("warn");
+      toast.error({
+        message: String((e as { message?: string })?.message ?? e),
+      });
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+
+  const loadMarket = useCallback(async () => {
+    if (typeof client.fetchPluginRegistry !== "function") return;
+    try {
+      const idx = await client.fetchPluginRegistry(null);
+      setMarketIndex(idx);
+    } catch {
+      /* registry optional offline */
+    }
+  }, []);
 
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+    void loadMarket();
+  }, [refresh, loadMarket]);
 
   useEffect(() => {
-    if (tabActive) void refresh();
-  }, [tabActive, refresh]);
+    if (tabActive) {
+      void refresh();
+      void loadMarket();
+    }
+  }, [tabActive, refresh, loadMarket]);
 
   useEffect(() => {
     function onPluginsChanged(ev: Event) {
@@ -296,8 +364,175 @@ export function PluginsPage({
     }
   }
 
+  const beginImportBytesRef = useRef(zip.beginImportBytes);
+  beginImportBytesRef.current = zip.beginImportBytes;
+  const beginImportPathRef = useRef(zip.beginImportPathSimple);
+  beginImportPathRef.current = zip.beginImportPathSimple;
+
+  const dropLabel = t("plugins:dropUpload", { defaultValue: "上传" });
+  const dropHint = t("plugins:dropToInstall", {
+    defaultValue: "松开以安装插件包",
+  });
+
+  const showDropOverlay = useCallback(() => {
+    document.documentElement.classList.add("callai-plugin-file-drag");
+    document.body.classList.add("callai-plugin-file-drag");
+    setDragOver(true);
+  }, []);
+  const hideDropOverlay = useCallback(() => {
+    document.documentElement.classList.remove("callai-plugin-file-drag");
+    document.body.classList.remove("callai-plugin-file-drag");
+    setDragOver(false);
+  }, []);
+
+  /**
+   * Tauri: OS file drops come as native `onDragDropEvent` with filesystem paths.
+   * HTML5 DataTransfer.files is empty / unused while Tauri dragDrop is enabled.
+   * Overlay uses document class so it paints during drag (no React re-render needed).
+   */
+  useEffect(() => {
+    if (!tabActive) {
+      hideDropOverlay();
+      return;
+    }
+
+    let unlisten: (() => void) | undefined;
+    let cancelled = false;
+
+    if (isTauri()) {
+      void (async () => {
+        try {
+          const un = await getCurrentWindow().onDragDropEvent((event) => {
+            const payload = event.payload;
+            if (payload.type === "enter" || payload.type === "over") {
+              showDropOverlay();
+              return;
+            }
+            if (payload.type === "leave") {
+              hideDropOverlay();
+              return;
+            }
+            if (payload.type === "drop") {
+              hideDropOverlay();
+              const paths = payload.paths ?? [];
+              const zipPath = paths.find((p) =>
+                p.toLowerCase().endsWith(".zip"),
+              );
+              if (!zipPath) {
+                playSound("warn");
+                toast.error({
+                  message: t("plugins:dropZipOnly", {
+                    defaultValue: "请拖入插件压缩包",
+                  }),
+                });
+                return;
+              }
+              playSound("soft");
+              void beginImportPathRef.current(zipPath);
+            }
+          });
+          if (cancelled) {
+            un();
+            return;
+          }
+          unlisten = un;
+        } catch (err) {
+          console.warn("[plugins] onDragDropEvent", err);
+        }
+      })();
+    } else {
+      const isFileDrag = (e: DragEvent) => {
+        const dt = e.dataTransfer;
+        if (!dt) return false;
+        const types = Array.from(dt.types || []);
+        if (types.length === 0) return true;
+        return types.some(
+          (x) =>
+            x === "Files" ||
+            x === "application/x-moz-file" ||
+            x.toLowerCase().includes("file"),
+        );
+      };
+      const onOver = (e: DragEvent) => {
+        if (!isFileDrag(e)) return;
+        e.preventDefault();
+        try {
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+        } catch {
+          /* ignore */
+        }
+        showDropOverlay();
+      };
+      const onLeave = (e: DragEvent) => {
+        if (e.relatedTarget == null) hideDropOverlay();
+      };
+      const onDrop = (e: DragEvent) => {
+        e.preventDefault();
+        hideDropOverlay();
+        const files = Array.from(e.dataTransfer?.files || []);
+        const z = files.find(
+          (f) =>
+            f.name.toLowerCase().endsWith(".zip") || f.type.includes("zip"),
+        );
+        if (!z) {
+          playSound("warn");
+          toast.error({
+            message: t("plugins:dropZipOnly", {
+              defaultValue: "请拖入插件压缩包",
+            }),
+          });
+          return;
+        }
+        playSound("soft");
+        void z.arrayBuffer().then((buf) => {
+          void beginImportBytesRef.current(new Uint8Array(buf), z.name);
+        });
+      };
+      window.addEventListener("dragenter", onOver, true);
+      window.addEventListener("dragover", onOver, true);
+      window.addEventListener("dragleave", onLeave, true);
+      window.addEventListener("drop", onDrop, true);
+      return () => {
+        hideDropOverlay();
+        window.removeEventListener("dragenter", onOver, true);
+        window.removeEventListener("dragover", onOver, true);
+        window.removeEventListener("dragleave", onLeave, true);
+        window.removeEventListener("drop", onDrop, true);
+      };
+    }
+
+    return () => {
+      cancelled = true;
+      hideDropOverlay();
+      unlisten?.();
+    };
+  }, [tabActive, t, showDropOverlay, hideDropOverlay]);
+
+  const dropOverlay =
+    typeof document !== "undefined"
+      ? createPortal(
+          <div
+            id="callai-plugin-drop-overlay"
+            className="plugins-drop-overlay"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="plugins-drop-card">
+              <span className="plugins-drop-plus" aria-hidden>
+                +
+              </span>
+              <span className="plugins-drop-label">{dropLabel}</span>
+              <span className="plugins-drop-sub meta">{dropHint}</span>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
-    <div className="page plugins-page">
+    <div className={`page plugins-page${dragOver ? " is-drag-over" : ""}`}>
+      {tabActive ? dropOverlay : null}
+
       <header className="soft-header plugins-hero">
         <div className="plugins-hero-brand">
           <ElementImage id="task-checklist" size={72} alt="" motion="hop" />
@@ -355,52 +590,7 @@ export function PluginsPage({
         </div>
       </header>
 
-      <div
-        className={`app-main plugins-main${dragOver ? " is-drag-over" : ""}`}
-        onDragEnter={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault();
-          if (e.currentTarget === e.target) setDragOver(false);
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          const files = Array.from(e.dataTransfer.files || []);
-          const z = files.find(
-            (f) =>
-              f.name.toLowerCase().endsWith(".zip") ||
-              f.type.includes("zip"),
-          );
-          if (!z) {
-            playSound("warn");
-            toast.error({
-              message: t("plugins:dropZipOnly", {
-                defaultValue: "请拖入 .zip 插件包",
-              }),
-            });
-            return;
-          }
-          playSound("soft");
-          void z.arrayBuffer().then((buf) =>
-            zip.beginImportBytes(new Uint8Array(buf)),
-          );
-        }}
-      >
-        {dragOver ? (
-          <div className="plugins-drop-hint" aria-hidden>
-            {t("plugins:dropToInstall", {
-              defaultValue: "松开以安装插件包",
-            })}
-          </div>
-        ) : null}
-
+      <div className="app-main plugins-main">
         <div className="plugin-view-seg" role="tablist">
           <button
             type="button"
@@ -426,8 +616,9 @@ export function PluginsPage({
 
         {pluginView === "registry" ? (
           <PluginRegistryPanel
-            installedIds={new Set(plugins.map((p) => p.id))}
+            installedVersions={installedVersions}
             onInstalled={refresh}
+            onIndexLoaded={setMarketIndex}
           />
         ) : loading ? (
           <p className="meta">{t("common:loading")}</p>
@@ -457,6 +648,7 @@ export function PluginsPage({
                 key={p.id}
                 plugin={p}
                 catalog={catalog}
+                marketUpdate={marketUpdates.get(p.id)}
                 onOpen={() => void openPlugin(p)}
                 onLogs={() => void showPluginLogs(p)}
                 onFix={() => void fixPluginWithAi(p)}
@@ -465,6 +657,11 @@ export function PluginsPage({
                   setRestoreWipeData(false);
                   setConfirmRestore(p);
                 }}
+                onUpdate={() => {
+                  const info = marketUpdates.get(p.id);
+                  if (info) void updateFromMarket(p.id, info);
+                }}
+                updating={updatingId === p.id}
                 onDelete={() => setConfirmDelete(p)}
               />
             ))}
@@ -612,9 +809,17 @@ export function PluginsPage({
       />
       <PluginImportConflictModal
         open={zip.conflictOpen}
-        pluginId={zip.conflictId}
+        pluginId={zip.conflictMeta?.pluginId ?? zip.conflictId}
+        packageVersion={zip.conflictMeta?.packageVersion}
+        installedVersion={zip.conflictMeta?.installedVersion}
+        packageName={zip.conflictMeta?.packageName}
+        includesData={zip.conflictMeta?.includesData}
         onCancel={zip.cancelConflict}
-        onChoose={(mode) => void zip.importWithMode(mode)}
+        onChoose={(choice) => void zip.importWithChoice(choice)}
+      />
+      <PluginImportProgressModal
+        progress={zip.importProgress}
+        onClose={zip.resetProgress}
       />
     </div>
   );

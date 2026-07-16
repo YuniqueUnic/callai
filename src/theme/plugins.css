@@ -778,3 +778,139 @@ html.tauri:has(.plugin-win-shell.is-content-dark) .cursor-root {
   border-color: rgba(184, 159, 126, 0.65) !important;
 }
 
+
+
+/* Full-page zip drop overlay */
+.plugins-page {
+  position: relative;
+}
+.plugins-page.is-drag-over {
+  /* keep layout */
+}
+/* Always mounted in body while plugins tab active; shown via html/body class
+   (React setState often does not paint during system file-drag in WKWebView).
+   Must follow transparent-window island radius — full-bleed fixed paints square ears. */
+.plugins-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: none;
+  place-items: center;
+  box-sizing: border-box;
+  /* Match app-shell rounded island (window-final / tokens) */
+  border-radius: var(--callai-window-radius, 16px);
+  overflow: hidden;
+  clip-path: inset(0 round var(--callai-window-radius, 16px));
+  -webkit-clip-path: inset(0 round var(--callai-window-radius, 16px));
+  background: color-mix(in srgb, var(--callai-bg, #f8f8f0) 40%, rgba(25, 200, 185, 0.45));
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+html.callai-plugin-file-drag .plugins-drop-overlay,
+body.callai-plugin-file-drag .plugins-drop-overlay {
+  display: grid !important;
+}
+/* Maximized / fullscreen shell is square — drop radius */
+html.tauri:has(.app-shell.is-maximized) .plugins-drop-overlay,
+html.tauri:has(.app-shell.is-fullscreen) .plugins-drop-overlay,
+html.callai-window-chrome-flat .plugins-drop-overlay {
+  border-radius: 0 !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+}
+.plugins-drop-sub {
+  margin-top: 2px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.plugins-drop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: min(280px, 72vw);
+  min-height: 160px;
+  padding: 28px 36px;
+  border-radius: 20px;
+  border: 3px dashed #19c8b9;
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 0 10px 0 rgba(17, 168, 155, 0.12);
+  color: #0f7f76;
+}
+.plugins-drop-plus {
+  font-size: 48px;
+  font-weight: 900;
+  line-height: 1;
+  color: #19c8b9;
+}
+.plugins-drop-label {
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+[data-theme="dark"] .plugins-drop-overlay {
+  background: color-mix(in srgb, #1c1915 50%, rgba(25, 200, 185, 0.25));
+}
+[data-theme="dark"] .plugins-drop-card {
+  background: rgba(42, 38, 32, 0.96);
+  border-color: #5ee0d2;
+  color: #9ff5eb;
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.25);
+}
+[data-theme="dark"] .plugins-drop-plus {
+  color: #5ee0d2;
+}
+
+/* Import progress modal body */
+.plugin-import-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  color: #5a3d1e;
+}
+.plugin-import-progress-visual {
+  min-height: 56px;
+  display: grid;
+  place-items: center;
+}
+.plugin-import-spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 4px solid #e8dcc8;
+  border-top-color: #19c8b9;
+  animation: plugin-import-spin 0.8s linear infinite;
+}
+@keyframes plugin-import-spin {
+  to { transform: rotate(360deg); }
+}
+.plugin-import-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 900;
+}
+.plugin-import-mark.is-ok {
+  background: #d8f5e4;
+  color: #1f7a45;
+}
+.plugin-import-mark.is-err {
+  background: #ffe0d8;
+  color: #a83333;
+}
+.plugin-import-msg {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+.plugin-import-file {
+  margin: 0;
+  word-break: break-all;
+}

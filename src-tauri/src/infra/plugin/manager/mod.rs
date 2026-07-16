@@ -2,6 +2,7 @@
 mod compose;
 mod invoke;
 mod package_io;
+pub use package_io::InstallPackageOpts;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};

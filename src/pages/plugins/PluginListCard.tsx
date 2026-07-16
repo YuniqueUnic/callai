@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Card, Tag } from "animal-island-ui";
 import type { PluginSummary } from "../../domain/types";
+import type { MarketUpdateInfo } from "../../domain/pluginVersion";
 import { IconButton } from "../../ui/IconButton";
 import {
   IconChat,
@@ -15,26 +16,35 @@ import type { BuiltinCatalogItem } from "./types";
 interface Props {
   plugin: PluginSummary;
   catalog: BuiltinCatalogItem[];
+  marketUpdate?: MarketUpdateInfo | null;
   onOpen: () => void;
   onLogs: () => void;
   onFix: () => void;
   onExport: () => void;
   onRestore?: () => void;
+  onUpdate?: () => void;
   onDelete: () => void;
+  updating?: boolean;
 }
 
 export function PluginListCard({
   plugin: p,
   catalog,
+  marketUpdate,
   onOpen,
   onLogs,
   onFix,
   onExport,
   onRestore,
+  onUpdate,
   onDelete,
+  updating,
 }: Props) {
   const { t } = useTranslation(["plugins", "common"]);
   const cat = catalog.find((c) => c.id === p.id);
+  const hasUpdate =
+    !!marketUpdate || !!(cat?.update_available && !cat?.user_edited);
+
   return (
     <Card className="plugin-card form-panel">
       <div className="plugin-card-head">
@@ -44,8 +54,17 @@ export function PluginListCard({
             <span className="plugin-id">{p.id}</span>
             <span aria-hidden>·</span>
             <span>v{p.version}</span>
-            {cat?.update_available ? <Tag size="small">update</Tag> : null}
-            {cat?.user_edited ? <Tag size="small">edited</Tag> : null}
+            {hasUpdate ? (
+              <Tag size="small" color="app-green">
+                {t("plugins:updateAvailable", { defaultValue: "有更新" })}
+                {marketUpdate ? ` → v${marketUpdate.version}` : ""}
+              </Tag>
+            ) : null}
+            {cat?.user_edited ? (
+              <Tag size="small">
+                {t("plugins:editedTag", { defaultValue: "已改" })}
+              </Tag>
+            ) : null}
           </div>
         </div>
         <div className="icon-actions plugin-card-actions">
@@ -56,6 +75,16 @@ export function PluginListCard({
             sfx="soft"
             onClick={onOpen}
           />
+          {marketUpdate && onUpdate ? (
+            <IconButton
+              label={t("plugins:updateNow", { defaultValue: "更新" })}
+              icon={<IconDownload size={16} />}
+              variant="primary"
+              sfx="confirm"
+              disabled={updating}
+              onClick={onUpdate}
+            />
+          ) : null}
           <IconButton
             label={t("plugins:logs", { defaultValue: "日志" })}
             icon={<IconLogs size={16} />}

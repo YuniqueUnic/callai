@@ -58,175 +58,460 @@ html.callai-theme-dark #callai-host-root #callai-host-bar:focus-within,
 html.callai-theme-dark #callai-host-root #callai-host-bar.is-dragging {
   opacity: 1;
 }
-html.callai-theme-dark #callai-host-modal {
-  background: #2a2620;
-  border-color: #5a5246;
-  color: #e8e0d0;
-  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
-}
-html.callai-theme-dark #callai-host-modal h2 { color: #f5efe4; }
-html.callai-theme-dark #callai-host-modal .ch-meta,
-html.callai-theme-dark #callai-host-modal .ch-hint { color: #a89f8e; }
-html.callai-theme-dark #callai-host-tabs {
-  background: #1c1915;
-  border-color: #5a5246;
-}
-html.callai-theme-dark #callai-host-tabs button { color: #a89f8e; }
-html.callai-theme-dark #callai-host-tabs button.on {
-  background: #3a342c;
-  color: #f5efe4;
-  border-color: #6a6254;
-}
-html.callai-theme-dark .ch-label { color: #f5efe4; }
-html.callai-theme-dark .ch-input {
-  background: #1c1915;
-  border-color: #5a5246;
-  color: #f5efe4;
-}
-html.callai-theme-dark .ch-btn {
-  background: #3a342c;
-  border-color: #6a6254;
-  color: #f5efe4;
-}
-html.callai-theme-dark .ch-btn.primary {
-  background: #19c8b9;
-  border-color: #11a89b;
-  color: #fff;
-}
-html.callai-theme-dark .ch-seg {
-  background: #1c1915;
-  border-color: #5a5246;
-}
-html.callai-theme-dark .ch-seg button { color: #a89f8e; }
-html.callai-theme-dark .ch-seg button.on {
-  background: #3a342c;
-  color: #f5efe4;
-  border-color: #6a6254;
-}
+/* Host modal stays parchment island plate in dark (matches animal-island Modal). */
 html.callai-theme-dark #callai-host-modal-backdrop {
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(40, 30, 20, 0.55);
 }
 
 
+/* ── Host modal · animal-island Modal blob plate ──
+   Spec: animal-island-style.prompt Modal + Tabs + Input + Button(primary yellow OK)
+   Never replace blob clip-path with plain rounded rect.
+*/
 #callai-host-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(50, 36, 20, 0.35);
+  z-index: 20;
+  isolation: isolate;
   display: none;
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-  padding: 16px;
+  padding: 20px 16px;
+  background: rgba(40, 30, 20, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: ch-modal-fade-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 #callai-host-modal-backdrop.is-open { display: flex; }
-#callai-host-modal {
-  width: min(380px, 100%);
-  max-height: min(80vh, 560px);
-  overflow: auto;
-  background: rgb(247, 243, 223);
-  border: 3px solid #c4b89e;
-  border-radius: 18px;
-  box-shadow: 0 10px 0 rgba(121, 79, 39, 0.12);
-  color: #725d42;
-  padding: 14px;
+@keyframes ch-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-#callai-host-modal h2 {
-  margin: 0 0 4px;
-  font-size: 18px;
-  font-weight: 900;
-  color: #794f27;
+@keyframes ch-modal-zoom-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
 }
-#callai-host-modal .ch-meta {
-  font-size: 12px;
-  color: #9f927d;
-  margin: 0 0 12px;
-  line-height: 1.4;
-}
-#callai-host-tabs {
+
+#callai-host-root #callai-host-modal.ch-modal-shell {
+  position: relative;
+  width: min(420px, 100%);
+  max-height: min(82vh, 640px);
   display: flex;
-  gap: 6px;
-  background: #efe8d4;
-  padding: 4px;
-  border-radius: 999px;
-  border: 2px solid #c4b89e;
-  margin-bottom: 12px;
+  flex-direction: column;
+  animation: ch-modal-zoom-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 10px 28px rgba(61, 52, 40, 0.22));
 }
-#callai-host-tabs button {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  border-radius: 999px;
-  padding: 8px 6px;
-  font: inherit;
-  font-weight: 800;
-  color: #9f927d;
-  cursor: pointer;
+
+/* Organic blob surface — same path as animal-island-ui #animal-modal-clip */
+#callai-host-root #callai-host-modal .ch-modal-plate {
+  width: 100%;
+  max-height: min(82vh, 640px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 40px 40px 36px;
+  background: rgb(247, 243, 223);
+  color: #807359;
+  font-family: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+  letter-spacing: 0.01em;
+  clip-path: url(#animal-modal-clip);
+  -webkit-clip-path: url(#animal-modal-clip);
 }
-#callai-host-tabs button.on {
-  background: #fffdf8;
-  color: #794f27;
-  box-shadow: 0 3px 0 rgba(121, 79, 39, 0.1);
-  border: 2px solid #c4b89e;
-}
-.ch-panel { display: none; }
-.ch-panel.on { display: block; }
-.ch-row {
+
+#callai-host-root #callai-host-modal .ch-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 12px;
+  padding-bottom: 10px;
+  flex-shrink: 0;
 }
-.ch-label { font-size: 13px; font-weight: 800; color: #794f27; }
-.ch-hint { font-size: 11px; color: #9f927d; margin: -4px 0 10px; line-height: 1.35; }
-.ch-btn {
-  border: 2px solid #9f927d;
-  background: #fffdf6;
-  color: #794f27;
-  border-radius: 999px;
-  padding: 7px 12px;
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 3px 0 rgba(121, 79, 39, 0.1);
+#callai-host-root #callai-host-modal .ch-modal-title,
+#callai-host-root #callai-host-modal h2.ch-modal-title {
+  margin: 0 !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.02em !important;
+  color: #725d42 !important;
 }
-.ch-btn.primary { background: #19c8b9; border-color: #11a89b; color: #fff; }
-.ch-btn.ghost { box-shadow: none; background: transparent; }
-.ch-input {
+#callai-host-root #callai-host-modal .ch-modal-x {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: rgba(114, 93, 66, 0.6) !important;
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#callai-host-root #callai-host-modal .ch-modal-x:hover,
+#callai-host-root #callai-host-modal .ch-modal-x:focus-visible {
+  background: rgba(114, 93, 66, 0.1) !important;
+  color: #725d42 !important;
+  outline: none !important;
+}
+
+#callai-host-root #callai-host-modal .ch-meta {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #9f927d !important;
+  margin: 0 0 14px !important;
+  line-height: 1.45 !important;
+  flex-shrink: 0;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Tabs — mirror animal-island-ui Tabs card (list + active teal pill) */
+#callai-host-root #callai-host-modal .ch-tabs-card {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  margin: 0 0 4px !important;
+  background: #f8f8f0 !important;
+  border: 2px solid #e8e2d6 !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+}
+#callai-host-root #callai-host-tabs.ch-tabs,
+#callai-host-root #callai-host-tabs {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 12px 12px 10px !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 0 !important;
+  border-bottom: 2px solid #e8e2d6 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+#callai-host-root #callai-host-tabs button {
+  position: relative !important;
+  flex: 1 1 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 24px !important;
+  padding: 8px 14px !important;
+  min-height: 40px !important;
+  height: auto !important;
+  width: auto !important;
+  font-family: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1.2 !important;
+  color: #794f27 !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+#callai-host-root #callai-host-tabs button:hover {
+  background: rgba(25, 200, 185, 0.1) !important;
+  color: #794f27 !important;
+}
+#callai-host-root #callai-host-tabs button.on {
+  background: #0cc0b5 !important;
+  color: #fff9e3 !important;
+  font-weight: 600 !important;
+  border: none !important;
+  border-radius: 24px !important;
+  box-shadow: 0 3px 0 rgba(61, 52, 40, 0.08) !important;
+}
+#callai-host-root #callai-host-modal .ch-tabs-card > .ch-modal-body {
+  padding: 16px 16px 12px !important;
+  background: #f8f8f0 !important;
+}
+
+#callai-host-root #callai-host-modal .ch-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
   width: 100%;
-  border: 2px solid #c4b89e;
-  border-radius: 10px;
-  padding: 8px 10px;
-  font: inherit;
-  font-weight: 600;
-  color: #794f27;
-  background: #fffdf8;
 }
-.ch-kv { display: flex; gap: 6px; margin-bottom: 6px; }
-.ch-kv .ch-input { flex: 1; min-width: 0; }
-.ch-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
-.ch-seg {
-  display: inline-flex;
-  gap: 4px;
-  background: #efe8d4;
-  padding: 3px;
-  border-radius: 999px;
-  border: 2px solid #c4b89e;
+
+.ch-panel { display: none !important; width: 100%; }
+.ch-panel.on { display: block !important; }
+
+#callai-host-root #callai-host-modal .ch-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+  width: 100%;
 }
-.ch-seg button {
-  border: 0;
-  background: transparent;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font: inherit;
-  font-weight: 800;
-  color: #9f927d;
-  cursor: pointer;
+#callai-host-root #callai-host-modal .ch-label {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #794f27 !important;
+  letter-spacing: 0.02em !important;
 }
-.ch-seg button.on {
-  background: #fffdf8;
-  color: #794f27;
-  border: 2px solid #c4b89e;
+#callai-host-root #callai-host-modal .ch-hint {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #8a7b66 !important;
+  margin: 0 0 12px !important;
+  line-height: 1.5 !important;
+}
+
+/* Buttons — default soft elevation; primary = game yellow (Modal OK) */
+#callai-host-root #callai-host-modal .ch-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 20px !important;
+  border: 2px solid #9f927d !important;
+  border-radius: 50px !important;
+  background: #f8f8f0 !important;
+  color: #725d42 !important;
+  font: inherit !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 4px 0 rgba(61, 52, 40, 0.06) !important;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#callai-host-root #callai-host-modal .ch-btn:hover {
+  color: #19c8b9 !important;
+  border-color: #19c8b9 !important;
+  box-shadow: 0 3px 10px 0 rgba(61, 52, 40, 0.1) !important;
+  transform: translateY(-1px) !important;
+}
+#callai-host-root #callai-host-modal .ch-btn:active {
+  color: #11a89b !important;
+  border-color: #11a89b !important;
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 4px 0 rgba(61, 52, 40, 0.06) !important;
+}
+#callai-host-root #callai-host-modal .ch-btn.primary {
+  background: #ffcc00 !important;
+  border-color: #ffcc00 !important;
+  color: #725d42 !important;
+  box-shadow: 0 4px 0 0 #e0b800 !important;
+  transform: none !important;
+}
+#callai-host-root #callai-host-modal .ch-btn.primary:hover {
+  background: #ffd633 !important;
+  border-color: #ffd633 !important;
+  color: #725d42 !important;
+  box-shadow: 0 5px 0 0 #e0b800 !important;
+  transform: translateY(-1px) !important;
+}
+#callai-host-root #callai-host-modal .ch-btn.primary:active {
+  box-shadow: 0 1px 0 0 #e0b800 !important;
+  transform: translateY(2px) !important;
+}
+#callai-host-root #callai-host-modal .ch-btn.ghost {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: rgba(114, 93, 66, 0.7) !important;
+  min-width: 36px !important;
+  padding: 0 10px !important;
+}
+#callai-host-root #callai-host-modal .ch-btn.ghost:hover {
+  background: rgba(114, 93, 66, 0.1) !important;
+  color: #725d42 !important;
+  border-color: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+#callai-host-root #callai-host-modal .ch-btn.ch-btn-icon {
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  font-size: 18px !important;
+  border-radius: 50% !important;
+}
+
+/* Inputs — parchment field, yellow focus (not cold blue) */
+#callai-host-root #callai-host-modal .ch-input {
+  width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  border: 2px solid #c4b89e !important;
+  border-radius: 50px !important;
+  padding: 0 16px !important;
+  font: inherit !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
+  color: #725d42 !important;
+  background: rgb(247, 243, 223) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transition: border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#callai-host-root #callai-host-modal .ch-input::placeholder {
+  color: #c4b89e !important;
+  font-weight: 400 !important;
+}
+#callai-host-root #callai-host-modal .ch-input:hover {
+  border-color: #a89878 !important;
+}
+#callai-host-root #callai-host-modal .ch-input:focus {
+  border-color: #ffcc00 !important;
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.15) !important;
+}
+
+#callai-host-root #callai-host-modal .ch-kv {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+  width: 100%;
+  align-items: center !important;
+}
+#callai-host-root #callai-host-modal .ch-kv .ch-input { flex: 1 1 0 !important; min-width: 0 !important; }
+
+#callai-host-root #callai-host-modal .ch-actions,
+#callai-host-root #callai-host-modal .ch-modal-footer {
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  width: 100% !important;
+  margin-top: 8px !important;
+}
+#callai-host-root #callai-host-modal .ch-actions-inline {
+  justify-content: flex-start !important;
+  margin-top: 10px !important;
+  padding-top: 0 !important;
+}
+#callai-host-root #callai-host-modal .ch-modal-footer {
+  padding-top: 14px !important;
+  padding-bottom: 6px !important;
+  margin-top: 4px !important;
+}
+#callai-host-root #callai-host-modal .ch-btn.primary {
+  margin-bottom: 4px !important;
+}
+
+/* Segmented control — island pills */
+#callai-host-root #callai-host-modal .ch-seg {
+  display: inline-flex !important;
+  gap: 4px !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+  padding: 4px !important;
+  border-radius: 50px !important;
+  border: 2px solid #c4b89e !important;
+}
+#callai-host-root #callai-host-modal .ch-seg button {
+  border: 0 !important;
+  background: transparent !important;
+  border-radius: 50px !important;
+  padding: 6px 14px !important;
+  min-height: 32px !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #9f927d !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#callai-host-root #callai-host-modal .ch-seg button.on {
+  background: #0cc0b5 !important;
+  color: #fff !important;
+  border: 0 !important;
+}
+
+/* Switch — animal-island track / handle */
+#callai-host-root #callai-host-modal .ch-switch {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 52px !important;
+  min-width: 52px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  position: relative !important;
+}
+#callai-host-root #callai-host-modal .ch-switch-track {
+  position: relative !important;
+  display: block !important;
+  width: 52px !important;
+  height: 28px !important;
+  border-radius: 50px !important;
+  background: #d4c9b4 !important;
+  border: 2.5px solid #c4b89e !important;
+  box-shadow: inset 0 2px 4px rgba(114, 93, 66, 0.15) !important;
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#callai-host-root #callai-host-modal .ch-switch-handle {
+  position: absolute !important;
+  top: 50% !important;
+  left: 2px !important;
+  width: 21px !important;
+  height: 21px !important;
+  border-radius: 50% !important;
+  background: rgb(247, 243, 223) !important;
+  border: 2.5px solid #c4b89e !important;
+  box-shadow: none !important;
+  transform: translateY(-50%) !important;
+  transition: left 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#callai-host-root #callai-host-modal .ch-switch:hover .ch-switch-track {
+  border-color: #a89878 !important;
+}
+#callai-host-root #callai-host-modal .ch-switch.is-on .ch-switch-track {
+  background: #86d67a !important;
+  border-color: #6fba2c !important;
+  box-shadow: inset 0 2px 4px rgba(90, 158, 30, 0.2) !important;
+}
+#callai-host-root #callai-host-modal .ch-switch.is-on .ch-switch-handle {
+  left: calc(100% - 24px) !important;
+  border-color: #6fba2c !important;
+}
+#callai-host-root #callai-host-modal .ch-switch:focus-visible .ch-switch-track {
+  outline: 2px solid #ffcc00 !important;
+  outline-offset: 2px !important;
+}
+
+#callai-host-modal .ch-params-list,
+#callai-host-modal #ch-params-list {
+  width: 100%;
 }
 
 
@@ -239,123 +524,212 @@ html.callai-theme-dark #callai-host-modal-backdrop {
 }
 #callai-host-root * { box-sizing: border-box; }
 
-/* Host floating actions bar — dim when idle, full on hover/drag */
-#callai-host-bar {
-  position: fixed;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 44px;
-  padding: 4px 6px 4px 4px;
-  border-radius: 999px;
-  border: 3px solid #9f927d;
-  background: rgba(25, 200, 185, 0.96);
-  box-shadow: 0 6px 0 rgba(121, 79, 39, 0.14);
-  pointer-events: auto;
-  user-select: none;
-  touch-action: none;
+/* Isolate host chrome from plugin page styles (e.g. bare `button { margin-top… }`).
+   IMPORTANT: only reset BAR controls — never #callai-host-modal (same-specificity
+   later rules were wiping Tabs / Button island styles). */
+#callai-host-root #callai-host-bar button,
+#callai-host-root #callai-host-bar input,
+#callai-host-root #callai-host-bar select,
+#callai-host-root #callai-host-bar textarea {
+  all: unset;
+  box-sizing: border-box !important;
+  font-family: inherit !important;
+}
+#callai-host-root #callai-host-bar button {
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+/* Modal form controls: still block plugin bare `input {}` without killing island look */
+#callai-host-root #callai-host-modal input,
+#callai-host-root #callai-host-modal select,
+#callai-host-root #callai-host-modal textarea {
+  all: unset;
+  box-sizing: border-box !important;
+  font-family: inherit !important;
+  display: inline-block !important;
+}
+#callai-host-root #callai-host-modal button {
+  /* soft baseline only — full look comes from .ch-btn / tabs / switch rules */
+  box-sizing: border-box !important;
+  font-family: inherit !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+
+/* Host floating actions bar — dim when idle, full on hover/drag.
+   Selectors MUST include #callai-host-root so they beat the bar button reset
+   (#callai-host-root #callai-host-bar button = 2 IDs). */
+#callai-host-root #callai-host-bar {
+  position: fixed !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 4px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  width: auto !important;
+  max-width: none !important;
+  padding: 4px 6px 4px 4px !important;
+  border-radius: 999px !important;
+  border: 3px solid #9f927d !important;
+  background: rgba(25, 200, 185, 0.96) !important;
+  box-shadow: 0 6px 0 rgba(121, 79, 39, 0.14) !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  touch-action: none !important;
   opacity: 0.6;
   transition: opacity 0.18s ease, box-shadow 0.12s ease, transform 0.12s ease;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  color: #fff !important;
+  font-family: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif !important;
 }
-#callai-host-bar:hover,
-#callai-host-bar:focus-within,
-#callai-host-bar.is-dragging {
+#callai-host-root #callai-host-bar:hover,
+#callai-host-root #callai-host-bar:focus-within,
+#callai-host-root #callai-host-bar.is-dragging {
   opacity: 1;
 }
-#callai-host-bar.is-dragging {
+#callai-host-root #callai-host-bar.is-dragging {
   cursor: grabbing;
-  box-shadow: 0 3px 0 rgba(121, 79, 39, 0.12);
+  box-shadow: 0 3px 0 rgba(121, 79, 39, 0.12) !important;
   transform: translateY(1px);
 }
-#callai-host-bar .ch-bar-handle {
-  width: 18px;
-  height: 28px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.85);
-  cursor: grab;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  padding: 0;
-  box-shadow: none;
+
+#callai-host-root #callai-host-bar .ch-bar-handle {
+  width: 18px !important;
+  height: 28px !important;
+  min-width: 18px !important;
+  min-height: 28px !important;
+  max-width: none !important;
+  max-height: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  cursor: grab !important;
+  display: grid !important;
+  place-items: center !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  line-height: 0 !important;
 }
-#callai-host-bar .ch-bar-handle:hover,
-#callai-host-bar .ch-bar-handle:focus-visible {
-  background: transparent;
-  color: #fff;
-  outline: none;
+#callai-host-root #callai-host-bar .ch-bar-handle:hover,
+#callai-host-root #callai-host-bar .ch-bar-handle:focus-visible {
+  background: transparent !important;
+  color: #fff !important;
+  outline: none !important;
 }
-#callai-host-bar.is-dragging .ch-bar-handle { cursor: grabbing; }
-#callai-host-bar .ch-bar-handle svg {
-  width: 14px;
-  height: 14px;
-  display: block;
+#callai-host-root #callai-host-bar.is-dragging .ch-bar-handle {
+  cursor: grabbing !important;
+}
+#callai-host-root #callai-host-bar .ch-bar-handle svg {
+  width: 14px !important;
+  height: 14px !important;
+  display: block !important;
   opacity: 0.95;
+  pointer-events: none;
 }
-#callai-host-bar .ch-bar-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 0;
-  background: transparent;
-  color: #fff;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  padding: 0;
+
+#callai-host-root #callai-host-bar .ch-bar-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
   transition: background 0.12s ease;
+  flex-shrink: 0 !important;
+  line-height: 0 !important;
 }
-#callai-host-bar .ch-bar-btn:hover,
-#callai-host-bar .ch-bar-btn:focus-visible {
-  background: rgba(255, 255, 255, 0.28);
-  outline: none;
+#callai-host-root #callai-host-bar .ch-bar-btn:hover,
+#callai-host-root #callai-host-bar .ch-bar-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.28) !important;
+  outline: none !important;
+  color: #fff !important;
 }
-#callai-host-bar .ch-bar-btn.is-on {
-  background: rgba(255, 253, 248, 0.95);
-  color: #11a89b;
+#callai-host-root #callai-host-bar .ch-bar-btn.is-on {
+  background: rgba(255, 253, 248, 0.95) !important;
+  color: #11a89b !important;
 }
-#callai-host-bar .ch-bar-btn svg {
-  width: 18px;
-  height: 18px;
-  display: block;
+#callai-host-root #callai-host-bar .ch-bar-btn svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: block !important;
+  pointer-events: none;
 }
-#callai-host-bar .ch-bar-sep {
-  width: 1px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.35);
-  margin: 0 2px;
-  flex-shrink: 0;
+
+#callai-host-root #callai-host-bar .ch-bar-sep {
+  width: 1px !important;
+  height: 20px !important;
+  min-width: 1px !important;
+  background: rgba(255, 255, 255, 0.35) !important;
+  margin: 0 2px !important;
+  flex-shrink: 0 !important;
+  border: 0 !important;
+  padding: 0 !important;
 }
 
 /* Vertical dock (left / right mid-edge): stack handle + actions */
-#callai-host-bar.is-vertical {
-  flex-direction: column;
-  height: auto;
-  width: 44px;
-  min-height: 44px;
-  padding: 4px 4px 6px;
-  gap: 4px;
+#callai-host-root #callai-host-bar.is-vertical {
+  flex-direction: column !important;
+  height: auto !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 4px 4px 6px !important;
+  gap: 4px !important;
 }
-#callai-host-bar.is-vertical .ch-bar-handle {
-  width: 28px;
-  height: 18px;
+#callai-host-root #callai-host-bar.is-vertical .ch-bar-handle {
+  width: 28px !important;
+  height: 18px !important;
+  min-width: 28px !important;
+  min-height: 18px !important;
 }
-#callai-host-bar.is-vertical .ch-bar-handle svg {
+#callai-host-root #callai-host-bar.is-vertical .ch-bar-handle svg {
   transform: rotate(90deg);
 }
-#callai-host-bar.is-vertical .ch-bar-sep {
-  width: 20px;
-  height: 1px;
-  margin: 2px 0;
+#callai-host-root #callai-host-bar.is-vertical .ch-bar-sep {
+  width: 20px !important;
+  height: 1px !important;
+  min-width: 20px !important;
+  min-height: 1px !important;
+  margin: 2px 0 !important;
 }
-#callai-host-bar.is-vertical .ch-bar-btn {
-  width: 36px;
-  height: 36px;
+#callai-host-root #callai-host-bar.is-vertical .ch-bar-btn {
+  width: 36px !important;
+  height: 36px !important;
 }
-#callai-host-bar.is-vertical.is-dragging {
+#callai-host-root #callai-host-bar.is-vertical.is-dragging {
   transform: translateX(1px);
 }
-

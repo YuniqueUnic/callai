@@ -34,7 +34,8 @@ UI_BARE = """<!DOCTYPE html>
     }
     h1 { margin: 0 0 6px; font-size: 18px; }
     .meta { color: #8a7b66; font-size: 12px; font-weight: 700; }
-    button {
+    /* Scope to page content — never style host #callai-host-bar buttons */
+    .card button {
       margin-top: 12px; border: 2px solid #0f9f92; background: var(--primary);
       color: #fff; font-weight: 800; border-radius: 12px; padding: 8px 14px; cursor: pointer;
     }

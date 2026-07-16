@@ -461,11 +461,18 @@ function App() {
     if (!items.length || spinning) return;
     setSpinning(true);
     setResult("");
-    const idx = Math.floor(Math.random() * items.length);
-    const turns = 5 + Math.random() * 3;
-    const slice = 360 / items.length;
-    // Align mid-sector under top pin (0deg at top for conic-gradient)
-    const target = rot + turns * 360 + (360 - (idx * slice + slice / 2));
+    const n = items.length;
+    const idx = Math.floor(Math.random() * n);
+    const slice = 360 / n;
+    // CSS conic: 0deg = top, clockwise. Sector i mid = (i+0.5)*slice.
+    // transform rotate(R) is clockwise; after rotate, mid sits at (mid+R) mod 360.
+    // Pin is at top (0°): need mid + R ≡ 0 ⇒ R ≡ -mid (mod 360).
+    const mid = (idx + 0.5) * slice;
+    const align = ((-mid) % 360 + 360) % 360;
+    const turns = 5 + Math.floor(Math.random() * 3);
+    let base = Math.floor(rot / 360) * 360 + align;
+    if (base <= rot + 0.5) base += 360;
+    const target = base + (turns - 1) * 360;
     setRot(target);
     const ms = Math.max(2, Number(s.effective.spinSeconds) || 4) * 1000 + 100;
     setTimeout(async () => {
@@ -496,7 +503,7 @@ function App() {
     <div className="app">
       <div className="header">
         <h1>今天吃喝什么</h1>
-        <p>设置 mode=food|drink；不同闹钟 ENV 覆盖即可打开不同页</p>
+        <p>转一下，看看今天吃喝什么</p>
       </div>
       <div className="banner">
         <span className="tag">mode={mode}</span>

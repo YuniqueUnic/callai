@@ -5,7 +5,40 @@ use chrono::{DateTime, Utc};
 
 use super::PluginManager;
 use crate::domain::{DomainError, DomainResult, ErrorCode, PluginDraft, PluginSummary};
-use crate::infra::plugin::package::{self, InstallConflictMode, PluginPackage};
+use crate::infra::plugin::package::{self, InstallConflictMode, PluginPackage, version_cmp};
+
+/// Options for installing a zip package (marketplace / drag-drop).
+#[derive(Debug, Clone, Copy)]
+pub struct InstallPackageOpts {
+    pub conflict: InstallConflictMode,
+    /// Allow package.version < installed.version (explicit downgrade).
+    pub force_downgrade: bool,
+    /// When package includes data.db, write it over existing data (destructive).
+    /// Default false: overwrite UI/manifest only, keep local data.db.
+    pub replace_data: bool,
+}
+
+impl Default for InstallPackageOpts {
+    fn default() -> Self {
+        Self {
+            conflict: InstallConflictMode::Rename,
+            force_downgrade: false,
+            replace_data: false,
+        }
+    }
+}
+
+impl InstallPackageOpts {
+    #[inline]
+    #[allow(dead_code)]
+    pub const fn from_conflict(conflict: InstallConflictMode) -> Self {
+        Self {
+            conflict,
+            force_downgrade: false,
+            replace_data: false,
+        }
+    }
+}
 
 impl PluginManager {
     /// Write plugin files for a known id (no rename). Optionally replace data.db.
@@ -64,17 +97,23 @@ impl PluginManager {
 
     /// Install from a validated zip package.
     /// Returns `None` when conflict mode is Skip and id already exists.
+    ///
+    /// Rules:
+    /// - same plugin ⇔ same `manifest.id`
+    /// - overwrite keeps data.db unless `replace_data` and package includes data
+    /// - package.version < installed.version blocked unless `force_downgrade`
     pub fn install_package(
         &self,
         package: PluginPackage,
-        conflict: InstallConflictMode,
+        opts: InstallPackageOpts,
     ) -> DomainResult<Option<PluginSummary>> {
         package.draft.validate()?;
         let mut draft = package.draft;
         let desired_id = draft.manifest.id.clone();
-        let exists = self.get_summary(&desired_id).is_ok();
+        let existing = self.read_manifest(&desired_id).ok();
+        let exists = existing.is_some();
 
-        match (exists, conflict) {
+        match (exists, opts.conflict) {
             (true, InstallConflictMode::Skip) => return Ok(None),
             (true, InstallConflictMode::Fail) => {
                 return Err(DomainError::new(
@@ -83,45 +122,68 @@ impl PluginManager {
                 ));
             }
             (true, InstallConflictMode::Overwrite) => {
-                // keep id/name as in package; replace files
+                if let Some(ref cur) = existing {
+                    let cmp = version_cmp(&draft.manifest.version, &cur.version);
+                    if cmp == std::cmp::Ordering::Less && !opts.force_downgrade {
+                        return Err(DomainError::new(
+                            ErrorCode::InvalidArgs,
+                            format!(
+                                "downgrade blocked: installed {} > package {} (pass force_downgrade)",
+                                cur.version, draft.manifest.version
+                            ),
+                        ));
+                    }
+                }
+                // keep id; replace ui/manifest only
             }
             (true, InstallConflictMode::Rename) | (false, _) => {
                 if exists {
                     draft.manifest.name = self.unique_display_name(&draft.manifest.name);
                     draft.manifest.id = self.unique_plugin_id(&draft.manifest.id);
                 } else {
-                    // still uniquify name if another plugin collides on display name
                     draft.manifest.name = self.unique_display_name(&draft.manifest.name);
                 }
             }
         }
+
+        // Overwrite without replace_data: never write data.db (preserve local settings/records).
+        // New install: write data if package includes it.
+        let data_blob: Option<&[u8]> = if package.meta.includes_data {
+            if !exists || opts.conflict != InstallConflictMode::Overwrite || opts.replace_data {
+                package.data_db.as_deref()
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         let mut meta = vec![
             ("imported_at", Utc::now().to_rfc3339()),
             ("source", "import".to_string()),
             ("user_edited_ui", "0".to_string()),
         ];
-        if package.meta.includes_data {
+        if package.meta.includes_data && data_blob.is_some() {
             meta.push(("imported_with_data", "1".to_string()));
         }
         let meta_ref: Vec<(&str, &str)> = meta.iter().map(|(k, v)| (*k, v.as_str())).collect();
-        let summary = self.write_plugin_files(&draft, package.data_db.as_deref(), &meta_ref)?;
+        let summary = self.write_plugin_files(&draft, data_blob, &meta_ref)?;
         Ok(Some(summary))
     }
 
     pub fn import_zip_bytes(
         &self,
         bytes: &[u8],
-        conflict: InstallConflictMode,
+        opts: InstallPackageOpts,
     ) -> DomainResult<Option<PluginSummary>> {
         let package = package::parse_plugin_zip(bytes)?;
-        self.install_package(package, conflict)
+        self.install_package(package, opts)
     }
 
     pub fn import_zip_path(
         &self,
         path: &Path,
-        conflict: InstallConflictMode,
+        opts: InstallPackageOpts,
     ) -> DomainResult<Option<PluginSummary>> {
         let bytes = std::fs::read(path).map_err(|e| {
             DomainError::new(
@@ -129,7 +191,7 @@ impl PluginManager {
                 format!("read zip {}: {e}", path.display()),
             )
         })?;
-        self.import_zip_bytes(&bytes, conflict)
+        self.import_zip_bytes(&bytes, opts)
     }
 
     /// Export installed plugin as zip bytes. `include_data` copies data.db when present.

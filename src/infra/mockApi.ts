@@ -263,13 +263,31 @@ export const mockApi = {
   async peekPluginZipId(_bytes: number[] | Uint8Array) {
     throw { code: "UNSUPPORTED", message: "peek requires desktop app" };
   },
-  async importPluginZipBytes(_bytes: number[] | Uint8Array, _conflict?: string | null) {
+  async peekPluginZip(_bytes: number[] | Uint8Array) {
+    throw { code: "UNSUPPORTED", message: "peek requires desktop app" };
+  },
+  async importPluginZipBytes(
+    _bytes: number[] | Uint8Array,
+    _conflict?: string | null,
+    _force?: boolean,
+    _replace?: boolean,
+  ) {
     throw { code: "UNSUPPORTED", message: "zip import requires desktop app" };
   },
-  async importPluginZipPath(_path: string, _conflict?: string | null) {
+  async importPluginZipPath(
+    _path: string,
+    _conflict?: string | null,
+    _force?: boolean,
+    _replace?: boolean,
+  ) {
     throw { code: "UNSUPPORTED", message: "zip import requires desktop app" };
   },
-  async importPluginZipUrl(_url: string, _conflict?: string | null) {
+  async importPluginZipUrl(
+    _url: string,
+    _conflict?: string | null,
+    _force?: boolean,
+    _replace?: boolean,
+  ) {
     throw { code: "UNSUPPORTED", message: "zip import requires desktop app" };
   },
   async listBuiltinCatalog() {

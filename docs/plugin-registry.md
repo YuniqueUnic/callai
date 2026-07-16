@@ -40,3 +40,11 @@ Default URL constant: `DEFAULT_PLUGIN_REGISTRY_URL` in `domain/plugin_registry.r
 
 - `fetch_plugin_registry(url?)` → index
 - `import_plugin_zip_url(url, conflict?)` → install package
+
+## Update rules (same plugin identity)
+
+- **Same plugin** ⇔ same `manifest.id` (not name).
+- **Update available** ⇔ registry/package `version` > installed `version` (semver-ish).
+- **Update action** ⇔ install with `conflict=overwrite`, **keep `data.db`** unless user opts into `replace_data`.
+- **Downgrade** ⇔ blocked unless `force_downgrade=true` (UI: 「强制装旧版」).
+- App surfaces: market list badges + installed list one-click update; zip drop conflict modal shows version compare.
