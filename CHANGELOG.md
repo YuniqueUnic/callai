@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.3.0](https://github.com/YuniqueUnic/callai/compare/v0.2.8...v0.3.0) (2026-07-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **runtime-context:** Schedule times must now be provided as wall-clock times in the application's configured timezone, not UTC-adjusted values.
+* **plugin-sdk:** Removed CALLAI_PLUGIN_* aliases; now only direct ENV keys (like mode=drink) are used for runtime parameter overrides.
+
+### Features
+
+* **docs:** add plugin marketplace drag-and-drop update feedback loop documentation ([5244a6d](https://github.com/YuniqueUnic/callai/commit/5244a6deb1a3d9126d37001cbcf8b1180e71f807))
+* **meal-spin:** add manifest params declaration ([b27153e](https://github.com/YuniqueUnic/callai/commit/b27153e2e53fa5ba53cd941ab9494a83dcfa0880))
+* **plugin-manager:** collect param keys from manifest and storage ([b27153e](https://github.com/YuniqueUnic/callai/commit/b27153e2e53fa5ba53cd941ab9494a83dcfa0880))
+* **plugin:** keep-alive host warmup, MCP agent tools, alarm-only overlay ([224951c](https://github.com/YuniqueUnic/callai/commit/224951cea86d7fdfac08cd6728ab403c025da941))
+
+
+### Bug Fixes
+
+* **homepage:** use schedule timezone for next-trigger display ([21468a7](https://github.com/YuniqueUnic/callai/commit/21468a72685df2b7a9d7da8dcf9c22cf4d3d6c83))
+* **plugin-console:** clear both console and errors on reset ([b27153e](https://github.com/YuniqueUnic/callai/commit/b27153e2e53fa5ba53cd941ab9494a83dcfa0880))
+* **plugins:** track builtin todo package ignored by global *TODO ([7691594](https://github.com/YuniqueUnic/callai/commit/7691594a3001f6162fcc4ab12e8ce5138f80a93f))
+* **runtime-context:** add timezone-resolved schedule wall-clock instructions ([21468a7](https://github.com/YuniqueUnic/callai/commit/21468a72685df2b7a9d7da8dcf9c22cf4d3d6c83))
+* **timezone:** add timezone utility functions ([21468a7](https://github.com/YuniqueUnic/callai/commit/21468a72685df2b7a9d7da8dcf9c22cf4d3d6c83))
+* **titlebar:** implement manual window resizing for transparent shells ([228f14c](https://github.com/YuniqueUnic/callai/commit/228f14ca416c35402949988b55702742b1605e1f))
+
+
+### Performance Improvements
+
+* **sound-cache:** add caching for builtin sound rendering ([b27153e](https://github.com/YuniqueUnic/callai/commit/b27153e2e53fa5ba53cd941ab9494a83dcfa0880))
+* **theme:** optimize resize grip z-index and targeting ([228f14c](https://github.com/YuniqueUnic/callai/commit/228f14ca416c35402949988b55702742b1605e1f))
+
+
+### Code Refactoring
+
+* **plugin-sdk:** simplify ENV param overrides to direct key mapping ([b27153e](https://github.com/YuniqueUnic/callai/commit/b27153e2e53fa5ba53cd941ab9494a83dcfa0880))
+
 ## [0.2.8](https://github.com/YuniqueUnic/callai/compare/v0.2.7...v0.2.8) (2026-07-15)
 
 
