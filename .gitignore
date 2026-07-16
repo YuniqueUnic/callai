@@ -70,3 +70,8 @@ assets/screenshot/*.png
 assets/screenshot/*.webp
 assets/screenshot/*.gif
 assets/screenshot/record.mp4
+
+# Force-track builtin plugin id "todo" (global ~/.gitignore often has *TODO)
+# If this path vanishes from git, re-add with: git add -f src-tauri/templates/builtin_plugins/todo
+!src-tauri/templates/builtin_plugins/todo/
+!src-tauri/templates/builtin_plugins/todo/**
