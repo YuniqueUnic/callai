@@ -733,3 +733,51 @@ html.callai-theme-dark #callai-host-modal-backdrop {
 #callai-host-root #callai-host-bar.is-vertical.is-dragging {
   transform: translateX(1px);
 }
+
+
+/* Alarm runtime override chip on host bar */
+#callai-host-root #callai-host-bar .ch-bar-override[hidden] {
+  display: none !important;
+}
+#callai-host-root #callai-host-bar .ch-bar-override.is-on {
+  background: rgba(255, 253, 248, 0.95) !important;
+  color: #a07a00 !important;
+}
+#callai-host-root #callai-host-modal .ch-override-block {
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 2px solid #e8dcc8;
+  background: rgba(255, 255, 255, 0.45);
+  box-sizing: border-box;
+}
+#callai-host-root #callai-host-modal .ch-override-block .ch-label {
+  margin-bottom: 8px;
+  display: block;
+}
+#callai-host-root #callai-host-modal .ch-override-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(196, 184, 158, 0.35);
+  font-size: 13px;
+  font-weight: 600;
+}
+#callai-host-root #callai-host-modal .ch-override-row:last-child {
+  border-bottom: 0;
+}
+#callai-host-root #callai-host-modal .ch-override-k {
+  color: #794f27;
+  flex: 0 1 auto;
+  word-break: break-all;
+}
+#callai-host-root #callai-host-modal .ch-override-v {
+  color: #0cc0b5;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  max-width: 55%;
+  word-break: break-all;
+}

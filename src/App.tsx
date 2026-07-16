@@ -15,9 +15,16 @@ import { SeaMarquee } from "./ui/SeaMarquee";
 import { TitleBar } from "./ui/TitleBar";
 import { warmToast } from "./ui/toast";
 import { setSoundEnabled, unlockAudio } from "./ui/sounds";
-import { ensureDetectedTimezone } from "./infra/timezoneCache";
+import {
+  ensureDetectedTimezone,
+  resetDetectedTimezone,
+} from "./infra/timezoneCache";
 import { getSettingsCached, warmSettingsSecondary } from "./infra/settingsCache";
-import { invalidateAlarmsCache, warmAlarmsCache } from "./infra/alarmsCache";
+import {
+  invalidateAlarmsCache,
+  invalidateNextMapCache,
+  warmAlarmsCache,
+} from "./infra/alarmsCache";
 
 export default function App() {
   const { t, i18n } = useTranslation(["common", "alarms", "logs"]);
@@ -32,7 +39,10 @@ export default function App() {
     warmToast();
     applyTheme(readStoredTheme());
     // Warm timezone cache off the critical path (Settings reads cache only).
-    void ensureDetectedTimezone();
+    resetDetectedTimezone();
+    void ensureDetectedTimezone().then(() => {
+      invalidateNextMapCache();
+    });
     void warmAlarmsCache();
     void getSettingsCached().then((s) => {
       applyTheme(s.theme);

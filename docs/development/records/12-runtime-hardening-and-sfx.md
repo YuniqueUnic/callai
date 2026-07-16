@@ -517,3 +517,246 @@ Test: Asia/Shanghai daily 08,13,18 → after 12:00 next is 13:00 local, not 21:0
 - 设置里 TimezonePicker 改 `America/New_York` 后 next 标签随之变化。  
 - 每周一 09:00：周日之后 next 落在周一 09:00。  
 - 编辑页顶栏 floating overlay + 透明（record 05 附录 B）；海浪无缝（record 04 附录 B）。
+
+---
+
+## 附录 B · 时区再翻车：GMT 误判、AI 生成「晚上 8 点」、前后端分叉（2026-07-16）
+
+> 接续 **附录 A**（墙钟求值）与 [15 AI/MCP/Prompt](./15-ai-mcp-prompt-composition.md)。  
+> 证据：工作区 `timezone_detect.rs` · `timezoneCache.ts` · `alarm_generate.prompt` · 用户手测闭环；关联 commit 线 `2c13cd8`（墙钟）+ 本轮 detect 硬化 / prompt / 显式 `Asia/Shanghai` 写库。  
+> **用户终态验收（正确）**：`每天 20:00` · 下次 **4 小时 27 分后 · 7月16日 20:00 · Asia/Shanghai**。
+
+### B.1 思想 / 为什么又有这个需求
+
+附录 A 解决了：**字段别当 UTC 迭代**。  
+用户以为「墙钟做完就稳了」，真实产品仍会在三处再炸：
+
+| 层 | 失败模式 | 用户可见 |
+| --- | --- | --- |
+| **探测** | `system` → 误得 `GMT`/`UTC`（Clash TUN / 污染 `TZ` / 缓存） | 标签写 GMT 或算成 04:00 |
+| **展示 vs 调度** | 前端 Intl 显示 `Asia/Shanghai`，后端仍按 UTC 求 next | **标签对、时间错**（最阴） |
+| **AI 生成** | 模型把「晚上 8 点」UTC 换算进 `times[]` | 库里变成 `12:00` 或语义漂移 |
+
+**思想一句话：**
+
+> 调度正确性 = **同一套 IANA 墙钟身份** × **探测不可被 VPN 骗成 GMT** × **AI 禁止 UTC 换算** × **验收用「剩余小时」而不是只看标签**。
+
+### B.2 用户原始反馈（压缩）与拆解
+
+#### 反馈 1 · AI 生成似乎没带时区
+
+```text
+帮我弄一个每天晚上 8 点提示我浇花的闹钟
+→ 生成 每天 20:00，但下次触发是 7月17日 04:00 / 约 13 小时后
+```
+
+| 维度 | 评价 |
+| --- | --- |
+| **好** | 给了期望语义（晚上 8 点）+ 实际 UI 数字（04:00 / 13h） |
+| **可机判** | 上海下午 ≈15:00 时，到 20:00 应 ≈5h；13h ⇔ 把 20:00 当 UTC 墙钟 |
+| **缺** | 初稿未强制「截图含时区标签」——后来补上 `alarm-next-tz` 才一眼看见 GMT |
+
+**算术板书（课堂必写）：**
+
+```text
+now ≈ 15:00 Asia/Shanghai (= 07:00 UTC)
+正确 next = 20:00 Asia/Shanghai (= 12:00 UTC)  → 剩余 ≈ 5h
+错误 next = 20:00 UTC (= 04:00+1 Asia/Shanghai) → 剩余 ≈ 13h，显示 04:00
+```
+
+#### 反馈 2 · 「是不是全局时间不统一」
+
+```text
+软件全局的时间/时区没有统一！只要统一了，prompt 有对应信息，就不会这样。
+```
+
+| 维度 | 评价 |
+| --- | --- |
+| **好** | 把问题从「AI 笨」升到 **系统单一真相源** |
+| **产品规则** | settings.timezone（system\|IANA）→ resolve → 调度与 next 与 AI runtime **同一 resolve** |
+
+#### 反馈 3 · 标签已是 Asia/Shanghai，时间仍是 04:00
+
+```text
+下次 12h29分 · 7月17日 04:00 · Asia/Shanghai
+这里该显示最近的下一次才对！
+```
+
+| 维度 | 评价 |
+| --- | --- |
+| **关键洞察** | **展示时区**（前端 `peek`/`Intl` 纠偏）与 **求值时区**（Rust `next_trigger`）可以分叉 |
+| **根因型** | 前端 offset 校验把 GMT 改成 Shanghai 写在标签上；后端二进制若仍用旧 detect / 仍 UTC 墙钟 → 绝对时刻仍是 20:00 UTC → format 成 04:00 |
+
+#### 反馈 4 · 要不要直接改库？
+
+```text
+是不是数据库数据不对了！？直接修正数据库！？
+```
+
+| 数据项 | 是否坏 | 动作 |
+| --- | --- | --- |
+| `schedule_json` `{"mode":"daily","times":["20:00"]}` | **否** | 不动 |
+| `app_settings.timezone` = `system` | **易被探测坑** | 本机可改为显式 **`Asia/Shanghai`** |
+| `config.toml` 同步 | 镜像 | 同步写 |
+
+**写库原则：** 修 **身份（timezone）**，不改已经正确的 **墙钟字段（20:00）**。
+
+#### 反馈 5 · 跨平台质疑
+
+```text
+是不是没做好跨平台！？是否有更合适的 lib？
+```
+
+**回答（定案）：**
+
+| 层 | 选型 | 平台 |
+| --- | --- | --- |
+| 主源 | **`iana-time-zone`** crate | Win 注册表/API · macOS · Linux |
+| 墙钟表 | **`chrono-tz`** | 全平台 IANA |
+| 校验 | `Local` offset vs 候选 zone 当前 offset | 全平台 |
+| Unix 辅助 | `/etc/localtime` zoneinfo、`/etc/timezone` | 仅 Unix |
+| 兜底 | +8→`Asia/Shanghai` 等启发式 | 防 GMT 假阳性 |
+| 前端 | `Intl` + 同样 offset 校验 | WebView |
+
+**不要**只依赖 `/etc/localtime`（Windows 无此路径）。  
+**不必**再引更大时区引擎；社区默认就是 `iana-time-zone` + `chrono-tz`。
+
+### B.3 原始 prompt / 规格怎样写才好
+
+#### 给 agent 的「墙钟 + 探测」总包（可复制）
+
+```markdown
+# Goal
+Schedule next-trigger and AI AlarmDraft times share ONE resolved IANA zone.
+
+# Rules
+1. times[] / cron hour-minute = civil wall-clock in settings.timezone resolved zone
+2. NEVER UTC-convert "晚上 8 点" → "12:00" in JSON
+3. detect system zone via iana-time-zone (all OS); sanity-check against Local UTC offset
+4. Reject bare GMT/UTC when process offset is clearly non-zero (VPN/TUN / polluted TZ)
+5. Frontend label and backend next_trigger MUST use the same resolve path
+6. Do not "fix" correct times[] by rewriting 20:00; fix timezone identity instead
+
+# Acceptance (Asia/Shanghai afternoon ~15:00)
+- daily 20:00 → next shows today 20:00, remaining ~5h (NOT ~13h, NOT 04:00 next day)
+- UI shows resolved zone string (e.g. Asia/Shanghai)
+- cargo test: wall-clock Shanghai + real_db next for water alarm
+```
+
+#### 坏 prompt → 好 prompt
+
+| 坏 | 为什么坏 | 好 |
+| --- | --- | --- |
+| 修一下时区 | 无验收数字 | 15:00 上海 → 20:00 剩余 5h；禁止 04:00/13h |
+| 支持跟随系统 | 不说探测失败怎么办 | system + iana-time-zone + offset 拒绝 GMT |
+| AI 记得用户在中国 | 不可机判 | runtime `timezone.resolved` + wall-clock 表 |
+| 改成 UTC 存储 | 与生活时间对抗 | 存墙钟，求值时带 zone |
+
+#### alarm_generate 为何要单独写 CRITICAL
+
+生成链路：`system → runtime → capabilities → alarm_generate → output_contract`。  
+若只在 system 写一句「注意时区」，模型仍会「聪明地」做 UTC 换算。  
+`alarm_generate.prompt` 必须用 **对错表**：
+
+| 用户 | timezone.resolved | 错 times | 对 times |
+| --- | --- | --- | --- |
+| 每天晚上 8 点 | Asia/Shanghai | `["12:00"]` | `["20:00"]` |
+
+并写死后果：UTC 换算 → next 显示 04:00。
+
+### B.4 功能划分与模块地图
+
+```text
+settings.timezone  (system | IANA)
+        │
+        ▼
+ resolve_timezone  ──► detect_system_timezone (timezone_detect.rs)
+        │                    ├ iana-time-zone (Win/macOS/Linux)
+        │                    ├ /etc/localtime (unix bonus)
+        │                    ├ offset sanity (reject GMT when +8)
+        │                    └ heuristic Asia/Shanghai for +8
+        ▼
+ next_trigger_after_in_tz(schedule, now, tz)   // 墙钟，附录 A
+        │
+        ▼
+ RFC3339 absolute instant  ──► UI formatDateTime(..., scheduleTz)
+                               remainingLabel(Date.now())  // 只信绝对时刻
+
+并行：AI runtime_context 注入 timezone.resolved + now.local
+      alarm_generate 禁止 UTC 换算 times[]
+```
+
+| 模块 | 职责 | 非职责 |
+| --- | --- | --- |
+| `timezone_detect.rs` | 跨平台探测 + 校验 | 不写 UI |
+| `schedule.rs` | 墙钟 cron 求值 | 不解析 VPN |
+| `timezoneCache.ts` | 前端缓存 / Intl 对齐 | 不单独发明 next |
+| `alarm_generate.prompt` | 生成契约 | 不替代 resolve |
+| DB `timezone` 列 | 用户身份偏好 | 不存每闹钟 zone |
+
+### B.5 推进流程（agent 真实顺序）
+
+```text
+1. 复现算术：13h ⇔ 20:00 UTC；5h ⇔ 20:00 Shanghai
+2. 读库：schedule 对不对？timezone 是什么？
+3. 用同一 DB 跑 domain 测试（real_user_db / probe）
+4. 分清「展示 zone」vs「求值 zone」是否分叉
+5. 硬化 detect（全平台主源 + offset 拒绝 GMT）
+6. 硬化 prompt / runtime CRITICAL
+7. 可选：显式写库 Asia/Shanghai（TUN 环境更稳）
+8. 手测：标签 + 剩余小时 + 日历时刻 三者一致
+9. 写入本附录（偏差表）
+```
+
+### B.6 真实执行 / 偏差表
+
+| # | 现象 | 错误假设 | 正确假设 | 纠偏 |
+| --- | --- | --- | --- | --- |
+| 1 | 20:00 却 04:00 next | AI 生成错了 | **求值 zone=UTC**，展示在上海 | 墙钟 + detect |
+| 2 | 剩余 13h | 时钟坏了 | 13h 是 UTC 20:00 的正确剩余 | 算术板书 |
+| 3 | 标签 Asia/Shanghai 仍 04:00 | 标签可信 | **前后端 zone 分叉** | 同源 resolve；重启二进制 |
+| 4 | 改 times 能修吗 | 数据坏了 | times 对，**timezone 身份**不稳 | 写库 `Asia/Shanghai` |
+| 5 | 只靠 /etc/localtime | Unix 通吃 | Windows 无此路径 | **iana-time-zone 主源** |
+| 6 | Clash TUN | 无关 | 可污染探测 / 环境 | offset 校验 + 显式 IANA |
+| 7 | 终态 4h27m · 20:00 · Shanghai | — | 三元一致 | **验收通过** |
+
+### B.7 写库操作记录（本机验收）
+
+```sql
+-- 只改身份，不改墙钟字段
+UPDATE app_settings SET timezone = 'Asia/Shanghai' WHERE id = 1;
+-- schedule_json 保持 {"mode":"daily","times":["20:00"]}
+```
+
+`config.toml` 同步：`timezone = "Asia/Shanghai"`。
+
+改后 domain 复算：`next_local = 20:00 CST`，剩余约 4.5h。  
+用户 UI 确认：`4 小时 27 分后 · 7月16日 20:00 · Asia/Shanghai`。
+
+### B.8 给 agent 的执行纪律
+
+1. 先 **算术**（5h vs 13h），再改代码。  
+2. 先 **读库**，禁止一上来改 `20:00`→别的钟点。  
+3. 探测必须 **跨平台主库 + offset 校验**，禁止 Unix-only 当唯一真相。  
+4. UI 时区标签与 next 必须 **同一 resolve**；标签「好看」不等于调度对。  
+5. AI 生成：runtime 有 zone + prompt 对错表 + 禁止 UTC 换算。  
+6. 手测三件套：**日历时刻 · 剩余小时 · zone 字符串**。
+
+### B.9 验收清单（可抄）
+
+- [ ] 上海下午：daily 20:00 → 今日 20:00，剩余 ~4–6h（非 ~13h）  
+- [ ] 不出现「标签 Shanghai + 时刻 04:00」组合  
+- [ ] `timezone=system` 在 +8 机器上 detect 不得稳定落在 GMT  
+- [ ] 显式 `Asia/Shanghai` 时与 system 纠偏后一致  
+- [ ] AI「晚上 8 点浇花」→ `times:["20:00"]` 非 `12:00`  
+- [ ] `cargo test --lib timezone_detect` / wall-clock / real_db 绿  
+
+### B.10 与附录 A / record 15 的关系
+
+| 文档 | 管什么 |
+| --- | --- |
+| 12 附录 A | cron **字段**别当 UTC 迭代 |
+| **12 附录 B（本篇）** | **探测/身份/前后端分叉/AI/写库/跨平台 lib** |
+| 15 | prompt 分层、runtime 注入、alarm_generate CRITICAL |
+
+---

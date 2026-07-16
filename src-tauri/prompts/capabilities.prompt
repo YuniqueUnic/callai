@@ -14,9 +14,10 @@ The program **parses and validates** AlarmDraft fields:
 - name (non-empty)
 - enabled (bool)
 - schedule:
-  - daily: times as "HH:MM" (24h)
+  - daily: times as "HH:MM" (24h wall-clock in settings timezone / timezone.resolved)
   - weekly: days 0=Sunday … 6=Saturday + times
   - monthly: days 1–31 + times
+  - Never store UTC-shifted clock hours; evaluation uses the same global zone as next-trigger
   - cron: classic 5-field "m h dom mon dow"
 - binary (non-empty executable or builtin)
 - args: string[]

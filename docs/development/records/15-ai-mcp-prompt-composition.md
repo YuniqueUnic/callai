@@ -623,3 +623,54 @@ UI 视觉以 animal-island-style.prompt 为准。
 - **16：** MCP 工具面、审计边界、App HTTP supervisor、Host/端口运维  
 
 读完 15 必须读 16，否则会带着「开关不 bind」的过时结论出门。
+
+---
+
+## 12. 追加：Alarm 生成与墙钟时区（2026-07-16 浇花案）
+
+> 详偏差与探测见 [12 附录 B](./12-runtime-hardening-and-sfx.md)。此处只补 **prompt 层** 为何改、怎么写才驱动 agent。
+
+### 12.1 需求从哪来
+
+用户自然语言：
+
+```text
+帮我弄一个每天晚上 8 点提示我浇花的闹钟
+```
+
+生成结果 `每天 20:00`「看起来对」，但 **下次触发** 曾出现 04:00 / ~13h——暴露：
+
+1. runtime 虽注入 `timezone.resolved`，**task prompt 未用对错表钉死墙钟**；  
+2. 全局 `settings.timezone=system` 探测成 GMT 时，再好的 JSON 也会被调度算歪。
+
+### 12.2 prompt 拆解：为什么 CRITICAL 段「好」
+
+`src-tauri/prompts/alarm_generate.prompt` 增补要点：
+
+| 写法 | 作用 |
+| --- | --- |
+| 「唯一 zone = timezone.resolved」 | 禁止模型另起炉灶 |
+| 「禁止 UTC 换算 times[]」 | 针对「聪明换算」失败模式 |
+| 对错表：上海 20:00 vs 12:00 | 可机判、可当测试向量 |
+| 「无 per-alarm timezone 字段」 | 防 schema 膨胀 |
+
+`system.prompt` / `output_contract.prompt` / runtime 块尾注同步同一 CRITICAL，避免只在一层写、组合时被淹没。
+
+### 12.3 坏 → 好（生成向）
+
+| 坏 | 好 |
+| --- | --- |
+| 按 UTC 理解用户本地晚上 | times 与用户口头钟点 1:1 |
+| 只写「注意时区」 | 对错表 + 失败后果（04:00） |
+| 生成后不管 next | 手测剩余小时与日历时刻 |
+
+### 12.4 与 runtime 层的合同
+
+```text
+runtime 提供：timezone.setting / timezone.resolved / now.local / now.utc
+task 消费：只把 now.local + resolved 用于相对时间；绝对钟点不写进 UTC
+domain 消费：times[] 在 resolved zone 墙钟求值 → 绝对瞬间 → UI
+```
+
+三层任一断裂都会重现浇花案。完整探测与写库见 record 12 附录 B。
+

@@ -5,7 +5,10 @@
 import type { AppSettings } from "../domain/types";
 import { client } from "../infra/client";
 import { getAppVersionCached, getSettingsCached } from "../infra/settingsCache";
-import { ensureDetectedTimezone } from "../infra/timezoneCache";
+import {
+  formatNowInTimezone,
+  resolveAppTimezone,
+} from "../domain/timezone";
 
 export interface AiRuntimeContextDto {
   app_name: string;
@@ -72,7 +75,14 @@ ${notes}
 Treat this block as authoritative environment/preferences for generation.
 Pick binaries, paths, schedule times, and UI copy that fit this machine and locale.
 Do not invent paths outside dirs.config / dirs.data unless the user asked.
-Never echo or request secrets.`;
+Never echo or request secrets.
+
+## Schedule / timezone (CRITICAL)
+- Alarm schedule.times and cron hour/minute are **wall-clock in timezone.resolved**.
+- Do NOT convert local clock times into UTC for the JSON times array.
+- Example: user says evening 8pm / 20:00 and timezone.resolved is Asia/Shanghai → times: ["20:00"] (NOT "12:00").
+- Relative phrases (in 30 minutes, tomorrow 9am) use now.local + timezone.resolved, never now.utc alone.
+- The app evaluates every alarm in this same resolved zone; wrong conversion shifts next-trigger by hours.`;
 }
 
 /** Browser/mock fallback when Tauri command is unavailable. */
@@ -104,7 +114,8 @@ export async function buildBrowserRuntimeContext(): Promise<AiRuntimeContextDto>
       }) as AppSettings,
   );
   const version = await getAppVersionCached().catch(() => "0.0.0");
-  const tzResolved = await ensureDetectedTimezone().catch(() => "UTC");
+  const tzSetting = settings.timezone || "system";
+  const tzResolved = await resolveAppTimezone(tzSetting).catch(() => "UTC");
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
   let os_family = "unknown";
   if (/Mac/i.test(ua)) os_family = "macos";
@@ -125,7 +136,7 @@ export async function buildBrowserRuntimeContext(): Promise<AiRuntimeContextDto>
     arch: typeof navigator !== "undefined" ? navigator.platform : "unknown",
     locale: settings.locale || "zh-CN",
     theme: settings.theme || "system",
-    timezone_setting: settings.timezone || "system",
+    timezone_setting: tzSetting,
     timezone_resolved: tzResolved,
     sound_enabled: settings.sound_enabled !== false,
     notify_on_failure: !!settings.notify_on_failure,
@@ -137,7 +148,7 @@ export async function buildBrowserRuntimeContext(): Promise<AiRuntimeContextDto>
     ai_base_host: host,
     mcp_enabled: !!settings.mcp?.enabled,
     mcp_listen: `${settings.mcp?.listen_host ?? "127.0.0.1"}:${settings.mcp?.port ?? 33927}`,
-    now_local: now.toString(),
+    now_local: formatNowInTimezone(tzResolved, now),
     now_utc: now.toISOString(),
     shell_hint:
       os_family === "windows"
@@ -152,6 +163,7 @@ export async function buildBrowserRuntimeContext(): Promise<AiRuntimeContextDto>
       "Never echo or request API keys / MCP tokens.",
       "For pure chime reminders use binary `__callai_alarm__`.",
       "Respond in the user's locale when writing names/copy.",
+      `Schedule HH:MM is wall-clock in ${tzResolved}; never UTC-convert times[].`,
     ],
   };
 }

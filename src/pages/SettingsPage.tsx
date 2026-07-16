@@ -16,6 +16,8 @@ import {
   ensureDetectedTimezone,
   peekDetectedTimezone,
 } from "../infra/timezoneCache";
+import { clearRuntimeContextCache } from "../ai/runtimeContext";
+import { invalidateNextMapCache } from "../infra/alarmsCache";
 import { SettingsAiMcpPanel } from "./SettingsAiMcpPanel";
 import {
   getAppVersionCached,
@@ -124,10 +126,15 @@ export function SettingsPage({ onOpenLogs }: Props) {
   }, []);
 
   async function save(next: AppSettings, opts?: { silent?: boolean }) {
+    const prevTz = settings?.timezone;
     const saved = await client.saveSettings(next);
     setSettingsCache(saved);
     setSettings(saved);
     applyTheme(saved.theme);
+    if (prevTz !== saved.timezone) {
+      clearRuntimeContextCache();
+      invalidateNextMapCache();
+    }
     if (saved.locale !== i18n.language) {
       await i18n.changeLanguage(saved.locale);
     }

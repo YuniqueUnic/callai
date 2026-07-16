@@ -94,17 +94,25 @@ Host helpers (optional):
 window.callai.openHostSettings()   // open injected modal
 window.callai.getHostPrefs()       // { theme, notifications }
 window.callai.getHostParams()      // host-panel param layer
-window.callai.getLaunchParams()    // effective overrides for this open
-window.callai.getAlarmLaunchParams?.() // raw alarm layer if present
+window.callai.getLaunchParams()         // effective: settings ⋃ alarm (this open)
+window.callai.getAlarmLaunchParams()    // alarm-only runtime overrides (badges / "临时")
 ```
 
 Listen when an already-open window is re-triggered:
 
 ```js
 window.addEventListener("callai:launch-params", (ev) => {
-  applyEffective(ev.detail || {});
+  const d = ev.detail || {};
+  // New hosts send { alarm, host, effective }; older hosts may send a flat map.
+  const alarm = d.alarm || (d.effective ? {} : d);
+  const effective = d.effective || d;
+  applyAlarmOverlay(alarm);
+  applyEffective(effective);
 });
 ```
+
+**Do not** label `storage.settings` as “闹钟覆盖”. Yellow/warn banners for every settings key are wrong.
+Host shows alarm-only overrides (clock chip on host bar + “本次闹钟” in host modal).
 
 ---
 
@@ -260,7 +268,8 @@ Host captures `console.*` and errors for Fix-with-AI / MCP `plugin_console`.
 
 1. [ ] Manifest permissions match used APIs (`storage` if you persist).
 2. [ ] Business keys are stable strings; overrides use the **same** names.
-3. [ ] Load: `storage.get` → merge `getLaunchParams()` → render.
+3. [ ] Load: `storage.get` → merge alarm via `getAlarmLaunchParams()` → render effective.
+3b. [ ] Overlay UI uses **alarm-only** keys, not the full settings object.
 4. [ ] Save: only `storage.set` on user intent (not on every overlay).
 5. [ ] No localStorage; no invented `callai.*` methods.
 6. [ ] No full theme/notify/settings chrome (host FAB).

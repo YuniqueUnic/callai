@@ -124,6 +124,18 @@ html, body {
   font-size: 12px; font-weight: 800; border: 2px solid rgba(17,168,155,.25);
 }
 .tag.warn { background: #fff4cc; color: #a07a00; border-color: rgba(219,169,14,.35); }
+.tag.soft {
+  background: rgba(25, 200, 185, 0.12);
+  color: #0a8f84;
+  border-color: rgba(25, 200, 185, 0.28);
+  max-width: min(220px, 52vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .tag.ok { background: #e8f7d8; color: #4d8a12; border-color: rgba(95,158,30,.3); }
 .tag.muted { background: #efe8d4; color: var(--text-secondary); border-color: var(--border); }
 .seg {
