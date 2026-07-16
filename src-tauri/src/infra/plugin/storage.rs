@@ -84,7 +84,23 @@ impl PluginDb {
         Ok(n > 0)
     }
 
-    pub fn list_keys(&self, prefix: Option<&str>) -> DomainResult<Vec<String>> {
+    /// Keys inside the `settings` JSON object (if present and is object).
+    pub fn settings_param_keys(&self) -> DomainResult<Vec<String>> {
+        let Some(raw) = self.get("settings")? else {
+            return Ok(Vec::new());
+        };
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(&raw) else {
+            return Ok(Vec::new());
+        };
+        let Some(obj) = v.as_object() else {
+            return Ok(Vec::new());
+        };
+        let mut keys: Vec<String> = obj.keys().cloned().collect();
+        keys.sort();
+        Ok(keys)
+    }
+
+        pub fn list_keys(&self, prefix: Option<&str>) -> DomainResult<Vec<String>> {
         let conn = self.conn.lock().unwrap();
         let mut out = Vec::new();
         if let Some(p) = prefix {

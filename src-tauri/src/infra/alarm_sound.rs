@@ -237,6 +237,21 @@ fn temp_wav_path(id: BuiltinSoundId) -> PathBuf {
     std::env::temp_dir().join(format!("callai-sound-{}-{nanos}.wav", id.as_str()))
 }
 
+fn wav_for(id: BuiltinSoundId) -> Vec<u8> {
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+    static CACHE: Mutex<Option<HashMap<&'static str, Vec<u8>>>> = Mutex::new(None);
+    let key = id.as_str();
+    let mut guard = CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    let map = guard.get_or_insert_with(HashMap::new);
+    if let Some(bytes) = map.get(key) {
+        return bytes.clone();
+    }
+    let bytes = render_wav(id);
+    map.insert(key, bytes.clone());
+    bytes
+}
+
 /// Best-effort playback. Returns true if a player was launched successfully.
 /// Honors system volume/mute; does not force sound through DND bypass hacks.
 pub fn play_sound(id: BuiltinSoundId) -> Result<bool, String> {
@@ -246,7 +261,7 @@ pub fn play_sound(id: BuiltinSoundId) -> Result<bool, String> {
         let _ = render_wav(id); // still exercise generation
         return Ok(true);
     }
-    let wav = render_wav(id);
+    let wav = wav_for(id);
     let path = temp_wav_path(id);
     {
         let mut f = fs::File::create(&path).map_err(|e| e.to_string())?;
@@ -262,39 +277,40 @@ pub fn play_sound(id: BuiltinSoundId) -> Result<bool, String> {
     Ok(played)
 }
 
+/// Launch player without waiting for the clip to finish (avoids ~1s UI stall).
 fn play_wav_file(path: &std::path::Path) -> Result<bool, String> {
     #[cfg(target_os = "macos")]
     {
-        let status = Command::new("afplay")
+        Command::new("afplay")
             .arg(path)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status()
+            .spawn()
             .map_err(|e| e.to_string())?;
-        Ok(status.success())
+        Ok(true)
     }
     #[cfg(target_os = "linux")]
     {
         if which_exists("paplay") {
-            let status = Command::new("paplay")
+            Command::new("paplay")
                 .arg(path)
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
-                .status()
+                .spawn()
                 .map_err(|e| e.to_string())?;
-            return Ok(status.success());
+            return Ok(true);
         }
         if which_exists("aplay") {
-            let status = Command::new("aplay")
+            Command::new("aplay")
                 .arg(path)
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
-                .status()
+                .spawn()
                 .map_err(|e| e.to_string())?;
-            return Ok(status.success());
+            return Ok(true);
         }
         Ok(false)
     }
@@ -304,14 +320,14 @@ fn play_wav_file(path: &std::path::Path) -> Result<bool, String> {
             r#"Add-Type -AssemblyName PresentationCore; $p = New-Object System.Windows.Media.MediaPlayer; $p.Open([uri]'{path}'); $p.Play(); Start-Sleep -Milliseconds 900"#,
             path = path.display().to_string().replace('\'', "''")
         );
-        let status = Command::new("powershell")
-            .args(["-NoProfile", "-Command", &ps])
+        Command::new("powershell")
+            .args(["-NoProfile", "-WindowStyle", "Hidden", "-Command", &ps])
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status()
+            .spawn()
             .map_err(|e| e.to_string())?;
-        Ok(status.success())
+        Ok(true)
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     {

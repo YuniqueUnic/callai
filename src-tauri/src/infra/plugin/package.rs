@@ -447,6 +447,7 @@ mod unit {
             description: "t".into(),
             permissions: vec![PluginPermission::Storage],
             ui: "ui.html".into(),
+            params: Default::default(),
         }
     }
 

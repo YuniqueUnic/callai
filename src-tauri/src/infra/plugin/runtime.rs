@@ -64,64 +64,32 @@ fn insert_string_param(map: &mut Map<String, Value>, key: &str, value: &str) {
     map.insert(k.to_string(), Value::String(value.to_string()));
 }
 
-fn merge_map(into: &mut Map<String, Value>, from: &Map<String, Value>) {
-    for (k, v) in from {
-        into.insert(k.clone(), v.clone());
-    }
+
+/// Host-injected env keys — never treated as plugin launch params.
+fn is_host_injected_env(key: &str) -> bool {
+    let u = key.to_ascii_uppercase();
+    u == "CALLAI_PLUGIN" || u == "CALLAI_NOTIFY"
 }
 
-/// Apply force overrides from process env pairs onto params.
+/// Map alarm Task ENV → launch params (runtime only, no storage write).
 ///
-/// Supported (later keys win within this step; whole step wins over base params):
-/// - `CALLAI_PLUGIN_PARAMS` — JSON object
-/// - `CALLAI_PLUGIN_PARAM_<key>` — string value for `key` (case preserved after prefix)
-/// - `CALLAI_PLUGIN_MODE` / `CALLAI_PLUGIN_PAGE` — shortcuts → `mode` / `page`
+/// Every non-host key is a param of the **same name** (e.g. `mode=drink`).
+/// No prefixed legacy aliases.
 pub fn apply_env_param_overrides(params: &mut Map<String, Value>, env: &[(String, String)]) {
-    // JSON blob first, then individual keys so PARAM_* can override the blob.
-    if let Some((_, raw)) = env
-        .iter()
-        .find(|(k, _)| k.eq_ignore_ascii_case("CALLAI_PLUGIN_PARAMS"))
-    {
-        if let Ok(Value::Object(obj)) = serde_json::from_str::<Value>(raw) {
-            merge_map(params, &obj);
-        } else if let Ok(Value::String(s)) = serde_json::from_str::<Value>(raw) {
-            // allow double-encoded string of object
-            if let Ok(Value::Object(obj)) = serde_json::from_str::<Value>(&s) {
-                merge_map(params, &obj);
-            }
-        }
-    }
-
     for (k, v) in env {
-        let upper = k.to_ascii_uppercase();
-        if let Some(rest) = upper.strip_prefix("CALLAI_PLUGIN_PARAM_") {
-            if rest.is_empty() {
-                continue;
-            }
-            // Prefer original key casing after the first matching prefix length.
-            let key = if let Some(idx) = k.find("PARAM_").or_else(|| k.find("param_")) {
-                &k[idx + "PARAM_".len()..]
-            } else {
-                rest
-            };
-            let key = if key.is_empty() { rest } else { key };
-            insert_string_param(params, key, v);
+        if is_host_injected_env(k) {
             continue;
         }
-        if upper == "CALLAI_PLUGIN_MODE" {
-            insert_string_param(params, "mode", v);
-        } else if upper == "CALLAI_PLUGIN_PAGE" {
-            insert_string_param(params, "page", v);
-        }
+        insert_string_param(params, k, v);
     }
 }
 
 /// Resolve plugin id + config from args/env.
 ///
 /// Param precedence (later wins):
-/// 1. `CALLAI_PLUGIN` JSON `.params` (or empty)
+/// 1. `CALLAI_PLUGIN` JSON base (popup / suppress / optional params from host)
 /// 2. argv `key=value` after plugin id
-/// 3. ENV force overrides (`CALLAI_PLUGIN_PARAMS` / `CALLAI_PLUGIN_PARAM_*` / MODE/PAGE)
+/// 3. Task ENV direct keys (same name as plugin settings keys)
 pub fn config_from_args_env(args: &[String], env: &[(String, String)]) -> AlarmPluginConfig {
     let mut cfg = if let Some((_, json)) = env.iter().find(|(k, _)| k == "CALLAI_PLUGIN") {
         serde_json::from_str::<AlarmPluginConfig>(json).unwrap_or_default()
@@ -142,14 +110,6 @@ pub fn config_from_args_env(args: &[String], env: &[(String, String)]) -> AlarmP
         if let Some((k, v)) = a.split_once('=') {
             insert_string_param(&mut cfg.params, k, v);
         }
-    }
-
-    // Explicit popup / suppress env (optional)
-    if let Some((_, v)) = env.iter().find(|(k, _)| k == "CALLAI_PLUGIN_POPUP") {
-        cfg.popup = v != "0" && !v.eq_ignore_ascii_case("false");
-    }
-    if let Some((_, v)) = env.iter().find(|(k, _)| k == "CALLAI_PLUGIN_SUPPRESS_FS") {
-        cfg.suppress_when_fullscreen = v != "0" && !v.eq_ignore_ascii_case("false");
     }
 
     apply_env_param_overrides(&mut cfg.params, env);
@@ -332,12 +292,9 @@ mod unit {
                 "CALLAI_PLUGIN".into(),
                 r#"{"plugin_id":"meal-spin","popup":true,"suppress_when_fullscreen":true,"params":{"mode":"food","size":"L"}}"#.into(),
             ),
-            ("CALLAI_PLUGIN_MODE".into(), "drink".into()),
-            ("CALLAI_PLUGIN_PARAM_size".into(), "S".into()),
-            (
-                "CALLAI_PLUGIN_PARAMS".into(),
-                r#"{"note":"from-json"}"#.into(),
-            ),
+            ("mode".into(), "drink".into()),
+            ("size".into(), "S".into()),
+            ("note".into(), "from-env".into()),
         ];
         let cfg = config_from_args_env(&args, &env);
         assert_eq!(cfg.plugin_id, "meal-spin");
@@ -348,7 +305,7 @@ mod unit {
         assert_eq!(cfg.params.get("size").and_then(|v| v.as_str()), Some("S"));
         assert_eq!(
             cfg.params.get("note").and_then(|v| v.as_str()),
-            Some("from-json")
+            Some("from-env")
         );
         assert_eq!(cfg.params.get("extra").and_then(|v| v.as_str()), Some("1"));
     }
@@ -363,5 +320,30 @@ mod unit {
             Some("open")
         );
         assert!(cfg.popup);
+    }
+
+    #[test]
+    fn direct_env_keys_override_as_launch_params() {
+        let args = vec!["meal-spin".into()];
+        let env = vec![
+            (
+                "CALLAI_PLUGIN".into(),
+                r#"{"plugin_id":"meal-spin","popup":true,"suppress_when_fullscreen":true,"params":{"mode":"food"}}"#.into(),
+            ),
+            ("mode".into(), "drink".into()),
+            ("spinSeconds".into(), "6".into()),
+            ("CALLAI_NOTIFY".into(), r#"{"enabled":true}"#.into()), // reserved, not a param
+        ];
+        let cfg = config_from_args_env(&args, &env);
+        assert_eq!(
+            cfg.params.get("mode").and_then(|v| v.as_str()),
+            Some("drink")
+        );
+        assert_eq!(
+            cfg.params.get("spinSeconds").and_then(|v| v.as_str()),
+            Some("6")
+        );
+        assert!(cfg.params.get("CALLAI_NOTIFY").is_none());
+        assert!(cfg.params.get("enabled").is_none());
     }
 }

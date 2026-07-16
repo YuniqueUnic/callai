@@ -49,27 +49,24 @@ builtin_plugins/
 
 插件只有 **一套设置（settings）**，持久化在 `callai.storage`。
 
-闹钟触发时，host 把 `alarm.plugin.params`、argv `key=value`、以及 ENV 合并成 **同名覆盖层** 注入窗口：
+闹钟触发时，host 把 Task **ENV 同名 key** 与 argv `key=value` 合并成 **覆盖层** 注入窗口：
 
 ```
-effective = defaults + saved settings + alarm overrides (same keys)
+effective = defaults + saved settings + ENV/argv overrides (same keys)
 ```
 
 - 覆盖 **只影响本次打开**，不会写回 storage（除非用户在插件设置里点保存）。
 - 同一插件、不同闹钟：ENV 不同 → 界面不同。  
   例：`meal-spin`  
-  - 闹钟 A：`CALLAI_PLUGIN_MODE=food`  
-  - 闹钟 B：`CALLAI_PLUGIN_PARAM_mode=drink`
+  - 闹钟 A 环境变量：`mode=food`  
+  - 闹钟 B 环境变量：`mode=drink`
 
 ### ENV / params 写法
 
 | 来源 | 示例 |
 |------|------|
-| alarm.plugin.params | `{ "mode": "drink" }` |
+| 任务 ENV | `mode=drink` |
 | argv | `meal-spin` + `mode=drink` |
-| ENV JSON | `CALLAI_PLUGIN_PARAMS={"mode":"drink","lockMode":true}` |
-| ENV 单键 | `CALLAI_PLUGIN_PARAM_mode=drink` |
-| 快捷 | `CALLAI_PLUGIN_MODE=drink` / `CALLAI_PLUGIN_PAGE=food`（写入 mode/page） |
 
 ### 插件内读取
 

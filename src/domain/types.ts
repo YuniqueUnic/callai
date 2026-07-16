@@ -258,6 +258,8 @@ export interface PluginSummary {
   installed_at: string;
   last_run_at: string | null;
   record_count: number;
+  /** manifest.params ∪ storage.settings keys for ENV autocomplete */
+  param_keys?: string[];
 }
 
 export interface PluginHistoryEntry {

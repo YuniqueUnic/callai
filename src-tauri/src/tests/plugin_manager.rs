@@ -19,6 +19,7 @@ fn install_invoke_storage_and_delete() {
                 PluginPermission::Timer,
             ],
             ui: "ui.html".into(),
+            params: Default::default(),
         },
         ui_html: "<html><body>hi</body></html>".into(),
     };
@@ -68,6 +69,7 @@ fn rejects_bad_plugin_id() {
             description: String::new(),
             permissions: vec![],
             ui: "ui.html".into(),
+            params: Default::default(),
         },
         ui_html: "<p>x</p>".into(),
     };
@@ -86,6 +88,7 @@ fn compose_host_forces_react_classic_jsx_runtime() {
             description: String::new(),
             permissions: vec![],
             ui: "ui.html".into(),
+            params: Default::default(),
         },
         ui_html: r#"<!DOCTYPE html><html><head>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>

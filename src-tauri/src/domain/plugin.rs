@@ -76,7 +76,20 @@ impl PluginPermission {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Optional declared param key (settings / launch override).
+/// Keys not listed here can still appear via storage.settings extraction.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct PluginParamDef {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub description: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default: Option<serde_json::Value>,
+    /// Allowed values for autocomplete / docs (optional).
+    #[serde(default, skip_serializing_if = "Vec::is_empty", rename = "enum")]
+    pub choices: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PluginManifest {
     pub id: String,
     pub name: String,
@@ -88,6 +101,10 @@ pub struct PluginManifest {
     /// Relative UI file name inside plugin dir (default ui.html).
     #[serde(default = "default_ui")]
     pub ui: String,
+    /// Initial param keys (settings ≡ params). Optional — host also discovers
+    /// keys from storage.settings at runtime for alarm ENV autocomplete.
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub params: std::collections::BTreeMap<String, PluginParamDef>,
 }
 
 fn default_ui() -> String {
@@ -166,6 +183,9 @@ pub struct PluginSummary {
     pub installed_at: DateTime<Utc>,
     pub last_run_at: Option<DateTime<Utc>>,
     pub record_count: u64,
+    /// Union of manifest.params keys + keys discovered from storage.settings.
+    #[serde(default)]
+    pub param_keys: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

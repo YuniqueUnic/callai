@@ -8,7 +8,6 @@ import { IconButton } from "../../ui/IconButton";
 import { IconVolume } from "../../ui/icons";
 import { playAlarmSoundPreview } from "../../ui/alarmSounds";
 import { playSound, playTick } from "../../ui/sounds";
-import { client } from "../../infra/client";
 
 interface Props {
   draft: AlarmDraft;
@@ -108,13 +107,12 @@ export function EditNotificationSection({ draft, setDraft }: Props) {
                   <IconButton
                     label={t("alarms:previewSound")}
                     icon={<IconVolume size={16} />}
+                    sfx="soft"
                     onClick={() => {
-                      const id =
-                        draft.notification?.sound_id ?? "soft_chime";
-                      playAlarmSoundPreview(id);
-                      void client.previewAlarmSound?.(id).catch(() => {
-                        /* browser mock / no-op */
-                      });
+                      // WebAudio only — instant, no Tauri afplay wait / double-play.
+                      playAlarmSoundPreview(
+                        draft.notification?.sound_id ?? "soft_chime",
+                      );
                     }}
                   />
                 </div>

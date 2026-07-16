@@ -27,14 +27,25 @@
 [data-theme="dark"] .edit-page input,
 [data-theme="dark"] .edit-page textarea,
 [data-theme="dark"] .edit-page .raw,
-[data-theme="dark"] .edit-page [class*="animal-input"],
-[data-theme="dark"] .env-row input,
-[data-theme="dark"] .env-row [class*="animal-input"] {
+[data-theme="dark"] .edit-page [class*="animal-input"] {
   color: #1f1408 !important;
   -webkit-text-fill-color: #1f1408 !important;
   caret-color: #1f1408 !important;
   background: #fff8ea !important;
   border-color: #c4a574 !important;
+}
+/* ENV: fill only the island pill wrapper; keep inner input transparent */
+[data-theme="dark"] .env-row [class*="animal-wrapper"] {
+  background: #fff8ea !important;
+  border-color: #c4a574 !important;
+}
+[data-theme="dark"] .env-row [class*="animal-wrapper"] input,
+[data-theme="dark"] .env-row [class*="animal-input"] {
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+  caret-color: #1f1408 !important;
+  background: transparent !important;
+  border-color: transparent !important;
 }
 
 [data-theme="dark"] .edit-page input::placeholder,
@@ -90,9 +101,13 @@
   margin-bottom: 0;
 }
 .env-row .env-input,
-.env-row [class*="animal-input"] {
+.env-row [class*="animal-input"],
+.env-row .env-key-suggest {
   width: 100%;
   min-width: 0;
+}
+.env-row .env-key-suggest .model-ac-input-wrap {
+  width: 100%;
 }
 .env-actions {
   display: inline-flex;
@@ -195,13 +210,11 @@
 [data-theme="dark"] .edit-page .env-row {
   color: var(--callai-ink) !important;
 }
-[data-theme="dark"] .edit-page .env-row .env-input,
-[data-theme="dark"] .edit-page .env-row input,
+/* Prefer animal-wrapper pill (see block below); avoid painting square .env-input shells */
+[data-theme="dark"] .edit-page .env-row input:not([class*="animal"]),
 [data-theme="dark"] .edit-page .env-row [class*="animal-input"] {
   color: #1f1408 !important;
   -webkit-text-fill-color: #1f1408 !important;
-  background: #fff8ea !important;
-  border-color: #c4a574 !important;
   caret-color: #1f1408 !important;
 }
 [data-theme="dark"] .edit-page .env-row input::placeholder {
@@ -239,3 +252,39 @@
   color: #5a3d1e;
   font-weight: 700;
 }
+
+
+/* SuggestInput shell: transparent — only animal Input pill paints fill */
+.env-row .env-key-suggest,
+.env-row .env-key-suggest.model-ac,
+.env-row .env-key-suggest .model-ac-input-wrap,
+[data-theme="dark"] .env-row .env-key-suggest,
+[data-theme="dark"] .env-row .env-key-suggest.model-ac,
+[data-theme="dark"] .env-row .env-key-suggest .model-ac-input-wrap,
+[data-theme="dark"] .edit-page .env-row .env-key-suggest,
+[data-theme="dark"] .edit-page .env-row .env-key-suggest .model-ac-input-wrap {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* Dark ENV fields: style the island Input pill, not a square wrapper */
+[data-theme="dark"] .edit-page .env-row [class*="animal-wrapper"],
+[data-theme="dark"] .env-row [class*="animal-wrapper"] {
+  background: #fff8ea !important;
+  border-color: #c4a574 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 3px #c4a57455 !important;
+}
+[data-theme="dark"] .edit-page .env-row [class*="animal-wrapper"] input,
+[data-theme="dark"] .edit-page .env-row [class*="animal-input"],
+[data-theme="dark"] .env-row [class*="animal-wrapper"] input,
+[data-theme="dark"] .env-row [class*="animal-input"] {
+  background: transparent !important;
+  color: #1f1408 !important;
+  -webkit-text-fill-color: #1f1408 !important;
+  caret-color: #1f1408 !important;
+}
+

@@ -160,7 +160,7 @@ export function PluginLogsPanel({
           <IconButton
             label={t("plugins:clearConsole")}
             icon={<IconClear size={16} />}
-            sfx="soft"
+            sfx="warn"
             onClick={onClearConsole}
           />
         </div>
@@ -208,7 +208,10 @@ export function PluginLogsPanel({
                   <div
                     key={key}
                     className={`log-card ${h.ok ? "success" : "failed"}`}
-                    onClick={() => setOpenKey(open ? null : key)}
+                    onClick={() => {
+                      playSound("soft");
+                      setOpenKey(open ? null : key);
+                    }}
                   >
                     <div
                       className="row"
@@ -231,6 +234,7 @@ export function PluginLogsPanel({
                         <IconButton
                           label={t("logs:copy")}
                           icon={<IconCopy size={14} />}
+                          sfx="soft"
                           onClick={() => {
                             void handleCopy(
                               formatHistoryCopy(h, {
@@ -291,7 +295,10 @@ export function PluginLogsPanel({
                   <div
                     key={key}
                     className={`log-card ${statusClass}`.trim()}
-                    onClick={() => setOpenKey(open ? null : key)}
+                    onClick={() => {
+                      playSound("soft");
+                      setOpenKey(open ? null : key);
+                    }}
                   >
                     <div
                       className="row"
@@ -314,6 +321,7 @@ export function PluginLogsPanel({
                         <IconButton
                           label={t("logs:copy")}
                           icon={<IconCopy size={14} />}
+                          sfx="soft"
                           onClick={() => {
                             void handleCopy(text);
                           }}

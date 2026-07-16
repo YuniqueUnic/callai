@@ -107,10 +107,12 @@
   "aiCreate": "AI 创建",
   "createSuccess": "闹钟已创建",
   "pluginRun": "插件运行",
-  "pluginRunHint": "触发时机、弹窗，以及与插件 settings 同名的参数覆盖（ENV 可强制覆盖）。",
+  "pluginRunHint": "要不要弹出窗口。参数写在下面的环境变量里就好。",
   "pluginPopup": "弹出插件窗口",
-  "pluginSuppressFs": "全屏时不弹窗（仅通知）",
-  "pluginParams": "参数覆盖 (与插件 settings 同名)",
-  "pluginParamsHint": "与插件内设置同一套 key。例如 meal-spin 的 mode=drink。ENV：CALLAI_PLUGIN_MODE / CALLAI_PLUGIN_PARAM_mode / CALLAI_PLUGIN_PARAMS，同名强制覆盖本次打开。",
-  "addParam": "+ 参数"
+  "pluginSuppressFs": "全屏时只提醒、不弹窗",
+  "pluginParams": "参数",
+  "pluginParamsHint": "请在环境变量里填写。",
+  "addParam": "加参数",
+  "pluginEnvRedirect": "例如 mode=drink。",
+  "envPluginHint": "这里可以临时改这次的参数，不会改掉插件里已保存的设置。"
 }

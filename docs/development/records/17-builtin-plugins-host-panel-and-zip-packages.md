@@ -203,7 +203,7 @@ plugin tab 支持安装 zip（pick / drag-drop），符合规范则成功；
 storage 是唯一持久化；settings 与 params 同一 key 空间。
 effective = defaults + storage + 同名覆盖（后写覆盖）。
 覆盖来源（后者优先）：alarm.plugin.params → argv k=v → ENV
-（CALLAI_PLUGIN_PARAMS / CALLAI_PLUGIN_PARAM_* / CALLAI_PLUGIN_MODE）。
+（任务 ENV 同名 key，如 mode=drink）。
 覆盖不写 storage。meal-spin 用 mode=food|drink 切页。
 ```
 
@@ -374,7 +374,7 @@ Plugins 页
 
 ### 8.2 参数覆盖
 
-- [ ] 闹钟 `meal-spin` + `CALLAI_PLUGIN_MODE=drink` 打开喝什么  
+- [ ] 闹钟 `meal-spin` + ENV `mode=drink` 打开喝什么  
 - [ ] 另一闹钟 `mode=food` 打开吃什么  
 - [ ] 覆盖不污染 storage 里已保存的默认 mode（除非用户在业务 UI 保存）  
 
@@ -449,3 +449,17 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 | MCP list/restore/upgrade | server tools |
 | https 安装 zip | `import_plugin_zip_url` |
 | Floating actions bar 60% 透明 | host_chrome |
+
+## Follow-up (restore confirm + QA zips + dark chrome)
+
+- Plugins 列表：**恢复内置** / **删除** 均二次确认；恢复可选「同时清空数据」。
+- Dark 插件子窗：去掉 `is-content-dark` 外阴影（避免圆角外方形耳朵），titlebar 强制实心深色，置顶/全屏 pill 高对比。
+- 测试包：`src-tauri/templates/plugin_packages/test/` + `scripts/build_plugin_test_packages.py`。
+- meal-spin 扇区标签：绝对定位 + 反向旋转，保证字在扇区内可见（manifest 0.5.1）。
+
+## Follow-up (alarm ENV is sole param surface)
+
+- Alarm **插件运行** 区只保留 plugin_id / 弹窗策略；去掉参数覆盖表单与 QuickParams。
+- **任务 → 环境变量** 是唯一 runtime 覆盖入口：ENV 的 key 与 `storage.settings` 同名即可（如 `mode=drink`）。
+- `manifest.params` 可选声明初始 keys；`PluginSummary.param_keys` = 声明 ∪ storage.settings 提取，供 ENV autocomplete。
+- 已去掉 CALLAI_PLUGIN_* 参数别名；Task ENV 只用同名 key。保存 alarm 时清空 legacy `plugin.params`。

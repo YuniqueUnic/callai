@@ -88,7 +88,7 @@ export function PluginListCard({
             label={t("common:delete")}
             icon={<IconTrash size={16} />}
             variant="danger"
-            sfx="soft"
+            sfx="warn"
             onClick={onDelete}
           />
         </div>

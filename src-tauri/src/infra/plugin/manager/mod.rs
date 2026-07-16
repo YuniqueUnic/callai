@@ -219,7 +219,18 @@ impl PluginManager {
             installed_at,
             last_run_at,
             record_count: db.record_count()?,
+            param_keys: Self::collect_param_keys(manifest, db),
         })
+    }
+
+    /// Manifest declared keys ∪ storage.settings object keys (sorted unique).
+    pub(super) fn collect_param_keys(manifest: &PluginManifest, db: &PluginDb) -> Vec<String> {
+        use std::collections::BTreeSet;
+        let mut set: BTreeSet<String> = manifest.params.keys().cloned().collect();
+        if let Ok(keys) = db.settings_param_keys() {
+            set.extend(keys);
+        }
+        set.into_iter().collect()
     }
 
     pub fn read_ui_html(&self, id: &str) -> DomainResult<String> {

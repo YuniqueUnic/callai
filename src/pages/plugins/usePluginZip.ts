@@ -13,8 +13,10 @@ export function usePluginZip(opts: {
   toastSuccess: ToastFn;
   toastError: ToastFn;
   playConfirm: () => void;
+  playWarn?: () => void;
 }) {
-  const { onChanged, t, toastSuccess, toastError, playConfirm } = opts;
+  const { onChanged, t, toastSuccess, toastError, playConfirm, playWarn } =
+    opts;
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportTarget, setExportTarget] = useState<PluginSummary | null>(null);
@@ -65,6 +67,7 @@ export function usePluginZip(opts: {
         setPendingPath(null);
         await finishImport(summary);
       } catch (e) {
+        playWarn?.();
         toastError({
           message: String((e as { message?: string })?.message ?? e),
         });
@@ -72,7 +75,7 @@ export function usePluginZip(opts: {
         setImporting(false);
       }
     },
-    [finishImport, pendingBytes, pendingPath, toastError],
+    [finishImport, pendingBytes, pendingPath, playWarn, toastError],
   );
 
   const beginImportBytes = useCallback(
@@ -90,7 +93,6 @@ export function usePluginZip(opts: {
         if (id && typeof client.getPlugin === "function") {
           try {
             await client.getPlugin(id);
-            // exists → ask conflict
             setConflictId(id);
             setPendingBytes(bytes);
             setPendingPath(null);
@@ -103,6 +105,7 @@ export function usePluginZip(opts: {
         const summary = await client.importPluginZipBytes(bytes, "rename");
         await finishImport(summary);
       } catch (e) {
+        playWarn?.();
         toastError({
           message: String((e as { message?: string })?.message ?? e),
         });
@@ -110,10 +113,9 @@ export function usePluginZip(opts: {
         setImporting(false);
       }
     },
-    [finishImport, toastError],
+    [finishImport, playWarn, toastError],
   );
 
-  // path import
   const beginImportPathSimple = useCallback(
     async (path: string) => {
       setImporting(true);
@@ -129,11 +131,11 @@ export function usePluginZip(opts: {
           setPendingBytes(null);
           setConflictOpen(true);
         } else {
-          // first-time install: rename mode same as install
           try {
             const summary = await client.importPluginZipPath(path, "rename");
             await finishImport(summary);
           } catch (e2) {
+            playWarn?.();
             toastError({
               message: String((e2 as { message?: string })?.message ?? e2),
             });
@@ -143,7 +145,7 @@ export function usePluginZip(opts: {
         setImporting(false);
       }
     },
-    [finishImport, toastError],
+    [finishImport, playWarn, toastError],
   );
 
   const pickAndImport = useCallback(async () => {
@@ -160,15 +162,18 @@ export function usePluginZip(opts: {
       input.onchange = () => {
         const f = input.files?.[0];
         if (!f) return;
-        void f.arrayBuffer().then((buf) => beginImportBytes(new Uint8Array(buf)));
+        void f
+          .arrayBuffer()
+          .then((buf) => beginImportBytes(new Uint8Array(buf)));
       };
       input.click();
     } catch (e) {
+      playWarn?.();
       toastError({
         message: String((e as { message?: string })?.message ?? e),
       });
     }
-  }, [beginImportBytes, beginImportPathSimple, toastError]);
+  }, [beginImportBytes, beginImportPathSimple, playWarn, toastError]);
 
   const doExport = useCallback(
     async (includeData: boolean) => {
@@ -181,6 +186,7 @@ export function usePluginZip(opts: {
           if (!path) return;
           await client.exportPluginZipPath(exportTarget.id, includeData, path);
         } else {
+          playWarn?.();
           toastError({
             message: t("plugins:exportDesktopOnly", {
               defaultValue: "导出需要桌面版",
@@ -196,6 +202,7 @@ export function usePluginZip(opts: {
           }),
         });
       } catch (e) {
+        playWarn?.();
         toastError({
           message: String((e as { message?: string })?.message ?? e),
         });
@@ -203,7 +210,7 @@ export function usePluginZip(opts: {
         setExporting(false);
       }
     },
-    [exportTarget, playConfirm, t, toastError, toastSuccess],
+    [exportTarget, playConfirm, playWarn, t, toastError, toastSuccess],
   );
 
   return {
