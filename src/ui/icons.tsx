@@ -391,3 +391,32 @@ export function IconClose(props: IconSvgProps) {
   );
 }
 
+
+
+export function IconUpload(props: IconSvgProps) {
+  return (
+    <svg {...base(props)}>
+      <path
+        d="M12 16V6M8 9.5 12 5.5 16 9.5M5 18.5h14"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconDownload(props: IconSvgProps) {
+  return (
+    <svg {...base(props)}>
+      <path
+        d="M12 5v10M8 11.5 12 15.5 16 11.5M5 18.5h14"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

@@ -2,8 +2,8 @@
 html, body {
   margin: 0 !important;
   overflow: hidden !important;
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important; /* legacy Edge */
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
@@ -13,7 +13,6 @@ body::-webkit-scrollbar,
   display: none !important;
   background: transparent !important;
 }
-/* Prefer page-level non-scroll shell; plugin UI should layout inside viewport */
 #root {
   max-height: 100vh;
   overflow: auto;
@@ -24,4 +23,309 @@ body::-webkit-scrollbar,
   width: 0 !important;
   height: 0 !important;
   display: none !important;
+}
+
+/*
+ * Dark theme: invert ONLY the plugin page content (body / #root).
+ * Host chrome (#callai-host-root) is a sibling of body under <html>, so it is
+ * NOT filtered — avoids fixed-bar disappearing / wrong colors when filter is on html.
+ * Media inside content is re-inverted to keep photos readable.
+ */
+html.callai-theme-dark {
+  background: #1c1915;
+}
+html.callai-theme-dark body {
+  filter: invert(1) hue-rotate(180deg);
+  background: #f8f8f0;
+}
+html.callai-theme-dark body img,
+html.callai-theme-dark body video,
+html.callai-theme-dark body picture,
+html.callai-theme-dark body canvas,
+html.callai-theme-dark body svg {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Host chrome lives outside body — keep solid, full opacity when themed */
+html.callai-theme-dark #callai-host-root #callai-host-bar {
+  opacity: 0.72;
+  border-color: #6a6254;
+  background: rgba(25, 200, 185, 0.98);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
+}
+html.callai-theme-dark #callai-host-root #callai-host-bar:hover,
+html.callai-theme-dark #callai-host-root #callai-host-bar:focus-within,
+html.callai-theme-dark #callai-host-root #callai-host-bar.is-dragging {
+  opacity: 1;
+}
+html.callai-theme-dark #callai-host-modal {
+  background: #2a2620;
+  border-color: #5a5246;
+  color: #e8e0d0;
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
+}
+html.callai-theme-dark #callai-host-modal h2 { color: #f5efe4; }
+html.callai-theme-dark #callai-host-modal .ch-meta,
+html.callai-theme-dark #callai-host-modal .ch-hint { color: #a89f8e; }
+html.callai-theme-dark #callai-host-tabs {
+  background: #1c1915;
+  border-color: #5a5246;
+}
+html.callai-theme-dark #callai-host-tabs button { color: #a89f8e; }
+html.callai-theme-dark #callai-host-tabs button.on {
+  background: #3a342c;
+  color: #f5efe4;
+  border-color: #6a6254;
+}
+html.callai-theme-dark .ch-label { color: #f5efe4; }
+html.callai-theme-dark .ch-input {
+  background: #1c1915;
+  border-color: #5a5246;
+  color: #f5efe4;
+}
+html.callai-theme-dark .ch-btn {
+  background: #3a342c;
+  border-color: #6a6254;
+  color: #f5efe4;
+}
+html.callai-theme-dark .ch-btn.primary {
+  background: #19c8b9;
+  border-color: #11a89b;
+  color: #fff;
+}
+html.callai-theme-dark .ch-seg {
+  background: #1c1915;
+  border-color: #5a5246;
+}
+html.callai-theme-dark .ch-seg button { color: #a89f8e; }
+html.callai-theme-dark .ch-seg button.on {
+  background: #3a342c;
+  color: #f5efe4;
+  border-color: #6a6254;
+}
+html.callai-theme-dark #callai-host-modal-backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+
+#callai-host-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(50, 36, 20, 0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  padding: 16px;
+}
+#callai-host-modal-backdrop.is-open { display: flex; }
+#callai-host-modal {
+  width: min(380px, 100%);
+  max-height: min(80vh, 560px);
+  overflow: auto;
+  background: rgb(247, 243, 223);
+  border: 3px solid #c4b89e;
+  border-radius: 18px;
+  box-shadow: 0 10px 0 rgba(121, 79, 39, 0.12);
+  color: #725d42;
+  padding: 14px;
+}
+#callai-host-modal h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #794f27;
+}
+#callai-host-modal .ch-meta {
+  font-size: 12px;
+  color: #9f927d;
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+#callai-host-tabs {
+  display: flex;
+  gap: 6px;
+  background: #efe8d4;
+  padding: 4px;
+  border-radius: 999px;
+  border: 2px solid #c4b89e;
+  margin-bottom: 12px;
+}
+#callai-host-tabs button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 6px;
+  font: inherit;
+  font-weight: 800;
+  color: #9f927d;
+  cursor: pointer;
+}
+#callai-host-tabs button.on {
+  background: #fffdf8;
+  color: #794f27;
+  box-shadow: 0 3px 0 rgba(121, 79, 39, 0.1);
+  border: 2px solid #c4b89e;
+}
+.ch-panel { display: none; }
+.ch-panel.on { display: block; }
+.ch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ch-label { font-size: 13px; font-weight: 800; color: #794f27; }
+.ch-hint { font-size: 11px; color: #9f927d; margin: -4px 0 10px; line-height: 1.35; }
+.ch-btn {
+  border: 2px solid #9f927d;
+  background: #fffdf6;
+  color: #794f27;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(121, 79, 39, 0.1);
+}
+.ch-btn.primary { background: #19c8b9; border-color: #11a89b; color: #fff; }
+.ch-btn.ghost { box-shadow: none; background: transparent; }
+.ch-input {
+  width: 100%;
+  border: 2px solid #c4b89e;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 600;
+  color: #794f27;
+  background: #fffdf8;
+}
+.ch-kv { display: flex; gap: 6px; margin-bottom: 6px; }
+.ch-kv .ch-input { flex: 1; min-width: 0; }
+.ch-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.ch-seg {
+  display: inline-flex;
+  gap: 4px;
+  background: #efe8d4;
+  padding: 3px;
+  border-radius: 999px;
+  border: 2px solid #c4b89e;
+}
+.ch-seg button {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  font-weight: 800;
+  color: #9f927d;
+  cursor: pointer;
+}
+.ch-seg button.on {
+  background: #fffdf8;
+  color: #794f27;
+  border: 2px solid #c4b89e;
+}
+
+
+#callai-host-root {
+  position: fixed;
+  z-index: 2147483000;
+  inset: 0;
+  pointer-events: none;
+  font-family: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+}
+#callai-host-root * { box-sizing: border-box; }
+
+/* Host floating actions bar — dim when idle, full on hover/drag */
+#callai-host-bar {
+  position: fixed;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 4px 6px 4px 4px;
+  border-radius: 999px;
+  border: 3px solid #9f927d;
+  background: rgba(25, 200, 185, 0.96);
+  box-shadow: 0 6px 0 rgba(121, 79, 39, 0.14);
+  pointer-events: auto;
+  user-select: none;
+  touch-action: none;
+  opacity: 0.6;
+  transition: opacity 0.18s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+#callai-host-bar:hover,
+#callai-host-bar:focus-within,
+#callai-host-bar.is-dragging {
+  opacity: 1;
+}
+#callai-host-bar.is-dragging {
+  cursor: grabbing;
+  box-shadow: 0 3px 0 rgba(121, 79, 39, 0.12);
+  transform: translateY(1px);
+}
+#callai-host-bar .ch-bar-handle {
+  width: 18px;
+  height: 28px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: grab;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  box-shadow: none;
+}
+#callai-host-bar .ch-bar-handle:hover,
+#callai-host-bar .ch-bar-handle:focus-visible {
+  background: transparent;
+  color: #fff;
+  outline: none;
+}
+#callai-host-bar.is-dragging .ch-bar-handle { cursor: grabbing; }
+#callai-host-bar .ch-bar-handle svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  opacity: 0.95;
+}
+#callai-host-bar .ch-bar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transition: background 0.12s ease;
+}
+#callai-host-bar .ch-bar-btn:hover,
+#callai-host-bar .ch-bar-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.28);
+  outline: none;
+}
+#callai-host-bar .ch-bar-btn.is-on {
+  background: rgba(255, 253, 248, 0.95);
+  color: #11a89b;
+}
+#callai-host-bar .ch-bar-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+#callai-host-bar .ch-bar-sep {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.35);
+  margin: 0 2px;
+  flex-shrink: 0;
 }

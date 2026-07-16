@@ -1,0 +1,12 @@
+{
+  "id": "meal-spin",
+  "name": "今天吃喝什么",
+  "version": "0.4.0",
+  "description": "吃/喝转盘。设置 mode；闹钟 ENV mode=drink 打开喝什么页。",
+  "permissions": [
+    "storage",
+    "timer",
+    "notification"
+  ],
+  "ui": "ui.html"
+}

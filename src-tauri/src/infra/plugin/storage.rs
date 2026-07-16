@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection, OptionalExtension};
 
-use crate::domain::{DomainError, DomainResult, ErrorCode, PluginHistoryEntry, MCP_LOG_MAX};
+use crate::domain::{DomainError, DomainResult, ErrorCode, PluginHistoryEntry, MCP_LOG_MAX, PLUGIN_INVOKE_HISTORY_MAX};
 
 pub struct PluginDb {
     conn: Mutex<Connection>,
@@ -128,18 +128,20 @@ impl PluginDb {
         )
         .map_err(|e| DomainError::new(ErrorCode::StorageFailed, e.to_string()))?;
         let id = conn.last_insert_rowid();
-        // Keep last 200 history rows per plugin.
+        // Keep last N invoke history rows per plugin (disk bound).
         let _ = conn.execute(
-            "DELETE FROM history WHERE id NOT IN (
-                SELECT id FROM history ORDER BY id DESC LIMIT 200
-            )",
+            &format!(
+                "DELETE FROM history WHERE id NOT IN (
+                    SELECT id FROM history ORDER BY id DESC LIMIT {PLUGIN_INVOKE_HISTORY_MAX}
+                )"
+            ),
             [],
         );
         Ok(id)
     }
 
     pub fn list_history(&self, limit: u32) -> DomainResult<Vec<PluginHistoryEntry>> {
-        let limit = limit.clamp(1, 200) as i64;
+        let limit = limit.clamp(1, PLUGIN_INVOKE_HISTORY_MAX as u32) as i64;
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn
             .prepare(

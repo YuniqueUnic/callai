@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "callai-plugin-registry-example",
+  "updated_at": "2026-07-16T00:00:00Z",
+  "plugins": [
+    {
+      "id": "sample-hello",
+      "name": "Hello Sample",
+      "version": "0.1.0",
+      "description": "Example entry for marketplace browse. Replace zip_url with a real https package.",
+      "author": "callai",
+      "zip_url": "https://github.com/YuniqueUnic/callai/releases/download/v0.0.0/sample-hello.zip",
+      "homepage": "https://github.com/YuniqueUnic/callai",
+      "repository": "https://github.com/YuniqueUnic/callai",
+      "tags": ["sample", "demo"]
+    }
+  ]
+}

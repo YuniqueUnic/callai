@@ -40,6 +40,17 @@ You may also use a plain line marker `ui.html` before the fence. Do not put the 
 - Request only permissions you need. Always include `"storage"` if the UI persists data
 - `ui` stays `"ui.html"` unless the user needs another simple filename (no path separators)
 
+## Host chrome (do not reimplement)
+
+callai injects a floating host control panel into every plugin (theme / notifications / param keys).
+Your `ui.html` is the **domain main screen only**:
+- Do **not** build global light/dark switches, global notification kill-switches, or a second params admin shell.
+- Persist business config with `callai.storage` (settings ≡ params, same keys).
+- Read `callai.getLaunchParams()` for same-key overrides this open (alarm/ENV); do not treat them as a second database.
+- Leave ~64px clearance near bottom-right so the host FAB does not cover primary actions.
+
+See `plugin_sdk` for the full contract.
+
 ## UI rules
 - **Visual source of truth** = `animal_island_style` + `ai2ui` style packs in context
 - **SDK (mandatory contract)** = `plugin_sdk` prompt in context. Prefer:

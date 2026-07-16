@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>今天吃喝什么</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+/* Canonical island tokens for builtin plugins */
+
+:root {
+  --primary: #19c8b9;
+  --primary-hover: #3dd4c6;
+  --primary-active: #11a89b;
+  --primary-bg: #e6f9f6;
+  --text: #794f27;
+  --text-body: #725d42;
+  --text-secondary: #9f927d;
+  --text-muted: #8a7b66;
+  --text-disabled: #c4b89e;
+  --bg: #f8f8f0;
+  --bg-content: rgb(247, 243, 223);
+  --bg-disabled: #f0ece2;
+  --border: #c4b89e;
+  --border-hover: #a89878;
+  --border-strong: #9f927d;
+  --success: #6fba2c;
+  --success-active: #5a9e1e;
+  --warning: #f5c31c;
+  --warning-active: #dba90e;
+  --error: #e05a5a;
+  --error-active: #c94444;
+  --shadow: 0 6px 0 rgba(121, 79, 39, 0.12);
+  --shadow-sm: 0 3px 0 rgba(121, 79, 39, 0.1);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(25,200,185,.10), transparent 28%),
+    radial-gradient(circle at 88% 0%, rgba(245,195,28,.12), transparent 26%),
+    var(--bg);
+  color: var(--text-body);
+  font-family: var(--font);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+#root { min-height: 100%; }
+.app {
+  padding: 18px 16px 28px;
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--text);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.header p { margin: 6px 0 0; font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+.card {
+  background: var(--bg-content);
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+.card.soft { border-width: 2px; box-shadow: var(--shadow-sm); }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.btn {
+  appearance: none;
+  border: 3px solid var(--border-strong);
+  background: #fffdf6;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, background .15s ease, box-shadow .08s ease;
+}
+.btn:hover { background: #fff8e8; border-color: var(--border-hover); }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.btn.primary {
+  background: var(--primary);
+  border-color: var(--primary-active);
+  color: #fff;
+}
+.btn.primary:hover { background: var(--primary-hover); }
+.btn.ghost { background: transparent; box-shadow: none; border-width: 2px; }
+.btn.danger {
+  background: #ffe8e8;
+  border-color: #e8a0a0;
+  color: var(--error-active);
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+.input, .textarea, .select {
+  width: 100%;
+  border: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: #fffdf8;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+}
+.input:focus, .textarea:focus, .select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(25,200,185,.18);
+}
+.textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
+.meta { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--primary-bg); color: var(--primary-active);
+  font-size: 12px; font-weight: 800; border: 2px solid rgba(17,168,155,.25);
+}
+.tag.warn { background: #fff4cc; color: #a07a00; border-color: rgba(219,169,14,.35); }
+.tag.ok { background: #e8f7d8; color: #4d8a12; border-color: rgba(95,158,30,.3); }
+.tag.muted { background: #efe8d4; color: var(--text-secondary); border-color: var(--border); }
+.seg {
+  display: flex; gap: 6px; background: #efe8d4;
+  padding: 5px; border-radius: 999px; border: 2px solid var(--border);
+}
+.seg button {
+  flex: 1; border: 0; background: transparent; border-radius: 999px;
+  padding: 8px 10px; font: inherit; font-weight: 800; color: var(--text-secondary); cursor: pointer;
+}
+.seg button.on {
+  background: #fffdf8; color: var(--text); box-shadow: var(--shadow-sm);
+  border: 2px solid var(--border);
+}
+.seg button:disabled { opacity: .5; cursor: not-allowed; }
+.list { display: flex; flex-direction: column; gap: 8px; max-height: 42vh; overflow: auto; }
+.item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 11px 12px; border: 2px solid var(--border);
+  border-radius: 14px; background: #fffdf8;
+}
+.item.done .item-title { text-decoration: line-through; color: var(--text-muted); }
+.item-title { font-weight: 800; color: var(--text); word-break: break-word; }
+.item-note { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+.check {
+  width: 24px; height: 24px; border-radius: 9px; border: 3px solid var(--border);
+  background: #fff; flex-shrink: 0; margin-top: 1px; cursor: pointer;
+  display: grid; place-items: center; font-size: 12px; font-weight: 900; color: #fff;
+}
+.check.on { background: var(--success); border-color: var(--success-active); }
+.timer-face {
+  font-size: 56px; font-weight: 900; color: var(--text); text-align: center;
+  letter-spacing: 0.04em; font-variant-numeric: tabular-nums;
+}
+.progress {
+  height: 12px; border-radius: 999px; background: #efe8d4;
+  overflow: hidden; border: 2px solid var(--border);
+}
+.progress > i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--success));
+  width: 0%;
+}
+.wheel-wrap { position: relative; width: min(280px, 80vw); margin: 4px auto; aspect-ratio: 1; }
+.wheel {
+  width: 100%; height: 100%; border-radius: 50%;
+  border: 5px solid var(--border-strong); box-shadow: var(--shadow);
+  transition: transform 4s cubic-bezier(.15,.8,.1,1);
+}
+.wheel-pin {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 11px solid transparent; border-right: 11px solid transparent;
+  border-top: 20px solid var(--error); z-index: 2;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.08));
+}
+.wheel-center {
+  position: absolute; inset: 36%; border-radius: 50%;
+  background: #fffdf8; border: 3px solid var(--border-strong);
+  display: grid; place-items: center; font-weight: 900; color: var(--text);
+  font-size: 13px; z-index: 1;
+}
+.result {
+  text-align: center; font-size: 20px; font-weight: 900; color: var(--text); min-height: 28px;
+}
+.empty { text-align: center; color: var(--text-secondary); padding: 18px 8px; font-size: 13px; }
+.field-label {
+  font-size: 12px; font-weight: 800; color: var(--text); letter-spacing: 0.02em;
+}
+.settings-grid {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center;
+}
+.settings-grid .input { width: 88px; text-align: center; }
+.banner {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  padding: 8px 10px; border-radius: 14px;
+  background: rgba(255,255,255,.55); border: 2px dashed var(--border);
+}
+.section-title {
+  margin: 0; font-size: 14px; font-weight: 900; color: var(--text); letter-spacing: 0.02em;
+}
+
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react-classic">
+
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+async function waitCallai(timeoutMs) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < (timeoutMs || 2500)) {
+    if (window.callai && (window.callai.ready || window.callai.storage || window.callai.invoke)) {
+      return window.callai;
+    }
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  const mem = {};
+  return {
+    ready: false,
+    launchParams: {},
+    getLaunchParams: function () { return this.launchParams || {}; },
+    storage: {
+      async get(k) {
+        if (k in mem) return mem[k];
+        try {
+          const raw = localStorage.getItem("callai-preview:" + k);
+          return raw == null ? null : JSON.parse(raw);
+        } catch (e) { return null; }
+      },
+      async set(k, v) {
+        mem[k] = v;
+        try { localStorage.setItem("callai-preview:" + k, JSON.stringify(v)); } catch (e) {}
+      },
+    },
+    timer: {
+      async now() {
+        const d = new Date();
+        const iso = d.toISOString();
+        return { iso, now: iso, ts: d.getTime() };
+      },
+    },
+    notification: {
+      async show(a, b) {
+        const title = typeof a === "string" ? a : (a && a.title) || "callai";
+        const body = typeof a === "string" ? (b || "") : (a && a.body) || "";
+        console.info("[notify]", title, body);
+      },
+    },
+  };
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+}
+
+function asBool(v, fallback) {
+  if (v === true || v === "1" || v === "true" || v === "yes") return true;
+  if (v === false || v === "0" || v === "false" || v === "no") return false;
+  return fallback;
+}
+
+/**
+ * Plugin settings model (single namespace):
+ *   effective = defaults + saved settings + same-name overrides from alarm
+ *
+ * Overrides come from host launchParams (built from alarm.plugin.params +
+ * argv key=value + ENV CALLAI_PLUGIN_PARAM_* / CALLAI_PLUGIN_MODE / CALLAI_PLUGIN_PARAMS).
+ * Overrides are one-shot for this open — they do not write back to storage
+ * unless the plugin UI explicitly saves.
+ */
+function usePluginSettings(api, storageKey, defaults) {
+  const [saved, setSaved] = useState(defaults);
+  const [override, setOverride] = useState({});
+  const [ready, setReady] = useState(false);
+
+  const applyOverride = useCallback((p) => {
+    setOverride(p && typeof p === "object" && !Array.isArray(p) ? p : {});
+  }, []);
+
+  useEffect(() => {
+    if (!api) return;
+    let alive = true;
+    (async () => {
+      const raw = (await api.storage.get(storageKey)) || {};
+      if (!alive) return;
+      setSaved(Object.assign({}, defaults, raw));
+      const lp = (api.getLaunchParams && api.getLaunchParams()) || api.launchParams || {};
+      applyOverride(lp);
+      setReady(true);
+    })();
+    function onLaunch(ev) { applyOverride((ev && ev.detail) || {}); }
+    window.addEventListener("callai:launch-params", onLaunch);
+    return () => {
+      alive = false;
+      window.removeEventListener("callai:launch-params", onLaunch);
+    };
+  }, [api, storageKey, applyOverride]);
+
+  const effective = useMemo(
+    () => Object.assign({}, defaults, saved, override),
+    [defaults, saved, override],
+  );
+
+  const saveSettings = useCallback(async (next) => {
+    const merged = Object.assign({}, defaults, next);
+    setSaved(merged);
+    if (api) await api.storage.set(storageKey, merged);
+  }, [api, storageKey, defaults]);
+
+  const patchSettings = useCallback(async (partial) => {
+    await saveSettings(Object.assign({}, saved, partial));
+  }, [saved, saveSettings]);
+
+  return {
+    saved,       // persisted plugin settings
+    override,    // same-key overrides from alarm (ENV/params) for this open
+    effective,   // what the UI should use
+    ready,
+    saveSettings,
+    patchSettings,
+  };
+}
+
+function OverrideBanner({ override, keys }) {
+  const entries = Object.entries(override || {}).filter(([k, v]) => {
+    if (v == null || v === "") return false;
+    if (keys && keys.length && !keys.includes(k)) return false;
+    return true;
+  });
+  if (!entries.length) return null;
+  return (
+    <span className="tag warn">
+      闹钟覆盖 {entries.map(([k, v]) => k + "=" + String(v)).join(" · ")}
+    </span>
+  );
+}
+
+
+const LISTS_KEY = "meal-spin:lists";
+const SETTINGS_KEY = "meal-spin:settings";
+const DEFAULT_LISTS = {
+  food: ["盖饭", "面食", "轻食沙拉", "火锅", "汉堡", "寿司", "粥", "自己做"],
+  drink: ["美式", "拿铁", "绿茶", "乌龙", "气泡水", "鲜榨果汁", "牛奶", "白开水"],
+};
+// Setting keys === alarm override keys (mode is the page)
+const DEFAULTS = {
+  mode: "food", // food | drink
+  spinSeconds: 4,
+  autoNotify: true,
+  lockMode: false, // when true (or override lockMode), hide other tab
+};
+
+function normalizeMode(v) {
+  const s = String(v || "").trim().toLowerCase();
+  if (["drink", "drinks", "喝", "喝什么", "beverage"].includes(s)) return "drink";
+  if (["food", "foods", "吃", "吃什么", "meal", "eat"].includes(s)) return "food";
+  // also accept page/view/tab as aliases for mode in override payloads
+  return null;
+}
+
+function App() {
+  const [api, setApi] = useState(null);
+  const [lists, setLists] = useState(DEFAULT_LISTS);
+  const s = usePluginSettings(api, SETTINGS_KEY, DEFAULTS);
+  const [draft, setDraft] = useState("");
+  const [rot, setRot] = useState(0);
+  const [spinning, setSpinning] = useState(false);
+  const [result, setResult] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [listsReady, setListsReady] = useState(false);
+
+  // mode: aliases page/view/tab → mode for override convenience
+  const mode = useMemo(() => {
+    const fromAlias = normalizeMode(s.override.page || s.override.view || s.override.tab);
+    const raw = fromAlias || s.effective.mode;
+    return normalizeMode(raw) || "food";
+  }, [s.effective.mode, s.override.page, s.override.view, s.override.tab, s.override.mode]);
+
+  const locked = asBool(s.effective.lockMode, false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const c = await waitCallai();
+      if (!alive) return;
+      setApi(c);
+      const saved = await c.storage.get(LISTS_KEY);
+      if (saved && typeof saved === "object") {
+        setLists({
+          food: Array.isArray(saved.food) && saved.food.length ? saved.food : DEFAULT_LISTS.food,
+          drink: Array.isArray(saved.drink) && saved.drink.length ? saved.drink : DEFAULT_LISTS.drink,
+        });
+      }
+      setListsReady(true);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const items = lists[mode] || [];
+  const persistLists = async (next) => {
+    setLists(next);
+    if (api) await api.storage.set(LISTS_KEY, next);
+  };
+  const add = async () => {
+    const t = draft.trim();
+    if (!t || items.includes(t)) { setDraft(""); return; }
+    setDraft("");
+    await persistLists({ ...lists, [mode]: [...items, t] });
+  };
+  const spin = async () => {
+    if (!items.length || spinning) return;
+    setSpinning(true);
+    setResult("");
+    const idx = Math.floor(Math.random() * items.length);
+    const turns = 5 + Math.random() * 3;
+    const slice = 360 / items.length;
+    const target = rot + turns * 360 + (360 - (idx * slice + slice / 2));
+    setRot(target);
+    const ms = Math.max(2, Number(s.effective.spinSeconds) || 4) * 1000 + 100;
+    setTimeout(async () => {
+      const pick = items[idx];
+      setResult(pick);
+      setSpinning(false);
+      if (asBool(s.effective.autoNotify, true) && api) {
+        await api.notification.show({
+          title: mode === "food" ? "今天吃什么" : "今天喝什么",
+          body: (mode === "food" ? "今天吃：" : "今天喝：") + pick,
+        });
+      }
+    }, ms);
+  };
+
+  const colors = ["#19c8b9","#6fba2c","#f5c31c","#e05a5a","#7aa2f7","#c58bff","#ff9f6b","#5ec8e8"];
+  const gradient = items.length
+    ? items.map((_, i) => {
+        const a = (i / items.length) * 360, b = ((i + 1) / items.length) * 360;
+        return colors[i % colors.length] + " " + a + "deg " + b + "deg";
+      }).join(", ")
+    : "#efe8d4 0deg 360deg";
+  const prefix = mode === "food" ? "今天吃：" : "今天喝：";
+  const spinSec = Math.max(2, Number(s.effective.spinSeconds) || 4);
+
+  return (
+    <div className="app">
+      <div className="header">
+        <h1>今天吃喝什么</h1>
+        <p>设置 mode=food|drink；不同闹钟 ENV 覆盖即可打开不同页</p>
+      </div>
+      <div className="banner">
+        <span className="tag">mode={mode}</span>
+        <OverrideBanner override={s.override} keys={["mode","page","spinSeconds","autoNotify","lockMode"]} />
+        <button className="btn ghost" onClick={() => setShowSettings((v) => !v)}>
+          {showSettings ? "收起设置" : "设置"}
+        </button>
+      </div>
+
+      <div className="seg">
+        <button className={mode === "food" ? "on" : ""} disabled={locked && mode !== "food"}
+          onClick={() => !locked && s.patchSettings({ mode: "food" })}>吃什么</button>
+        <button className={mode === "drink" ? "on" : ""} disabled={locked && mode !== "drink"}
+          onClick={() => !locked && s.patchSettings({ mode: "drink" })}>喝什么</button>
+      </div>
+
+      <div className="wheel-wrap">
+        <div className="wheel-pin" />
+        <div className="wheel" style={{
+          transform: "rotate(" + rot + "deg)",
+          background: "conic-gradient(" + gradient + ")",
+          transitionDuration: spinSec + "s",
+        }} />
+        <div className="wheel-center">GO</div>
+      </div>
+      <div className="result">{result ? prefix + result : spinning ? "转起来…" : "点下方开始"}</div>
+      <button className="btn primary" onClick={spin}
+        disabled={!s.ready || !listsReady || spinning || !items.length}>
+        {spinning ? "转动中" : "转一下"}
+      </button>
+
+      {showSettings ? (
+        <div className="card soft stack">
+          <h3 className="section-title">插件设置</h3>
+          <p className="meta">
+            闹钟示例：params mode=drink，或 ENV CALLAI_PLUGIN_MODE=drink /
+            CALLAI_PLUGIN_PARAM_mode=drink。同名覆盖本次打开。
+          </p>
+          <div className="settings-grid">
+            <span className="field-label">mode</span>
+            <select className="select" style={{ width: 120 }} value={s.saved.mode}
+              onChange={(e) => s.patchSettings({ mode: e.target.value })}>
+              <option value="food">food 吃</option>
+              <option value="drink">drink 喝</option>
+            </select>
+            <span className="field-label">spinSeconds</span>
+            <input className="input" type="number" min="2" max="10" value={s.saved.spinSeconds}
+              onChange={(e) => s.patchSettings({ spinSeconds: Math.max(2, +e.target.value || 2) })} />
+            <span className="field-label">autoNotify</span>
+            <button className={"btn" + (s.saved.autoNotify ? " primary" : "")}
+              onClick={() => s.patchSettings({ autoNotify: !s.saved.autoNotify })}>
+              {s.saved.autoNotify ? "开" : "关"}
+            </button>
+            <span className="field-label">lockMode</span>
+            <button className={"btn" + (s.saved.lockMode ? " primary" : "")}
+              onClick={() => s.patchSettings({ lockMode: !s.saved.lockMode })}>
+              {s.saved.lockMode ? "开" : "关"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="card stack">
+        <div className="row">
+          <input className="input grow" placeholder={mode === "food" ? "添加吃的" : "添加喝的"}
+            value={draft} onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
+          <button className="btn" onClick={add}>加</button>
+        </div>
+        <div className="list" style={{ maxHeight: "26vh" }}>
+          {items.length === 0 && <div className="empty">先加几个选项吧</div>}
+          {items.map((name) => (
+            <div key={name} className="item">
+              <div className="grow item-title">{name}</div>
+              <button className="btn ghost danger"
+                onClick={() => persistLists({ ...lists, [mode]: items.filter((x) => x !== name) })}>删</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+  </script>
+</body>
+</html>

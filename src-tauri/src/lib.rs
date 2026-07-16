@@ -101,6 +101,15 @@ fn build_app_state() -> AppState {
     let runner = Arc::new(SystemProcessRunner);
     let clock = Arc::new(SystemClock);
     let plugins = Arc::new(crate::infra::PluginManager::new(&paths).expect("plugin manager"));
+    match crate::infra::plugin::ensure_builtin_plugins(&plugins) {
+        Ok(seeded) if !seeded.is_empty() => {
+            tracing::info!(count = seeded.len(), "seeded builtin plugins");
+        }
+        Ok(_) => {}
+        Err(e) => {
+            tracing::warn!(error = %e.message, "builtin plugin seed failed");
+        }
+    }
     let plugin_console = Arc::new(crate::infra::PluginConsoleStore::new());
     let mcp_logs =
         Arc::new(crate::infra::McpLogStore::open(paths.mcp_log_file()).expect("mcp log store"));
@@ -191,6 +200,16 @@ pub fn run() {
             commands::list_plugins,
             commands::get_plugin,
             commands::install_plugin,
+            commands::import_plugin_zip_bytes,
+            commands::import_plugin_zip_path,
+            commands::export_plugin_zip_path,
+            commands::export_plugin_zip_bytes,
+            commands::list_builtin_catalog,
+            commands::restore_builtin_plugin,
+            commands::upgrade_builtin_plugins,
+            commands::import_plugin_zip_url,
+            commands::peek_plugin_zip_id,
+            commands::fetch_plugin_registry,
             commands::delete_plugin,
             commands::plugin_invoke,
             commands::plugin_ui_html,

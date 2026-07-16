@@ -40,17 +40,53 @@ function resolvePluginId(): string {
   return "";
 }
 
+function resolveLaunchParams(): Record<string, unknown> {
+  const q = new URLSearchParams(window.location.search);
+  const raw = (q.get("launch") || q.get("params") || "").trim();
+  if (raw) {
+    for (const candidate of [raw, (() => { try { return decodeURIComponent(raw); } catch { return ""; } })()]) {
+      if (!candidate) continue;
+      try {
+        const parsed = JSON.parse(candidate) as unknown;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          return parsed as Record<string, unknown>;
+        }
+      } catch {
+        /* try next */
+      }
+    }
+  }
+  // Flat query shortcuts: ?mode=drink&page=food
+  const flat: Record<string, unknown> = {};
+  for (const key of ["mode", "page", "view", "tab"]) {
+    const v = q.get(key);
+    if (v != null && v !== "") flat[key] = v;
+  }
+  // p.<key>=value
+  q.forEach((value, key) => {
+    if (key.startsWith("p.") && key.length > 2) {
+      flat[key.slice(2)] = value;
+    }
+  });
+  return flat;
+}
+
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
 export function PluginWindowApp() {
   const [pluginId] = useState(() => resolvePluginId());
+  const [launchParams, setLaunchParams] = useState(() => resolveLaunchParams());
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [title, setTitle] = useState("callai plugin");
   const [html, setHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [compact, setCompact] = useState(false);
+  /** Theme requested by plugin host panel (iframe). Affects outer titlebar/shell. */
+  const [contentTheme, setContentTheme] = useState<"light" | "dark">("light");
+
   const expandedSizeRef = useRef(DEFAULT_EXPANDED);
   const sizingLock = useRef(false);
 
@@ -176,6 +212,75 @@ export function PluginWindowApp() {
     };
   }, []);
 
+  // Alarm re-trigger / open_plugin_window on existing label → host-launch event.
+  useEffect(() => {
+    function onHostLaunch(ev: Event) {
+      const detail = (ev as CustomEvent<Record<string, unknown>>).detail;
+      if (detail && typeof detail === "object") {
+        setLaunchParams(detail);
+      }
+    }
+    window.addEventListener("callai:host-launch", onHostLaunch as EventListener);
+    return () =>
+      window.removeEventListener(
+        "callai:host-launch",
+        onHostLaunch as EventListener,
+      );
+  }, []);
+
+  // Plugin iframe host-panel dark/light → outer titlebar / shell.
+  useEffect(() => {
+    function onThemeMsg(ev: MessageEvent) {
+      const d = ev.data as {
+        __callai_plugin_theme?: boolean;
+        theme?: string;
+        pluginId?: string;
+      };
+      if (!d?.__callai_plugin_theme) return;
+      if (pluginId && d.pluginId && d.pluginId !== pluginId) return;
+      const next = d.theme === "dark" ? "dark" : "light";
+      setContentTheme(next);
+    }
+    window.addEventListener("message", onThemeMsg);
+    return () => window.removeEventListener("message", onThemeMsg);
+  }, [pluginId]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", contentTheme);
+    document.documentElement.classList.toggle("plugin-content-dark", contentTheme === "dark");
+    document.body.classList.toggle("plugin-content-dark", contentTheme === "dark");
+    return () => {
+      document.documentElement.classList.remove("plugin-content-dark");
+      document.body.classList.remove("plugin-content-dark");
+    };
+  }, [contentTheme]);
+
+    // Push launch params into sandboxed plugin document (bridge listens).
+  const pushLaunchParams = useCallback(() => {
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    try {
+      win.postMessage(
+        { __callai_set_launch_params: true, params: launchParams },
+        "*",
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [launchParams]);
+
+  useEffect(() => {
+    pushLaunchParams();
+    const t1 = window.setTimeout(pushLaunchParams, 80);
+    const t2 = window.setTimeout(pushLaunchParams, 400);
+    const t3 = window.setTimeout(pushLaunchParams, 1200);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
+  }, [html, pushLaunchParams]);
+
   const applyCompact = useCallback(async (next: boolean) => {
     if (sizingLock.current) return;
     sizingLock.current = true;
@@ -264,7 +369,7 @@ export function PluginWindowApp() {
 
   return (
     <div
-      className={`plugin-win-shell app-shell has-titlebar${compact ? " is-compact" : ""}`}
+      className={`plugin-win-shell app-shell has-titlebar${compact ? " is-compact" : ""}${contentTheme === "dark" ? " is-content-dark" : ""}`}
     >
       <TitleBar
         variant="plugin"
@@ -287,10 +392,12 @@ export function PluginWindowApp() {
           <p className="plugin-win-status">no ui</p>
         ) : (
           <iframe
+            ref={iframeRef}
             className="plugin-win-frame"
             title={title}
             sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
             srcDoc={html}
+            onLoad={() => pushLaunchParams()}
           />
         )}
       </div>

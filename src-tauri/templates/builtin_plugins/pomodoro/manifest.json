@@ -1,0 +1,12 @@
+{
+  "id": "pomodoro",
+  "name": "番茄时钟",
+  "version": "0.4.0",
+  "description": "番茄钟。设置 mode/时长；闹钟 ENV 同名覆盖即可换模式。",
+  "permissions": [
+    "storage",
+    "timer",
+    "notification"
+  ],
+  "ui": "ui.html"
+}

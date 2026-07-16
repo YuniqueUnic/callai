@@ -35,11 +35,12 @@
 | 14 | [14 自绘 Titlebar 与窗口铬](./14-custom-titlebar-and-window-chrome.md) | decorations/transparent；圆角坑（host / fixed 海浪 / OS·CSS 外阴影 / Drawer mask）；clip-path；pin/fullscreen/grips |
 | 15 | [15 AI / MCP / Prompt 分层](./15-ai-mcp-prompt-composition.md) | Epic #42；prompt 组合；runtime；WebView CORS→Rust 代理；Settings 防抖 |
 | 16 | [16 MCP Tools / Logs / In-App HTTP](./16-mcp-tools-and-logs.md) | 审计边界；compose_prompt；App supervisor；端口 33927；Host 不白名单 |
+| 17 | [17 内置插件 / Host Panel / Zip 包](./17-builtin-plugins-host-panel-and-zip-packages.md) | seed 内置；storage≡params；主机 FAB；zip 安装导出；SDK 减负 |
 
 ### 路径 B · 只学「如何写 prompt」
 
 精读每篇 **§原始 prompt 拆解** 与 **§给 AI 的提示模板**，对照根目录 `TODO` 原文；并打开 `src-tauri/prompts/*.prompt` 对照 15§11 / 16§7 的「失败模式 → 文件」表。  
-**AI 生成 / 契约分层** 精读 [15](./15-ai-mcp-prompt-composition.md) §2–3、§6.4。
+**AI 生成 / 契约分层** 精读 [15](./15-ai-mcp-prompt-composition.md) §2–3、§6.4；**插件 SDK 减负** 精读 [17](./17-builtin-plugins-host-panel-and-zip-packages.md) §7 与 `plugin_sdk.prompt`。
 
 ### 路径 C · 只学发布工程
 
@@ -55,7 +56,11 @@
 
 ### 路径 F · 只学 AI 生成与 MCP
 
-`03`（CLI/daemon 心智）→ `15`（prompt 分层 / runtime / CORS 代理 / Settings 防抖）→ `docs/mcp.md`，配合 `bun tauri dev` 真 key 手测。
+`03`（CLI/daemon 心智）→ `15`（prompt 分层 / runtime / CORS 代理 / Settings 防抖）→ `16`（MCP tools / 日志 / HTTP）→ `17`（内置插件 / Host panel / zip / SDK 减负）→ `docs/mcp.md`，配合 `bun tauri dev` 真 key 手测。
+
+### 路径 G · 只学插件平台（作者 / 市场雏形）
+
+`15` §plugin dual-part → `16` §插件调试 tools → `17`（全文）→ 打开 `src-tauri/prompts/plugin_sdk.prompt` 与 `templates/builtin_plugins/README.md`，手测 FAB / ENV 覆盖 / zip 往返。
 
 ## 提交时间线（证据）
 
@@ -84,6 +89,7 @@
 | AI / MCP / Prompt 分层 / WebView 代理 | `2d8e1d3` `5c663ea` `c140399` + `ai_chat_completion` | 15 |
 | 插件窗 / Fix seed / dual-part / 流式 | `7b9a443` `5b270af` `0e5480b` | 15 §11 · 16 |
 | MCP tools 扩 + 日志分离 + App HTTP | `6e00da2` `8fb8b57` | 16 · 15 纠偏 |
+| 内置插件 / Host panel / zip 包 / 参数统一 | 工作区 `builtin_plugins` + `host_panel` + `package` | 17 |
 
 ```bash
 git log --oneline --reverse

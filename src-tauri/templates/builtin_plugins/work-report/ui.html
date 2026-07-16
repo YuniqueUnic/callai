@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>工作汇报</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+/* Canonical island tokens for builtin plugins */
+
+:root {
+  --primary: #19c8b9;
+  --primary-hover: #3dd4c6;
+  --primary-active: #11a89b;
+  --primary-bg: #e6f9f6;
+  --text: #794f27;
+  --text-body: #725d42;
+  --text-secondary: #9f927d;
+  --text-muted: #8a7b66;
+  --text-disabled: #c4b89e;
+  --bg: #f8f8f0;
+  --bg-content: rgb(247, 243, 223);
+  --bg-disabled: #f0ece2;
+  --border: #c4b89e;
+  --border-hover: #a89878;
+  --border-strong: #9f927d;
+  --success: #6fba2c;
+  --success-active: #5a9e1e;
+  --warning: #f5c31c;
+  --warning-active: #dba90e;
+  --error: #e05a5a;
+  --error-active: #c94444;
+  --shadow: 0 6px 0 rgba(121, 79, 39, 0.12);
+  --shadow-sm: 0 3px 0 rgba(121, 79, 39, 0.1);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font: Nunito, "Noto Sans SC", -apple-system, "PingFang SC", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(25,200,185,.10), transparent 28%),
+    radial-gradient(circle at 88% 0%, rgba(245,195,28,.12), transparent 26%),
+    var(--bg);
+  color: var(--text-body);
+  font-family: var(--font);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+#root { min-height: 100%; }
+.app {
+  padding: 18px 16px 28px;
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--text);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.header p { margin: 6px 0 0; font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+.card {
+  background: var(--bg-content);
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+.card.soft { border-width: 2px; box-shadow: var(--shadow-sm); }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.btn {
+  appearance: none;
+  border: 3px solid var(--border-strong);
+  background: #fffdf6;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform .08s ease, background .15s ease, box-shadow .08s ease;
+}
+.btn:hover { background: #fff8e8; border-color: var(--border-hover); }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.btn.primary {
+  background: var(--primary);
+  border-color: var(--primary-active);
+  color: #fff;
+}
+.btn.primary:hover { background: var(--primary-hover); }
+.btn.ghost { background: transparent; box-shadow: none; border-width: 2px; }
+.btn.danger {
+  background: #ffe8e8;
+  border-color: #e8a0a0;
+  color: var(--error-active);
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+.input, .textarea, .select {
+  width: 100%;
+  border: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: #fffdf8;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+}
+.input:focus, .textarea:focus, .select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(25,200,185,.18);
+}
+.textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
+.meta { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--primary-bg); color: var(--primary-active);
+  font-size: 12px; font-weight: 800; border: 2px solid rgba(17,168,155,.25);
+}
+.tag.warn { background: #fff4cc; color: #a07a00; border-color: rgba(219,169,14,.35); }
+.tag.ok { background: #e8f7d8; color: #4d8a12; border-color: rgba(95,158,30,.3); }
+.tag.muted { background: #efe8d4; color: var(--text-secondary); border-color: var(--border); }
+.seg {
+  display: flex; gap: 6px; background: #efe8d4;
+  padding: 5px; border-radius: 999px; border: 2px solid var(--border);
+}
+.seg button {
+  flex: 1; border: 0; background: transparent; border-radius: 999px;
+  padding: 8px 10px; font: inherit; font-weight: 800; color: var(--text-secondary); cursor: pointer;
+}
+.seg button.on {
+  background: #fffdf8; color: var(--text); box-shadow: var(--shadow-sm);
+  border: 2px solid var(--border);
+}
+.seg button:disabled { opacity: .5; cursor: not-allowed; }
+.list { display: flex; flex-direction: column; gap: 8px; max-height: 42vh; overflow: auto; }
+.item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 11px 12px; border: 2px solid var(--border);
+  border-radius: 14px; background: #fffdf8;
+}
+.item.done .item-title { text-decoration: line-through; color: var(--text-muted); }
+.item-title { font-weight: 800; color: var(--text); word-break: break-word; }
+.item-note { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+.check {
+  width: 24px; height: 24px; border-radius: 9px; border: 3px solid var(--border);
+  background: #fff; flex-shrink: 0; margin-top: 1px; cursor: pointer;
+  display: grid; place-items: center; font-size: 12px; font-weight: 900; color: #fff;
+}
+.check.on { background: var(--success); border-color: var(--success-active); }
+.timer-face {
+  font-size: 56px; font-weight: 900; color: var(--text); text-align: center;
+  letter-spacing: 0.04em; font-variant-numeric: tabular-nums;
+}
+.progress {
+  height: 12px; border-radius: 999px; background: #efe8d4;
+  overflow: hidden; border: 2px solid var(--border);
+}
+.progress > i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--success));
+  width: 0%;
+}
+.wheel-wrap { position: relative; width: min(280px, 80vw); margin: 4px auto; aspect-ratio: 1; }
+.wheel {
+  width: 100%; height: 100%; border-radius: 50%;
+  border: 5px solid var(--border-strong); box-shadow: var(--shadow);
+  transition: transform 4s cubic-bezier(.15,.8,.1,1);
+}
+.wheel-pin {
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 11px solid transparent; border-right: 11px solid transparent;
+  border-top: 20px solid var(--error); z-index: 2;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.08));
+}
+.wheel-center {
+  position: absolute; inset: 36%; border-radius: 50%;
+  background: #fffdf8; border: 3px solid var(--border-strong);
+  display: grid; place-items: center; font-weight: 900; color: var(--text);
+  font-size: 13px; z-index: 1;
+}
+.result {
+  text-align: center; font-size: 20px; font-weight: 900; color: var(--text); min-height: 28px;
+}
+.empty { text-align: center; color: var(--text-secondary); padding: 18px 8px; font-size: 13px; }
+.field-label {
+  font-size: 12px; font-weight: 800; color: var(--text); letter-spacing: 0.02em;
+}
+.settings-grid {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center;
+}
+.settings-grid .input { width: 88px; text-align: center; }
+.banner {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  padding: 8px 10px; border-radius: 14px;
+  background: rgba(255,255,255,.55); border: 2px dashed var(--border);
+}
+.section-title {
+  margin: 0; font-size: 14px; font-weight: 900; color: var(--text); letter-spacing: 0.02em;
+}
+
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react-classic">
+
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+async function waitCallai(timeoutMs) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < (timeoutMs || 2500)) {
+    if (window.callai && (window.callai.ready || window.callai.storage || window.callai.invoke)) {
+      return window.callai;
+    }
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  const mem = {};
+  return {
+    ready: false,
+    launchParams: {},
+    getLaunchParams: function () { return this.launchParams || {}; },
+    storage: {
+      async get(k) {
+        if (k in mem) return mem[k];
+        try {
+          const raw = localStorage.getItem("callai-preview:" + k);
+          return raw == null ? null : JSON.parse(raw);
+        } catch (e) { return null; }
+      },
+      async set(k, v) {
+        mem[k] = v;
+        try { localStorage.setItem("callai-preview:" + k, JSON.stringify(v)); } catch (e) {}
+      },
+    },
+    timer: {
+      async now() {
+        const d = new Date();
+        const iso = d.toISOString();
+        return { iso, now: iso, ts: d.getTime() };
+      },
+    },
+    notification: {
+      async show(a, b) {
+        const title = typeof a === "string" ? a : (a && a.title) || "callai";
+        const body = typeof a === "string" ? (b || "") : (a && a.body) || "";
+        console.info("[notify]", title, body);
+      },
+    },
+  };
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+}
+
+function asBool(v, fallback) {
+  if (v === true || v === "1" || v === "true" || v === "yes") return true;
+  if (v === false || v === "0" || v === "false" || v === "no") return false;
+  return fallback;
+}
+
+/**
+ * Plugin settings model (single namespace):
+ *   effective = defaults + saved settings + same-name overrides from alarm
+ *
+ * Overrides come from host launchParams (built from alarm.plugin.params +
+ * argv key=value + ENV CALLAI_PLUGIN_PARAM_* / CALLAI_PLUGIN_MODE / CALLAI_PLUGIN_PARAMS).
+ * Overrides are one-shot for this open — they do not write back to storage
+ * unless the plugin UI explicitly saves.
+ */
+function usePluginSettings(api, storageKey, defaults) {
+  const [saved, setSaved] = useState(defaults);
+  const [override, setOverride] = useState({});
+  const [ready, setReady] = useState(false);
+
+  const applyOverride = useCallback((p) => {
+    setOverride(p && typeof p === "object" && !Array.isArray(p) ? p : {});
+  }, []);
+
+  useEffect(() => {
+    if (!api) return;
+    let alive = true;
+    (async () => {
+      const raw = (await api.storage.get(storageKey)) || {};
+      if (!alive) return;
+      setSaved(Object.assign({}, defaults, raw));
+      const lp = (api.getLaunchParams && api.getLaunchParams()) || api.launchParams || {};
+      applyOverride(lp);
+      setReady(true);
+    })();
+    function onLaunch(ev) { applyOverride((ev && ev.detail) || {}); }
+    window.addEventListener("callai:launch-params", onLaunch);
+    return () => {
+      alive = false;
+      window.removeEventListener("callai:launch-params", onLaunch);
+    };
+  }, [api, storageKey, applyOverride]);
+
+  const effective = useMemo(
+    () => Object.assign({}, defaults, saved, override),
+    [defaults, saved, override],
+  );
+
+  const saveSettings = useCallback(async (next) => {
+    const merged = Object.assign({}, defaults, next);
+    setSaved(merged);
+    if (api) await api.storage.set(storageKey, merged);
+  }, [api, storageKey, defaults]);
+
+  const patchSettings = useCallback(async (partial) => {
+    await saveSettings(Object.assign({}, saved, partial));
+  }, [saved, saveSettings]);
+
+  return {
+    saved,       // persisted plugin settings
+    override,    // same-key overrides from alarm (ENV/params) for this open
+    effective,   // what the UI should use
+    ready,
+    saveSettings,
+    patchSettings,
+  };
+}
+
+function OverrideBanner({ override, keys }) {
+  const entries = Object.entries(override || {}).filter(([k, v]) => {
+    if (v == null || v === "") return false;
+    if (keys && keys.length && !keys.includes(k)) return false;
+    return true;
+  });
+  if (!entries.length) return null;
+  return (
+    <span className="tag warn">
+      闹钟覆盖 {entries.map(([k, v]) => k + "=" + String(v)).join(" · ")}
+    </span>
+  );
+}
+
+
+const DATA_KEY = "work-report:entries";
+const SETTINGS_KEY = "work-report:settings";
+const DEFAULTS = {
+  kind: "daily", // daily | weekly | monthly
+  placeholderHints: true,
+  notifyOnSave: true,
+};
+
+function periodKey(kind, d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  if (kind === "daily") return y + "-" + m + "-" + day;
+  if (kind === "monthly") return y + "-" + m;
+  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((tmp - yearStart) / 86400000) + 1) / 7);
+  return tmp.getUTCFullYear() + "-W" + String(week).padStart(2, "0");
+}
+function kindLabel(k) {
+  return k === "daily" ? "日报" : k === "weekly" ? "周报" : "月报";
+}
+
+function App() {
+  const [api, setApi] = useState(null);
+  const s = usePluginSettings(api, SETTINGS_KEY, DEFAULTS);
+  const kind = ["daily", "weekly", "monthly"].includes(String(s.effective.kind))
+    ? String(s.effective.kind) : "daily";
+  const [entries, setEntries] = useState({});
+  const [body, setBody] = useState("");
+  const [nowLabel, setNowLabel] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
+
+  const loadKey = useCallback(async (c, k) => {
+    let d = new Date();
+    if (c && c.timer) {
+      try {
+        const t = await c.timer.now();
+        if (t && t.ts) d = new Date(t.ts);
+      } catch (e) {}
+    }
+    const pk = periodKey(k, d);
+    setNowLabel(pk);
+    return pk;
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const c = await waitCallai();
+      if (!alive) return;
+      setApi(c);
+      const saved = (await c.storage.get(DATA_KEY)) || {};
+      setEntries(typeof saved === "object" && saved ? saved : {});
+      setDataReady(true);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!dataReady) return;
+    (async () => {
+      const pk = await loadKey(api, kind);
+      const bucket = entries[kind] || {};
+      setBody((bucket[pk] && bucket[pk].text) || "");
+    })();
+  }, [kind, dataReady, api]);
+
+  const save = async () => {
+    const pk = await loadKey(api, kind);
+    const next = {
+      ...entries,
+      [kind]: { ...(entries[kind] || {}), [pk]: { text: body, updatedAt: Date.now() } },
+    };
+    setEntries(next);
+    if (api) await api.storage.set(DATA_KEY, next);
+    if (asBool(s.effective.notifyOnSave, true) && api) {
+      await api.notification.show({ title: "汇报已保存", body: kindLabel(kind) + " · " + pk });
+    }
+  };
+
+  const history = Object.entries(entries[kind] || {})
+    .map(([k, v]) => ({ key: k, text: (v && v.text) || "" }))
+    .sort((a, b) => b.key.localeCompare(a.key))
+    .slice(0, 12);
+
+  const ph = asBool(s.effective.placeholderHints, true)
+    ? ("写一点" + kindLabel(kind) + "…\n· 做了什么\n· 卡点\n· 下一步")
+    : ("写一点" + kindLabel(kind) + "…");
+
+  return (
+    <div className="app">
+      <div className="header">
+        <h1>工作汇报</h1>
+        <p>设置 kind=daily|weekly|monthly；闹钟同名覆盖即可切类型</p>
+      </div>
+      <div className="banner">
+        <span className="tag">{kindLabel(kind)}</span>
+        <span className="meta grow">周期 {nowLabel || "…"}</span>
+        <OverrideBanner override={s.override} keys={["kind","placeholderHints","notifyOnSave"]} />
+        <button className="btn ghost" onClick={() => setShowSettings((v) => !v)}>
+          {showSettings ? "收起设置" : "设置"}
+        </button>
+      </div>
+
+      <div className="seg">
+        {[["daily","日报"],["weekly","周报"],["monthly","月报"]].map(([k,l]) => (
+          <button key={k} className={kind===k?"on":""}
+            onClick={() => s.patchSettings({ kind: k })}>{l}</button>
+        ))}
+      </div>
+
+      <div className="card stack">
+        <textarea className="textarea" placeholder={ph} value={body}
+          onChange={(e) => setBody(e.target.value)} />
+        <div className="row">
+          <button className="btn primary grow" onClick={save} disabled={!s.ready || !dataReady}>保存本周期</button>
+          <button className="btn" onClick={async () => {
+            if (!api) return;
+            await api.notification.show({
+              title: "填写" + kindLabel(kind),
+              body: "记录一下当前周期吧",
+            });
+          }}>提醒</button>
+        </div>
+      </div>
+
+      {showSettings ? (
+        <div className="card soft stack">
+          <h3 className="section-title">插件设置</h3>
+          <p className="meta">ENV 示例：CALLAI_PLUGIN_PARAM_kind=weekly</p>
+          <div className="settings-grid">
+            <span className="field-label">kind</span>
+            <select className="select" style={{ width: 120 }} value={s.saved.kind}
+              onChange={(e) => s.patchSettings({ kind: e.target.value })}>
+              <option value="daily">daily</option>
+              <option value="weekly">weekly</option>
+              <option value="monthly">monthly</option>
+            </select>
+            <span className="field-label">placeholderHints</span>
+            <button className={"btn" + (s.saved.placeholderHints ? " primary" : "")}
+              onClick={() => s.patchSettings({ placeholderHints: !s.saved.placeholderHints })}>
+              {s.saved.placeholderHints ? "开" : "关"}
+            </button>
+            <span className="field-label">notifyOnSave</span>
+            <button className={"btn" + (s.saved.notifyOnSave ? " primary" : "")}
+              onClick={() => s.patchSettings({ notifyOnSave: !s.saved.notifyOnSave })}>
+              {s.saved.notifyOnSave ? "开" : "关"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="card soft stack">
+        <h3 className="section-title">最近记录</h3>
+        <div className="list" style={{ maxHeight: "28vh" }}>
+          {history.length === 0 && <div className="empty">还没有记录</div>}
+          {history.map((h) => (
+            <div key={h.key} className="item" style={{ cursor: "pointer" }}
+              onClick={() => { setBody(h.text); setNowLabel(h.key); }}>
+              <div className="grow">
+                <div className="item-title">{h.key}</div>
+                <div className="item-note">{(h.text || "").slice(0, 80) || "（空）"}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+  </script>
+</body>
+</html>

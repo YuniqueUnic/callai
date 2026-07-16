@@ -134,3 +134,14 @@ textarea.raw:focus {
   color: #d8ecdf;
   border-color: #2a3a32;
 }
+
+.native-select {
+  width: 100%;
+  border: 2px solid var(--border, #c4b89e);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text, #794f27);
+  background: #fffdf8;
+}

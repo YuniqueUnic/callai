@@ -301,7 +301,15 @@ export function EditAlarmPage({ alarmId, onBack, onSaved }: Props) {
           <EditPluginSection
             pluginId={draft.plugin?.plugin_id || draft.args[0] || ""}
             popup={draft.plugin?.popup !== false}
-            suppressWhenFullscreen={draft.plugin?.suppress_when_fullscreen !== false}
+            suppressWhenFullscreen={
+              draft.plugin?.suppress_when_fullscreen !== false
+            }
+            params={
+              (draft.plugin?.params as Record<
+                string,
+                string | number | boolean | null
+              >) || {}
+            }
             onPatch={patchPlugin}
           />
         ) : null}

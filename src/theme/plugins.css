@@ -507,3 +507,162 @@ html.tauri:has(.plugin-win-shell) #root::-webkit-scrollbar {
 .plugin-logs-panel .log-card {
   cursor: pointer;
 }
+
+.plugins-main.is-drag-over {
+  outline: 3px dashed #19c8b9;
+  outline-offset: -8px;
+  border-radius: 18px;
+  background: rgba(25, 200, 185, 0.06);
+}
+.plugins-drop-hint {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  text-align: center;
+  font-weight: 800;
+  color: #11a89b;
+  background: #e6f9f6;
+  border: 2px solid #19c8b9;
+  border-radius: 14px;
+}
+
+.plugin-view-seg {
+  display: flex;
+  gap: 6px;
+  background: #efe8d4;
+  padding: 4px;
+  border-radius: 999px;
+  border: 2px solid #c4b89e;
+  margin: 0 0 14px;
+  max-width: 320px;
+}
+.plugin-view-seg button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 800;
+  color: #9f927d;
+  cursor: pointer;
+}
+.plugin-view-seg button.on {
+  background: #fffdf8;
+  color: #794f27;
+  box-shadow: 0 3px 0 rgba(121, 79, 39, 0.1);
+  border: 2px solid #c4b89e;
+}
+.plugin-registry-toolbar { margin-bottom: 12px; }
+
+/* Plugin window shell follows iframe host-panel theme.
+   Titlebar uses background: transparent !important globally — must override with !important. */
+.plugin-win-shell.is-content-dark {
+  --plugin-chrome-bg: #1c1915;
+  --plugin-chrome-fg: #f5efe4;
+  --plugin-chrome-muted: #a89f8e;
+  --plugin-chrome-border: #5a5246;
+  --plugin-chrome-btn: #3a342c;
+  --callai-bg: #1c1915;
+  --callai-bg-soft: #2a2620;
+  --callai-ink: #f5efe4;
+  --callai-ink-soft: #a89f8e;
+  --callai-border: #5a5246;
+  background: #1c1915 !important;
+  color: #f5efe4 !important;
+  border-color: #5a5246 !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar,
+.plugin-win-shell.is-content-dark > .titlebar.is-plugin-titlebar,
+.plugin-win-shell.is-content-dark > .titlebar.is-plugin-compact {
+  background: #1c1915 !important;
+  background-color: #1c1915 !important;
+  background-image: none !important;
+  border-bottom: 1px solid #5a5246 !important;
+  box-shadow: none !important;
+  color: #f5efe4 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-title,
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-drag,
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-controls,
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-extras {
+  color: #f5efe4 !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-tagline {
+  color: #a89f8e !important;
+  opacity: 0.95;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-pill {
+  background: #2a2620 !important;
+  color: #f5efe4 !important;
+  border-color: #5a5246 !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn:not(.is-traffic) {
+  background: #3a342c !important;
+  border-color: #5a5246 !important;
+  color: #f5efe4 !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn:not(.is-traffic):hover {
+  background: #4a433a !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic) {
+  background: #19c8b9 !important;
+  border-color: #11a89b !important;
+  color: #fff !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-close:not(.is-traffic):hover {
+  background: #c94444 !important;
+  border-color: #a83333 !important;
+  color: #fff !important;
+}
+.plugin-win-shell.is-content-dark .plugin-win-status {
+  color: #a89f8e !important;
+}
+.plugin-win-shell.is-content-dark .plugin-win-body {
+  background: #1c1915 !important;
+}
+.plugin-win-shell.is-content-dark .plugin-win-frame {
+  background: #141210 !important;
+}
+
+/* Keep transparent host so rounded shell corners stay clean (no square plate). */
+html.tauri:has(.plugin-win-shell.is-content-dark),
+html.tauri:has(.plugin-win-shell.is-content-dark) body,
+html.tauri:has(.plugin-win-shell.is-content-dark) #root {
+  background: transparent !important;
+}
+
+/* Pin / fullscreen badges + active extras: high contrast on dark plugin chrome */
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-pill {
+  background: #19c8b9 !important;
+  color: #062a26 !important;
+  border: 1px solid #0d8a7e !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.02em;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-pill.is-focus {
+  background: #f5c31c !important;
+  color: #3a2800 !important;
+  border-color: #d4a40f !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic) {
+  background: #19c8b9 !important;
+  border-color: #0d8a7e !important;
+  color: #062a26 !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-btn.is-active:not(.is-traffic) svg {
+  color: #062a26 !important;
+  stroke: #062a26 !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-extras .titlebar-btn:not(.is-traffic) {
+  color: #f5efe4 !important;
+}
+.plugin-win-shell.is-content-dark > .titlebar .titlebar-extras .titlebar-btn.is-active:not(.is-traffic) {
+  color: #062a26 !important;
+}
+

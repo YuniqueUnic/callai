@@ -3,6 +3,7 @@
 use std::sync::{Arc, OnceLock};
 use std::time::Instant;
 
+use serde_json::{Map, Value};
 use tauri::{AppHandle, Manager};
 
 use crate::app::{CancelFlag, ProcessOutput};
@@ -28,43 +29,188 @@ fn any_fullscreen(app: &AppHandle) -> bool {
         .any(|w| w.is_fullscreen().unwrap_or(false))
 }
 
-/// Resolve plugin id + config from args/env.
-pub fn config_from_args_env(args: &[String], env: &[(String, String)]) -> AlarmPluginConfig {
-    if let Some((_, json)) = env.iter().find(|(k, _)| k == "CALLAI_PLUGIN") {
-        if let Ok(cfg) = serde_json::from_str::<AlarmPluginConfig>(json) {
-            return cfg;
+/// Percent-encode a string for use in a query value (RFC 3986 unreserved left as-is).
+pub fn percent_encode(input: &str) -> String {
+    let mut out = String::with_capacity(input.len() * 3);
+    for &b in input.as_bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(b as char);
+            }
+            _ => out.push_str(&format!("%{b:02X}")),
         }
     }
-    let plugin_id = args
-        .first()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .unwrap_or_default();
-    let mut params = serde_json::Map::new();
+    out
+}
+
+/// Build `plugin.html?...` URL including optional launch params JSON.
+pub fn plugin_window_path(plugin_id: &str, params: &Map<String, Value>) -> String {
+    let id = plugin_id.trim();
+    let mut path = format!("plugin.html?id={id}");
+    if !params.is_empty() {
+        let json = serde_json::to_string(params).unwrap_or_else(|_| "{}".into());
+        path.push_str("&launch=");
+        path.push_str(&percent_encode(&json));
+    }
+    path.push_str(&format!("#id={id}"));
+    path
+}
+
+fn insert_string_param(map: &mut Map<String, Value>, key: &str, value: &str) {
+    let k = key.trim();
+    if k.is_empty() {
+        return;
+    }
+    map.insert(k.to_string(), Value::String(value.to_string()));
+}
+
+fn merge_map(into: &mut Map<String, Value>, from: &Map<String, Value>) {
+    for (k, v) in from {
+        into.insert(k.clone(), v.clone());
+    }
+}
+
+/// Apply force overrides from process env pairs onto params.
+///
+/// Supported (later keys win within this step; whole step wins over base params):
+/// - `CALLAI_PLUGIN_PARAMS` — JSON object
+/// - `CALLAI_PLUGIN_PARAM_<key>` — string value for `key` (case preserved after prefix)
+/// - `CALLAI_PLUGIN_MODE` / `CALLAI_PLUGIN_PAGE` — shortcuts → `mode` / `page`
+pub fn apply_env_param_overrides(params: &mut Map<String, Value>, env: &[(String, String)]) {
+    // JSON blob first, then individual keys so PARAM_* can override the blob.
+    if let Some((_, raw)) = env
+        .iter()
+        .find(|(k, _)| k.eq_ignore_ascii_case("CALLAI_PLUGIN_PARAMS"))
+    {
+        if let Ok(Value::Object(obj)) = serde_json::from_str::<Value>(raw) {
+            merge_map(params, &obj);
+        } else if let Ok(Value::String(s)) = serde_json::from_str::<Value>(raw) {
+            // allow double-encoded string of object
+            if let Ok(Value::Object(obj)) = serde_json::from_str::<Value>(&s) {
+                merge_map(params, &obj);
+            }
+        }
+    }
+
+    for (k, v) in env {
+        let upper = k.to_ascii_uppercase();
+        if let Some(rest) = upper.strip_prefix("CALLAI_PLUGIN_PARAM_") {
+            if rest.is_empty() {
+                continue;
+            }
+            // Prefer original key casing after the first matching prefix length.
+            let key = if let Some(idx) = k.find("PARAM_").or_else(|| k.find("param_")) {
+                &k[idx + "PARAM_".len()..]
+            } else {
+                rest
+            };
+            let key = if key.is_empty() { rest } else { key };
+            insert_string_param(params, key, v);
+            continue;
+        }
+        if upper == "CALLAI_PLUGIN_MODE" {
+            insert_string_param(params, "mode", v);
+        } else if upper == "CALLAI_PLUGIN_PAGE" {
+            insert_string_param(params, "page", v);
+        }
+    }
+}
+
+/// Resolve plugin id + config from args/env.
+///
+/// Param precedence (later wins):
+/// 1. `CALLAI_PLUGIN` JSON `.params` (or empty)
+/// 2. argv `key=value` after plugin id
+/// 3. ENV force overrides (`CALLAI_PLUGIN_PARAMS` / `CALLAI_PLUGIN_PARAM_*` / MODE/PAGE)
+pub fn config_from_args_env(args: &[String], env: &[(String, String)]) -> AlarmPluginConfig {
+    let mut cfg = if let Some((_, json)) = env.iter().find(|(k, _)| k == "CALLAI_PLUGIN") {
+        serde_json::from_str::<AlarmPluginConfig>(json).unwrap_or_default()
+    } else {
+        AlarmPluginConfig::default()
+    };
+
+    if cfg.plugin_id.trim().is_empty() {
+        cfg.plugin_id = args
+            .first()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_default();
+    }
+
+    // Argv key=value after plugin id
     for a in args.iter().skip(1) {
         if let Some((k, v)) = a.split_once('=') {
-            params.insert(
-                k.trim().to_string(),
-                serde_json::Value::String(v.to_string()),
-            );
+            insert_string_param(&mut cfg.params, k, v);
         }
     }
-    let popup = env
-        .iter()
-        .find(|(k, _)| k == "CALLAI_PLUGIN_POPUP")
-        .map(|(_, v)| v != "0" && !v.eq_ignore_ascii_case("false"))
-        .unwrap_or(true);
-    let suppress = env
-        .iter()
-        .find(|(k, _)| k == "CALLAI_PLUGIN_SUPPRESS_FS")
-        .map(|(_, v)| v != "0" && !v.eq_ignore_ascii_case("false"))
-        .unwrap_or(true);
-    AlarmPluginConfig {
-        plugin_id,
-        popup,
-        suppress_when_fullscreen: suppress,
-        params,
+
+    // Explicit popup / suppress env (optional)
+    if let Some((_, v)) = env.iter().find(|(k, _)| k == "CALLAI_PLUGIN_POPUP") {
+        cfg.popup = v != "0" && !v.eq_ignore_ascii_case("false");
     }
+    if let Some((_, v)) = env.iter().find(|(k, _)| k == "CALLAI_PLUGIN_SUPPRESS_FS") {
+        cfg.suppress_when_fullscreen = v != "0" && !v.eq_ignore_ascii_case("false");
+    }
+
+    apply_env_param_overrides(&mut cfg.params, env);
+    cfg
+}
+
+/// Open or focus a plugin host window, injecting launch params into the URL.
+pub fn open_plugin_window_with_params(
+    app: &AppHandle,
+    plugin_id: &str,
+    params: &Map<String, Value>,
+    title: Option<&str>,
+) -> DomainResult<&'static str> {
+    let id = plugin_id.trim();
+    if id.is_empty() {
+        return Err(DomainError::new(
+            ErrorCode::InvalidArgs,
+            "plugin id required",
+        ));
+    }
+    let label = format!("plugin-{id}");
+    let path = plugin_window_path(id, params);
+    let title = title.unwrap_or(id);
+
+    if let Some(existing) = app.get_webview_window(&label) {
+        // Push fresh launch params into the already-open host (no full reload required).
+        // PluginWindowApp listens for `callai:host-launch` and re-injects into the iframe bridge.
+        let payload = serde_json::to_string(params).unwrap_or_else(|_| "{}".into());
+        let script = format!(
+            r#"(function(){{try{{var p={payload};window.__callaiPendingLaunch=p;window.dispatchEvent(new CustomEvent('callai:host-launch',{{detail:p}}));}}catch(e){{console.warn('host-launch',e);}}}})();"#,
+            payload = payload
+        );
+        if let Err(e) = existing.eval(&script) {
+            tracing::warn!(error = %e, plugin_id = id, "eval host-launch failed; focus only");
+        }
+        let _ = existing.unminimize();
+        let _ = existing.show();
+        let _ = existing.set_focus();
+        let _ = existing.set_title(title);
+        return Ok("focus_window");
+    }
+
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+    let url = WebviewUrl::App(path.into());
+    WebviewWindowBuilder::new(app, &label, url)
+        .title(title.to_string())
+        .inner_size(440.0, 720.0)
+        .min_inner_size(280.0, 44.0)
+        .resizable(true)
+        .decorations(false)
+        .transparent(true)
+        .visible(true)
+        .center()
+        .build()
+        .map_err(|e| {
+            DomainError::new(
+                ErrorCode::ExecutionFailed,
+                format!("open plugin window: {e}"),
+            )
+        })?;
+    Ok("open_window")
 }
 
 pub fn run_builtin_plugin(
@@ -121,39 +267,18 @@ pub fn run_builtin_plugin(
 
     let should_popup = cfg.popup && !(cfg.suppress_when_fullscreen && fullscreen);
     if should_popup {
-        // Reuse open_plugin_window command logic inline (same label).
-        let id = cfg.plugin_id.clone();
-        let label = format!("plugin-{id}");
-        if let Some(existing) = app.get_webview_window(&label) {
-            let _ = existing.unminimize();
-            let _ = existing.show();
-            let _ = existing.set_focus();
-            actions.push("focus_window".into());
-        } else {
-            use tauri::{WebviewUrl, WebviewWindowBuilder};
-            let url = WebviewUrl::App(format!("plugin.html?id={id}#id={id}").into());
-            match WebviewWindowBuilder::new(app, &label, url)
-                .title(id.clone())
-                .inner_size(440.0, 720.0)
-                .min_inner_size(280.0, 44.0)
-                .resizable(true)
-                .decorations(false)
-                .transparent(true)
-                .visible(true)
-                .center()
-                .build()
-            {
-                Ok(_) => actions.push("open_window".into()),
-                Err(e) => {
-                    return Ok(ProcessOutput {
-                        exit_code: 1,
-                        stdout: actions.join(","),
-                        stderr: format!("open plugin window: {e}"),
-                        duration_ms: started.elapsed().as_millis() as i64,
-                        canceled: false,
-                        timed_out: false,
-                    });
-                }
+        match open_plugin_window_with_params(app, &cfg.plugin_id, &cfg.params, Some(&cfg.plugin_id))
+        {
+            Ok(action) => actions.push(action.into()),
+            Err(e) => {
+                return Ok(ProcessOutput {
+                    exit_code: 1,
+                    stdout: actions.join(","),
+                    stderr: e.message,
+                    duration_ms: started.elapsed().as_millis() as i64,
+                    canceled: false,
+                    timed_out: false,
+                });
             }
         }
     } else if cfg.suppress_when_fullscreen && fullscreen {
@@ -164,10 +289,79 @@ pub fn run_builtin_plugin(
 
     Ok(ProcessOutput {
         exit_code: 0,
-        stdout: format!("plugin={} actions={}", cfg.plugin_id, actions.join("+")),
+        stdout: format!(
+            "plugin={} actions={} params={}",
+            cfg.plugin_id,
+            actions.join("+"),
+            serde_json::to_string(&cfg.params).unwrap_or_else(|_| "{}".into())
+        ),
         stderr: String::new(),
         duration_ms: started.elapsed().as_millis() as i64,
         canceled: false,
         timed_out: false,
     })
+}
+
+#[cfg(test)]
+mod unit {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn percent_encode_keeps_unreserved() {
+        assert_eq!(percent_encode("abc-._~XYZ09"), "abc-._~XYZ09");
+        assert!(percent_encode("a b").contains("%20"));
+        assert!(percent_encode("{\"mode\":\"drink\"}").contains("%22"));
+    }
+
+    #[test]
+    fn plugin_window_path_embeds_launch_json() {
+        let mut params = Map::new();
+        params.insert("mode".into(), json!("drink"));
+        let path = plugin_window_path("meal-spin", &params);
+        assert!(path.starts_with("plugin.html?id=meal-spin&launch="));
+        assert!(path.contains("#id=meal-spin"));
+        assert!(path.contains("drink") || path.contains("%22drink%22") || path.contains("mode"));
+    }
+
+    #[test]
+    fn env_overrides_win_over_base_and_args() {
+        let args = vec!["meal-spin".into(), "mode=food".into(), "extra=1".into()];
+        let env = vec![
+            (
+                "CALLAI_PLUGIN".into(),
+                r#"{"plugin_id":"meal-spin","popup":true,"suppress_when_fullscreen":true,"params":{"mode":"food","size":"L"}}"#.into(),
+            ),
+            ("CALLAI_PLUGIN_MODE".into(), "drink".into()),
+            ("CALLAI_PLUGIN_PARAM_size".into(), "S".into()),
+            (
+                "CALLAI_PLUGIN_PARAMS".into(),
+                r#"{"note":"from-json"}"#.into(),
+            ),
+        ];
+        let cfg = config_from_args_env(&args, &env);
+        assert_eq!(cfg.plugin_id, "meal-spin");
+        assert_eq!(
+            cfg.params.get("mode").and_then(|v| v.as_str()),
+            Some("drink")
+        );
+        assert_eq!(cfg.params.get("size").and_then(|v| v.as_str()), Some("S"));
+        assert_eq!(
+            cfg.params.get("note").and_then(|v| v.as_str()),
+            Some("from-json")
+        );
+        assert_eq!(cfg.params.get("extra").and_then(|v| v.as_str()), Some("1"));
+    }
+
+    #[test]
+    fn args_only_params_without_callai_plugin_json() {
+        let args = vec!["todo".into(), "filter=open".into()];
+        let cfg = config_from_args_env(&args, &[]);
+        assert_eq!(cfg.plugin_id, "todo");
+        assert_eq!(
+            cfg.params.get("filter").and_then(|v| v.as_str()),
+            Some("open")
+        );
+        assert!(cfg.popup);
+    }
 }
