@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/YuniqueUnic/callai/compare/v0.3.0...v0.3.1) (2026-07-16)
+
+
+### Features
+
+* island ledger plugin, AI chat polish, picker keyboard scroll ([d3fa12a](https://github.com/YuniqueUnic/callai/commit/d3fa12a998b75b4bf52bcc28a2be57325e0e7cc5))
+
 ## [0.3.0](https://github.com/YuniqueUnic/callai/compare/v0.2.8...v0.3.0) (2026-07-16)
 
 
