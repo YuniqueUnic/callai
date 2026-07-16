@@ -7,9 +7,15 @@ import {
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isTauri } from "../infra/tauriApi";
+
+/** Match tauri.conf min window (logical px). */
+const MIN_LOGICAL_W = 386;
+const MIN_LOGICAL_H = 217;
 
 /**
  * Custom titlebar pitfalls (Tauri 2 docs + practice):
@@ -42,6 +48,11 @@ type WinApi = {
   setAlwaysOnTop: (v: boolean) => Promise<void>;
   startDragging: () => Promise<void>;
   startResizeDragging: (dir: ResizeDir) => Promise<void>;
+  outerSize: () => Promise<{ width: number; height: number }>;
+  outerPosition: () => Promise<{ x: number; y: number }>;
+  scaleFactor: () => Promise<number>;
+  setSize: (w: number, h: number) => Promise<void>;
+  setPosition: (x: number, y: number) => Promise<void>;
   onResized: (cb: () => void) => Promise<() => void>;
   onScaleChanged: (cb: () => void) => Promise<() => void>;
 };
@@ -66,6 +77,19 @@ function getWin(): WinApi | null {
       setAlwaysOnTop: (v) => w.setAlwaysOnTop(v),
       startDragging: () => w.startDragging(),
       startResizeDragging: (dir) => w.startResizeDragging(dir),
+      outerSize: async () => {
+        const s = await w.outerSize();
+        return { width: s.width, height: s.height };
+      },
+      outerPosition: async () => {
+        const p = await w.outerPosition();
+        return { x: p.x, y: p.y };
+      },
+      scaleFactor: () => w.scaleFactor(),
+      setSize: (width, height) =>
+        w.setSize(new PhysicalSize(Math.round(width), Math.round(height))),
+      setPosition: (x, y) =>
+        w.setPosition(new PhysicalPosition(Math.round(x), Math.round(y))),
       onResized: async (cb) => {
         const un = await w.onResized(() => cb());
         return () => {
@@ -176,6 +200,14 @@ export function TitleBar({
   const isPlugin = variant === "plugin";
   /** Cached window API so resize/drag can fire synchronously on pointerdown. */
   const winRef = useRef<WinApi | null>(null);
+  /** Last known outer metrics (physical px) for snappy manual resize start. */
+  const metricsRef = useRef<{
+    w: number;
+    h: number;
+    x: number;
+    y: number;
+    factor: number;
+  } | null>(null);
 
   useEffect(() => {
     applyShellFlags({ compact }, shellSelector);
@@ -185,10 +217,20 @@ export function TitleBar({
     const win = getWin();
     if (!win) return;
     try {
-      const [max, full] = await Promise.all([
+      const [max, full, size, pos, factor] = await Promise.all([
         win.isMaximized(),
         win.isFullscreen(),
+        win.outerSize(),
+        win.outerPosition(),
+        win.scaleFactor(),
       ]);
+      metricsRef.current = {
+        w: size.width,
+        h: size.height,
+        x: pos.x,
+        y: pos.y,
+        factor: factor || window.devicePixelRatio || 1,
+      };
       setMaximized(max);
       setFullscreen(full);
       applyShellFlags(
@@ -335,23 +377,175 @@ export function TitleBar({
   );
 
   /**
-   * Start OS-level resize. Must invoke startResizeDragging in the same user-gesture
-   * turn as pointerdown/mousedown (no prior await).
+   * Edge resize for decorations:false + transparent shells.
+   *
+   * OS `startResizeDragging` is flaky when grips live under clip-path / custom
+   * cursor hosts — we still kick it (same gesture tick), and run a reliable
+   * manual PhysicalSize/Position path with pointer capture as the real driver.
    */
   const beginResize = useCallback(
-    (dir: ResizeDir, e?: MouseEvent | ReactPointerEvent) => {
+    (dir: ResizeDir, e: ReactPointerEvent<HTMLDivElement>) => {
       if (maximized || fullscreen) return;
-      if (e && "button" in e && e.button !== 0) return;
-      e?.preventDefault();
-      e?.stopPropagation();
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+
       const win = winRef.current ?? getWin();
       winRef.current = win;
       if (!win) return;
-      void win.startResizeDragging(dir).catch((err) => {
-        console.warn("[callai] startResizeDragging failed", dir, err);
-      });
+
+      // Manual PhysicalSize path is authoritative for transparent undeco shells.
+      // (OS startResizeDragging often no-ops when grips sit under clip-path hosts.)
+
+      const target = e.currentTarget;
+      const pointerId = e.pointerId;
+      const startScreenX = e.screenX;
+      const startScreenY = e.screenY;
+      try {
+        target.setPointerCapture(pointerId);
+      } catch {
+        /* ignore */
+      }
+
+      type Session = {
+        dir: ResizeDir;
+        startX: number;
+        startY: number;
+        w: number;
+        h: number;
+        left: number;
+        top: number;
+        factor: number;
+        active: boolean;
+      };
+      const cached = metricsRef.current;
+      const session: Session = {
+        dir,
+        startX: startScreenX,
+        startY: startScreenY,
+        w: cached?.w ?? 0,
+        h: cached?.h ?? 0,
+        left: cached?.x ?? 0,
+        top: cached?.y ?? 0,
+        factor: cached?.factor || window.devicePixelRatio || 1,
+        active: !!(cached && cached.w > 0 && cached.h > 0),
+      };
+
+      void (async () => {
+        try {
+          const [size, pos, factor] = await Promise.all([
+            win.outerSize(),
+            win.outerPosition(),
+            win.scaleFactor(),
+          ]);
+          // Only replace baseline if user has not moved much yet — keep first sample.
+          if (!session.active) {
+            session.w = size.width;
+            session.h = size.height;
+            session.left = pos.x;
+            session.top = pos.y;
+            session.factor = factor || session.factor;
+            session.active = true;
+          }
+          metricsRef.current = {
+            w: size.width,
+            h: size.height,
+            x: pos.x,
+            y: pos.y,
+            factor: factor || session.factor,
+          };
+        } catch (err) {
+          console.warn("[callai] resize session init failed", err);
+        }
+      })();
+
+      let raf = 0;
+      let pending: { x: number; y: number } | null = null;
+
+      const apply = (screenX: number, screenY: number) => {
+        if (!session.active) return;
+        // screen deltas are CSS px in WKWebView; scale to physical.
+        const dx = (screenX - session.startX) * session.factor;
+        const dy = (screenY - session.startY) * session.factor;
+        let w = session.w;
+        let h = session.h;
+        let left = session.left;
+        let top = session.top;
+        const minW = MIN_LOGICAL_W * session.factor;
+        const minH = MIN_LOGICAL_H * session.factor;
+
+        if (dir === "East" || dir === "NorthEast" || dir === "SouthEast") {
+          w = session.w + dx;
+        }
+        if (dir === "West" || dir === "NorthWest" || dir === "SouthWest") {
+          w = session.w - dx;
+          left = session.left + dx;
+        }
+        if (dir === "South" || dir === "SouthEast" || dir === "SouthWest") {
+          h = session.h + dy;
+        }
+        if (dir === "North" || dir === "NorthEast" || dir === "NorthWest") {
+          h = session.h - dy;
+          top = session.top + dy;
+        }
+
+        if (w < minW) {
+          if (dir === "West" || dir === "NorthWest" || dir === "SouthWest") {
+            left -= minW - w;
+          }
+          w = minW;
+        }
+        if (h < minH) {
+          if (dir === "North" || dir === "NorthEast" || dir === "NorthWest") {
+            top -= minH - h;
+          }
+          h = minH;
+        }
+
+        void win.setSize(w, h);
+        if (
+          dir === "West" ||
+          dir === "North" ||
+          dir === "NorthWest" ||
+          dir === "NorthEast" ||
+          dir === "SouthWest"
+        ) {
+          void win.setPosition(left, top);
+        }
+      };
+
+      const onMove = (ev: PointerEvent) => {
+        pending = { x: ev.screenX, y: ev.screenY };
+        if (raf) return;
+        raf = window.requestAnimationFrame(() => {
+          raf = 0;
+          if (!pending) return;
+          apply(pending.x, pending.y);
+        });
+      };
+
+      const onUp = (ev: PointerEvent) => {
+        session.active = false;
+        if (raf) {
+          window.cancelAnimationFrame(raf);
+          raf = 0;
+        }
+        try {
+          target.releasePointerCapture(ev.pointerId);
+        } catch {
+          /* ignore */
+        }
+        target.removeEventListener("pointermove", onMove);
+        target.removeEventListener("pointerup", onUp);
+        target.removeEventListener("pointercancel", onUp);
+        void syncState();
+      };
+
+      target.addEventListener("pointermove", onMove);
+      target.addEventListener("pointerup", onUp);
+      target.addEventListener("pointercancel", onUp);
     },
-    [fullscreen, maximized],
+    [fullscreen, maximized, syncState],
   );
 
   const controls = (
@@ -564,30 +758,38 @@ export function TitleBar({
         )}
       </header>
 
-      {/* Edge resize grips — undeco windows need explicit resize affordances */}
-      {!maximized && !fullscreen ? (
-        <div className={`window-resize-layer${compact ? " is-compact-grips" : ""}`} aria-hidden>
-          {(
-            [
-              ["n", "North"],
-              ["s", "South"],
-              ["e", "East"],
-              ["w", "West"],
-              ["ne", "NorthEast"],
-              ["nw", "NorthWest"],
-              ["se", "SouthEast"],
-              ["sw", "SouthWest"],
-            ] as const
-          ).map(([cls, dir]) => (
+      {/* Grips portal to body — escape app-shell clip-path so edges stay hittable */}
+      {!maximized &&
+      !fullscreen &&
+      typeof document !== "undefined"
+        ? createPortal(
             <div
-              key={dir}
-              className={`window-resize-grip grip-${cls}`}
-              data-resize-dir={dir}
-              onPointerDown={(e) => beginResize(dir, e)}
-            />
-          ))}
-        </div>
-      ) : null}
+              className={`window-resize-layer${compact ? " is-compact-grips" : ""}`}
+              aria-hidden
+            >
+              {(
+                [
+                  ["n", "North"],
+                  ["s", "South"],
+                  ["e", "East"],
+                  ["w", "West"],
+                  ["ne", "NorthEast"],
+                  ["nw", "NorthWest"],
+                  ["se", "SouthEast"],
+                  ["sw", "SouthWest"],
+                ] as const
+              ).map(([cls, dir]) => (
+                <div
+                  key={dir}
+                  className={`window-resize-grip grip-${cls}`}
+                  data-resize-dir={dir}
+                  onPointerDown={(e) => beginResize(dir, e)}
+                />
+              ))}
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

@@ -62,6 +62,26 @@
   flex: 1 1 160px;
 }
 
+/* MCP status + refresh: keep icon pinned to the right edge */
+.settings-row.mcp-status-row {
+  flex-wrap: nowrap;
+  width: 100%;
+  gap: 10px;
+}
+.settings-row.mcp-status-row > .meta,
+.settings-row.mcp-status-row > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-row.mcp-status-row .icon-btn-wrap,
+.settings-row.mcp-status-row .mcp-status-actions {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 .backup-item {
   display: flex;
   align-items: center;

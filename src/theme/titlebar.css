@@ -291,32 +291,65 @@
 }
 
 /* Edge resize grips for decorations:false
-   - layer is fixed to the viewport so grips always cover the true window edge
-   - edges ~8–10px, corners ~16px (5px was too thin to start a drag reliably)
-   - z-index above app chrome; layer itself is pointer-events:none so only grips hit */
+   - portaled to document.body (escape shell clip-path)
+   - thick hit targets; cursor !important beats animal-cursor force
+   - layer pointer-events:none; only grips receive hits */
 .window-resize-layer {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 2147483000;
+  z-index: 2147483646;
 }
 .window-resize-grip {
   position: absolute;
   pointer-events: auto;
   background: transparent;
-  /* slightly larger hit target than painted area feel */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  z-index: 1;
 }
-.grip-n { top: 0; left: 14px; right: 14px; height: 8px; cursor: ns-resize; }
-.grip-s { bottom: 0; left: 14px; right: 14px; height: 8px; cursor: ns-resize; }
-.grip-e { top: 14px; right: 0; bottom: 14px; width: 8px; cursor: ew-resize; }
-.grip-w { top: 14px; left: 0; bottom: 14px; width: 8px; cursor: ew-resize; }
-.grip-ne { top: 0; right: 0; width: 16px; height: 16px; cursor: nesw-resize; }
-.grip-nw { top: 0; left: 0; width: 16px; height: 16px; cursor: nwse-resize; }
-.grip-se { bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; }
-.grip-sw { bottom: 0; left: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+/* Beat .animal-cursor--force * { cursor: url !important } */
+html.tauri body > .window-resize-layer .grip-n {
+  top: 0; left: 18px; right: 18px; height: 12px;
+  cursor: ns-resize !important;
+}
+html.tauri body > .window-resize-layer .grip-s {
+  bottom: 0; left: 18px; right: 18px; height: 12px;
+  cursor: ns-resize !important;
+}
+html.tauri body > .window-resize-layer .grip-e {
+  top: 18px; right: 0; bottom: 18px; width: 12px;
+  cursor: ew-resize !important;
+}
+html.tauri body > .window-resize-layer .grip-w {
+  top: 18px; left: 0; bottom: 18px; width: 12px;
+  cursor: ew-resize !important;
+}
+html.tauri body > .window-resize-layer .grip-ne {
+  top: 0; right: 0; width: 20px; height: 20px;
+  cursor: nesw-resize !important;
+}
+html.tauri body > .window-resize-layer .grip-nw {
+  top: 0; left: 0; width: 20px; height: 20px;
+  cursor: nwse-resize !important;
+}
+html.tauri body > .window-resize-layer .grip-se {
+  bottom: 0; right: 0; width: 20px; height: 20px;
+  cursor: nwse-resize !important;
+}
+html.tauri body > .window-resize-layer .grip-sw {
+  bottom: 0; left: 0; width: 20px; height: 20px;
+  cursor: nesw-resize !important;
+}
+.grip-n { top: 0; left: 18px; right: 18px; height: 12px; cursor: ns-resize; }
+.grip-s { bottom: 0; left: 18px; right: 18px; height: 12px; cursor: ns-resize; }
+.grip-e { top: 18px; right: 0; bottom: 18px; width: 12px; cursor: ew-resize; }
+.grip-w { top: 18px; left: 0; bottom: 18px; width: 12px; cursor: ew-resize; }
+.grip-ne { top: 0; right: 0; width: 20px; height: 20px; cursor: nesw-resize; }
+.grip-nw { top: 0; left: 0; width: 20px; height: 20px; cursor: nwse-resize; }
+.grip-se { bottom: 0; right: 0; width: 20px; height: 20px; cursor: nwse-resize; }
+.grip-sw { bottom: 0; left: 0; width: 20px; height: 20px; cursor: nwse-resize; }
 
 /* When maximized/fullscreen, grips are unmounted; still neutralize if present */
 .app-shell.is-maximized .window-resize-layer,
