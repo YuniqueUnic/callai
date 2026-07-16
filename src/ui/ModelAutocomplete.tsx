@@ -87,57 +87,14 @@ function ModelAutocompleteImpl({
     setActiveIdx(0);
   }, [text, models]);
 
-  // Reload cache / seeds when provider / baseUrl changes.
+  // Local list only when provider / baseUrl changes (cache or seed).
+  // Never auto-fetch network models — user must click refresh.
   useEffect(() => {
     setModels(seedModelsList(provider, baseUrl));
     setFromSeed(!hasLiveCache(provider, baseUrl));
     setHint(null);
+    setBusy(false);
   }, [provider, baseUrl]);
-
-  // Soft auto-fetch only when provider/baseUrl changes — never on each apiKey keystroke.
-  const apiKeyRef = useRef(apiKey);
-  apiKeyRef.current = apiKey;
-  useEffect(() => {
-    if (!baseUrl.trim()) return;
-    if (hasLiveCache(provider, baseUrl)) return;
-    if (!apiKeyRef.current.trim()) return;
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        const liveKey = apiKeyRef.current.trim();
-        if (!liveKey || cancelled) return;
-        try {
-          setBusy(true);
-          const res = await fetchAiModels({
-            provider,
-            base_url: baseUrl,
-            api_key: liveKey,
-            force: false,
-          });
-          if (!cancelled) {
-            setModels(res.models);
-            setFromSeed(false);
-            setHint(
-              res.fromCache
-                ? t("settings:aiModelsCached")
-                : t("settings:aiModelsFetched", { count: res.models.length }),
-            );
-          }
-        } catch {
-          if (!cancelled) {
-            setModels(modelHintsForProvider(provider));
-            setFromSeed(true);
-          }
-        } finally {
-          if (!cancelled) setBusy(false);
-        }
-      })();
-    }, 700);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [provider, baseUrl, t]);
 
   /** Anchor popup to the input. Uses real dropdown height when mounted so
    *  long fallback lists (custom model like grok-4.5 → full seed) stay glued. */

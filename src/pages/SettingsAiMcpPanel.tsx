@@ -358,7 +358,7 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
         <p className="meta settings-section-hint">{t("settings:mcpEnabledNote")}</p>
 
         <div className="settings-row mcp-status-row" style={{ marginTop: 8, marginBottom: 8 }}>
-          <span className="meta">
+          <span className="meta mcp-status-label">
             {mcpStatus == null
               ? t("settings:mcpStatusLoading")
               : mcpStatus.running
@@ -367,24 +367,27 @@ function SettingsAiMcpPanelImpl({ settings, onSave }: Props) {
                   ? `${t("settings:mcpStatusError")}: ${mcpStatus.error}`
                   : t("settings:mcpStatusStopped")}
           </span>
-          <IconButton
-            label={t("settings:mcpRestart")}
-            icon={<IconRefresh size={16} />}
-            sfx="soft"
-            onClick={() => {
-              void (async () => {
-                if (dirtyRef.current) await flushNow({ silent: true });
-                // re-save current mcp to re-apply supervisor
-                await patchMcpImmediate({
-                  enabled: !!savedMcp.enabled,
-                  listen_host: mcpHost,
-                  port: Number(mcpPort) || 33927,
-                  auth_token: mcpToken,
-                });
-                await refreshMcpStatus();
-              })();
-            }}
-          />
+          <span className="mcp-status-actions">
+            <IconButton
+              label={t("settings:mcpRestart")}
+              icon={<IconRefresh size={16} />}
+              sfx="soft"
+              tooltipPlacement="left"
+              onClick={() => {
+                void (async () => {
+                  if (dirtyRef.current) await flushNow({ silent: true });
+                  // re-save current mcp to re-apply supervisor
+                  await patchMcpImmediate({
+                    enabled: !!savedMcp.enabled,
+                    listen_host: mcpHost,
+                    port: Number(mcpPort) || 33927,
+                    auth_token: mcpToken,
+                  });
+                  await refreshMcpStatus();
+                })();
+              }}
+            />
+          </span>
         </div>
 
         <div className="field">

@@ -374,9 +374,9 @@ html.tauri:has(.plugin-win-shell) body {
   font-size: 0.85rem;
 }
 
-/* plugin window still needs edge grips above iframe */
-.plugin-win-shell > .window-resize-layer {
-  z-index: 50;
+/* plugin window grips are portaled to body (same as main) */
+body:has(.plugin-win-shell) > .window-resize-layer {
+  z-index: 2147483646;
 }
 
 
