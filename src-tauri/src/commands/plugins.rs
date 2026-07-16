@@ -198,15 +198,21 @@ pub fn import_plugin_zip_bytes(
     state: State<'_, AppState>,
     bytes: Vec<u8>,
     conflict: Option<String>,
+    force_downgrade: Option<bool>,
+    replace_data: Option<bool>,
 ) -> Result<Option<PluginSummary>, String> {
-    use crate::infra::plugin::InstallConflictMode;
-    let mode = conflict
-        .as_deref()
-        .map(InstallConflictMode::parse)
-        .unwrap_or_default();
+    use crate::infra::plugin::{InstallConflictMode, InstallPackageOpts};
+    let opts = InstallPackageOpts {
+        conflict: conflict
+            .as_deref()
+            .map(InstallConflictMode::parse)
+            .unwrap_or_default(),
+        force_downgrade: force_downgrade.unwrap_or(false),
+        replace_data: replace_data.unwrap_or(false),
+    };
     state
         .plugins
-        .import_zip_bytes(&bytes, mode)
+        .import_zip_bytes(&bytes, opts)
         .map_err(map_err)
 }
 
@@ -216,15 +222,21 @@ pub fn import_plugin_zip_path(
     state: State<'_, AppState>,
     path: String,
     conflict: Option<String>,
+    force_downgrade: Option<bool>,
+    replace_data: Option<bool>,
 ) -> Result<Option<PluginSummary>, String> {
-    use crate::infra::plugin::InstallConflictMode;
-    let mode = conflict
-        .as_deref()
-        .map(InstallConflictMode::parse)
-        .unwrap_or_default();
+    use crate::infra::plugin::{InstallConflictMode, InstallPackageOpts};
+    let opts = InstallPackageOpts {
+        conflict: conflict
+            .as_deref()
+            .map(InstallConflictMode::parse)
+            .unwrap_or_default(),
+        force_downgrade: force_downgrade.unwrap_or(false),
+        replace_data: replace_data.unwrap_or(false),
+    };
     state
         .plugins
-        .import_zip_path(std::path::Path::new(&path), mode)
+        .import_zip_path(std::path::Path::new(&path), opts)
         .map_err(map_err)
 }
 
@@ -256,8 +268,10 @@ pub async fn import_plugin_zip_url(
     state: State<'_, AppState>,
     url: String,
     conflict: Option<String>,
+    force_downgrade: Option<bool>,
+    replace_data: Option<bool>,
 ) -> Result<Option<PluginSummary>, String> {
-    use crate::infra::plugin::InstallConflictMode;
+    use crate::infra::plugin::{InstallConflictMode, InstallPackageOpts};
     let url = url.trim();
     if !(url.starts_with("https://")
         || url.starts_with("http://127.0.0.1")
@@ -277,13 +291,17 @@ pub async fn import_plugin_zip_url(
     if bytes.len() > 12 * 1024 * 1024 {
         return Err("downloaded zip too large".into());
     }
-    let mode = conflict
-        .as_deref()
-        .map(InstallConflictMode::parse)
-        .unwrap_or_default();
+    let opts = InstallPackageOpts {
+        conflict: conflict
+            .as_deref()
+            .map(InstallConflictMode::parse)
+            .unwrap_or_default(),
+        force_downgrade: force_downgrade.unwrap_or(false),
+        replace_data: replace_data.unwrap_or(false),
+    };
     state
         .plugins
-        .import_zip_bytes(&bytes, mode)
+        .import_zip_bytes(&bytes, opts)
         .map_err(map_err)
 }
 
@@ -318,6 +336,13 @@ pub fn export_plugin_zip_bytes(
 #[tauri::command]
 pub fn peek_plugin_zip_id(bytes: Vec<u8>) -> Result<String, String> {
     crate::infra::plugin::package::peek_plugin_zip_id(&bytes).map_err(map_err)
+}
+
+#[tauri::command]
+pub fn peek_plugin_zip(
+    bytes: Vec<u8>,
+) -> Result<crate::infra::plugin::package::PluginZipPeek, String> {
+    crate::infra::plugin::package::peek_plugin_zip(&bytes).map_err(map_err)
 }
 
 #[tauri::command]

@@ -110,15 +110,26 @@ export const api = {
   importPluginZipBytes: (
     bytes: number[] | Uint8Array,
     conflict?: string | null,
+    force_downgrade?: boolean,
+    replace_data?: boolean,
   ) =>
     call<PluginSummary | null>("import_plugin_zip_bytes", {
       bytes: Array.from(bytes as Uint8Array),
       conflict: conflict ?? null,
+      force_downgrade: force_downgrade ?? false,
+      replace_data: replace_data ?? false,
     }),
-  importPluginZipPath: (path: string, conflict?: string | null) =>
+  importPluginZipPath: (
+    path: string,
+    conflict?: string | null,
+    force_downgrade?: boolean,
+    replace_data?: boolean,
+  ) =>
     call<PluginSummary | null>("import_plugin_zip_path", {
       path,
       conflict: conflict ?? null,
+      force_downgrade: force_downgrade ?? false,
+      replace_data: replace_data ?? false,
     }),
   fetchPluginRegistry: (url?: string | null) =>
     call<{
@@ -141,10 +152,26 @@ export const api = {
     call<string>("peek_plugin_zip_id", {
       bytes: Array.from(bytes as Uint8Array),
     }),
-  importPluginZipUrl: (url: string, conflict?: string | null) =>
+  peekPluginZip: (bytes: number[] | Uint8Array) =>
+    call<{
+      id: string;
+      name: string;
+      version: string;
+      includes_data: boolean;
+    }>("peek_plugin_zip", {
+      bytes: Array.from(bytes as Uint8Array),
+    }),
+  importPluginZipUrl: (
+    url: string,
+    conflict?: string | null,
+    force_downgrade?: boolean,
+    replace_data?: boolean,
+  ) =>
     call<PluginSummary | null>("import_plugin_zip_url", {
       url,
       conflict: conflict ?? null,
+      force_downgrade: force_downgrade ?? false,
+      replace_data: replace_data ?? false,
     }),
   listBuiltinCatalog: () =>
     call<

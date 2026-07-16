@@ -323,7 +323,26 @@ pub fn parse_plugin_zip(bytes: &[u8]) -> DomainResult<PluginPackage> {
 
 /// Read only plugin id from zip (for conflict UI before install).
 pub fn peek_plugin_zip_id(bytes: &[u8]) -> DomainResult<String> {
-    Ok(parse_plugin_zip(bytes)?.draft.manifest.id)
+    Ok(peek_plugin_zip(bytes)?.id)
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct PluginZipPeek {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub includes_data: bool,
+}
+
+/// Peek id/version/includes_data for update UI (no install).
+pub fn peek_plugin_zip(bytes: &[u8]) -> DomainResult<PluginZipPeek> {
+    let pkg = parse_plugin_zip(bytes)?;
+    Ok(PluginZipPeek {
+        id: pkg.draft.manifest.id,
+        name: pkg.draft.manifest.name,
+        version: pkg.draft.manifest.version,
+        includes_data: pkg.meta.includes_data || pkg.data_db.is_some(),
+    })
 }
 
 pub fn build_plugin_zip(

@@ -36,11 +36,12 @@
 | 15 | [15 AI / MCP / Prompt 分层](./15-ai-mcp-prompt-composition.md) | Epic #42；prompt 组合；runtime；WebView CORS→Rust 代理；Settings 防抖 |
 | 16 | [16 MCP Tools / Logs / In-App HTTP](./16-mcp-tools-and-logs.md) | 审计边界；compose_prompt；App supervisor；端口 33927；Host 不白名单 |
 | 17 | [17 内置插件 / Host Panel / Zip 包](./17-builtin-plugins-host-panel-and-zip-packages.md) | seed 内置；storage≡params；主机 FAB；zip 安装导出；SDK 减负 |
+| 18 | [18 市场 / 拖放 / 版本更新 / 反馈闭环](./18-plugin-marketplace-dnd-update-and-feedback-loop.md) | id+version 更新；Tauri DnD；overlay 圆角（用户确认）；进度/冲突态；host 隔离；**附录 A–K**（手测时间线·commits·超长 prompt 拆包） |
 
 ### 路径 B · 只学「如何写 prompt」
 
 精读每篇 **§原始 prompt 拆解** 与 **§给 AI 的提示模板**，对照根目录 `TODO` 原文；并打开 `src-tauri/prompts/*.prompt` 对照 15§11 / 16§7 的「失败模式 → 文件」表。  
-**AI 生成 / 契约分层** 精读 [15](./15-ai-mcp-prompt-composition.md) §2–3、§6.4；**插件 SDK 减负** 精读 [17](./17-builtin-plugins-host-panel-and-zip-packages.md) §7 与 `plugin_sdk.prompt`。
+**AI 生成 / 契约分层** 精读 [15](./15-ai-mcp-prompt-composition.md) §2–3、§6.4；**插件 SDK 减负** 精读 [17](./17-builtin-plugins-host-panel-and-zip-packages.md) §7 与 `plugin_sdk.prompt`；**拖放/更新反馈闭环** 精读 [18](./18-plugin-marketplace-dnd-update-and-feedback-loop.md) §2–6 与附录 A（手测时间线）/ B（commits）/ D（超长 prompt 拆包）。
 
 ### 路径 C · 只学发布工程
 
@@ -56,11 +57,11 @@
 
 ### 路径 F · 只学 AI 生成与 MCP
 
-`03`（CLI/daemon 心智）→ `15`（prompt 分层 / runtime / CORS 代理 / Settings 防抖）→ `16`（MCP tools / 日志 / HTTP）→ `17`（内置插件 / Host panel / zip / SDK 减负）→ `docs/mcp.md`，配合 `bun tauri dev` 真 key 手测。
+`03`（CLI/daemon 心智）→ `15`（prompt 分层 / runtime / CORS 代理 / Settings 防抖）→ `16`（MCP tools / 日志 / HTTP）→ `17`（内置插件 / Host panel / zip / SDK 减负）→ `18`（市场更新 / Tauri 拖放 / 反馈闭环）→ `docs/mcp.md`，配合 `bun tauri dev` 真 key 手测。
 
 ### 路径 G · 只学插件平台（作者 / 市场雏形）
 
-`15` §plugin dual-part → `16` §插件调试 tools → `17`（全文）→ 打开 `src-tauri/prompts/plugin_sdk.prompt` 与 `templates/builtin_plugins/README.md`，手测 FAB / ENV 覆盖 / zip 往返。
+`15` §plugin dual-part → `16` §插件调试 tools → `17`（全文）→ `18`（市场/拖放/更新/偏差表 + **附录 A–K**）→ 打开 `plugin_sdk.prompt` 与 `templates/builtin_plugins/README.md`，手测 FAB / ENV / **Finder 拖 zip（圆角 overlay）** / 一键更新保 data。
 
 ## 提交时间线（证据）
 
@@ -90,6 +91,7 @@
 | 插件窗 / Fix seed / dual-part / 流式 | `7b9a443` `5b270af` `0e5480b` | 15 §11 · 16 |
 | MCP tools 扩 + 日志分离 + App HTTP | `6e00da2` `8fb8b57` | 16 · 15 纠偏 |
 | 内置插件 / Host panel / zip 包 / 参数统一 | 工作区 `builtin_plugins` + `host_panel` + `package` | 17 |
+| 市场更新 / Tauri 拖放 / 进度冲突 / host 隔离 / overlay 圆角 | 工作区 `InstallPackageOpts` · PluginsPage `onDragDropEvent` · record 18 附录 A–K；关联 `8f68e7b` `02f60f9` `7b22b97` | 18 |
 
 ```bash
 git log --oneline --reverse
