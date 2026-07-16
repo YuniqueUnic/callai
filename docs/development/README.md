@@ -25,7 +25,7 @@
 ## 维护
 
 新增大阶段需求后：新增 `records/NN-*.md`，更新 `00-index.md` 时间线。
-最近完整长文示例：[`records/18-plugin-marketplace-dnd-update-and-feedback-loop.md`](./records/18-plugin-marketplace-dnd-update-and-feedback-loop.md)（市场/拖放/更新/多轮反馈闭环 + 附录 A–K：手测时间线、commits、DnD 三连坑、超长 prompt 拆包）；前篇平台骨架见 [`records/17-builtin-plugins-host-panel-and-zip-packages.md`](./records/17-builtin-plugins-host-panel-and-zip-packages.md)；时区/墙钟/GMT 误判见 [`records/12-runtime-hardening-and-sfx.md`](./records/12-runtime-hardening-and-sfx.md) **附录 A–B**；AI 生成墙钟见 [`records/15-ai-mcp-prompt-composition.md`](./records/15-ai-mcp-prompt-composition.md) §12。  
+最近完整长文示例：[`records/19-timezone-host-override-and-plugin-warmup.md`](./records/19-timezone-host-override-and-plugin-warmup.md)（时区/覆盖条/warmup）；另见 [`records/18-plugin-marketplace-dnd-update-and-feedback-loop.md`](./records/18-plugin-marketplace-dnd-update-and-feedback-loop.md)（市场/拖放/更新/多轮反馈闭环 + 附录 A–K：手测时间线、commits、DnD 三连坑、超长 prompt 拆包）；前篇平台骨架见 [`records/17-builtin-plugins-host-panel-and-zip-packages.md`](./records/17-builtin-plugins-host-panel-and-zip-packages.md)；时区/墙钟/GMT 误判见 [`records/12-runtime-hardening-and-sfx.md`](./records/12-runtime-hardening-and-sfx.md) **附录 A–B**；AI 生成墙钟见 [`records/15-ai-mcp-prompt-composition.md`](./records/15-ai-mcp-prompt-composition.md) §12。  
 禁止把私钥、本机绝对路径密钥、`assets/screenshot/original` 大文件写进教材附件。
 
 ## 专题速查

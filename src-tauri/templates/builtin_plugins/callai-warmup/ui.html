@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>warmup</title>
+  <style>
+    html, body { margin: 0; background: transparent; }
+  </style>
+</head>
+<body>
+  <script>
+    // Tiny payload so the host iframe + bridge path is exercised once.
+    window.__callaiWarmup = 1;
+    try {
+      if (window.callai && window.callai.ready) {
+        window.callai.ping && window.callai.ping();
+      }
+    } catch (e) {}
+  </script>
+</body>
+</html>

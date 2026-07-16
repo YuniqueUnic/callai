@@ -89,4 +89,57 @@ impl CallaiMcp {
         Self::ok_json(&res.map_err(Self::map_err)?)
     }
 
+
+    #[rmcp::tool(
+        description = "List alarm execution logs (stdout/stderr/status). Filter by alarm_id/status/query. Use after run_alarm to debug failures."
+    )]
+    fn list_execution_logs(
+        &self,
+        rmcp::handler::server::wrapper::Parameters(params): rmcp::handler::server::wrapper::Parameters<
+            ListExecutionLogsParams,
+        >,
+    ) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
+        use crate::domain::{ExecutionStatus, LogFilter};
+        let status = params.status.as_deref().and_then(|s| match s.trim().to_ascii_lowercase().as_str() {
+            "success" => Some(ExecutionStatus::Success),
+            "failed" => Some(ExecutionStatus::Failed),
+            "running" => Some(ExecutionStatus::Running),
+            "canceled" | "cancelled" => Some(ExecutionStatus::Canceled),
+            "timeout" => Some(ExecutionStatus::Timeout),
+            "retrying" => Some(ExecutionStatus::Retrying),
+            _ => None,
+        });
+        let filter = LogFilter {
+            alarm_id: params.alarm_id.clone(),
+            status,
+            query: params.query.clone(),
+            limit: params.limit.clamp(1, 200),
+        };
+        let args = json!({
+            "alarm_id": &params.alarm_id,
+            "status": &params.status,
+            "query": &params.query,
+            "limit": filter.limit,
+        });
+        let res = self.service.list_logs(filter).map(|v| json!(v));
+        self.audit("list_execution_logs", &args, &res);
+        Self::ok_json(&res.map_err(Self::map_err)?)
+    }
+
+    #[rmcp::tool(description = "Enable or disable one alarm by id (does not delete)")]
+    fn set_alarm_enabled(
+        &self,
+        rmcp::handler::server::wrapper::Parameters(params): rmcp::handler::server::wrapper::Parameters<
+            SetAlarmEnabledParams,
+        >,
+    ) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
+        let args = json!({ "id": &params.id, "enabled": params.enabled });
+        let res = self
+            .service
+            .set_enabled(&params.id, params.enabled)
+            .map(|a| json!(a));
+        self.audit("set_alarm_enabled", &args, &res);
+        Self::ok_json(&res.map_err(Self::map_err)?)
+    }
+
 }

@@ -111,6 +111,9 @@ pub fn open_plugin_window(
     params: Option<serde_json::Map<String, Value>>,
 ) -> Result<(), String> {
     crate::domain::validate_plugin_id(&id).map_err(map_err)?;
+    if crate::infra::plugin::is_internal_plugin(&id) {
+        return Err("internal plugin cannot be opened from UI".into());
+    }
     let summary = state.plugins.get_summary(&id).map_err(map_err)?;
     let map = params.unwrap_or_default();
     crate::infra::plugin::open_plugin_window_with_params(

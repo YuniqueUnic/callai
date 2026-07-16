@@ -1,7 +1,7 @@
 {
   "id": "work-report",
   "name": "工作汇报",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "日/周/月报。settings/ENV：kind, placeholderHints, notifyOnSave。",
   "permissions": [
     "storage",
