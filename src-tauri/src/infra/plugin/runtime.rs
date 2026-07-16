@@ -78,7 +78,6 @@ fn insert_string_param(map: &mut Map<String, Value>, key: &str, value: &str) {
     map.insert(k.to_string(), Value::String(value.to_string()));
 }
 
-
 /// Host-injected env keys — never treated as plugin launch params.
 fn is_host_injected_env(key: &str) -> bool {
     let u = key.to_ascii_uppercase();
@@ -200,7 +199,6 @@ pub fn open_plugin_window_with_params(
     Ok("open_window")
 }
 
-
 /// Hidden internal plugin id used only to cold-start the plugin host WebView.
 pub const WARMUP_PLUGIN_ID: &str = "callai-warmup";
 
@@ -217,13 +215,8 @@ pub fn ensure_warmup_plugin(mgr: &crate::infra::plugin::PluginManager) -> Domain
     let manifest_json =
         include_str!("../../../templates/builtin_plugins/callai-warmup/manifest.json");
     let ui_html = include_str!("../../../templates/builtin_plugins/callai-warmup/ui.html");
-    let mut manifest: crate::domain::PluginManifest =
-        serde_json::from_str(manifest_json).map_err(|e| {
-            DomainError::new(
-                ErrorCode::ConfigCorrupt,
-                format!("warmup manifest: {e}"),
-            )
-        })?;
+    let mut manifest: crate::domain::PluginManifest = serde_json::from_str(manifest_json)
+        .map_err(|e| DomainError::new(ErrorCode::ConfigCorrupt, format!("warmup manifest: {e}")))?;
     manifest.id = WARMUP_PLUGIN_ID.into();
     let draft = crate::domain::PluginDraft {
         manifest,
@@ -236,7 +229,10 @@ pub fn ensure_warmup_plugin(mgr: &crate::infra::plugin::PluginManager) -> Domain
         ("user_edited_ui", "0"),
     ];
     let _ = mgr.write_plugin_files(&draft, None, &meta)?;
-    tracing::info!(plugin_id = WARMUP_PLUGIN_ID, "seeded internal warmup plugin");
+    tracing::info!(
+        plugin_id = WARMUP_PLUGIN_ID,
+        "seeded internal warmup plugin"
+    );
     Ok(())
 }
 
@@ -308,8 +304,6 @@ pub fn warmup_plugin_host(app: &AppHandle) -> DomainResult<()> {
     tracing::info!("plugin host warmup window opened (will stay hidden)");
     Ok(())
 }
-
-
 
 pub fn run_builtin_plugin(
     args: &[String],

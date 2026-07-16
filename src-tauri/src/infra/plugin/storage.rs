@@ -5,7 +5,10 @@ use std::sync::Mutex;
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection, OptionalExtension};
 
-use crate::domain::{DomainError, DomainResult, ErrorCode, PluginHistoryEntry, MCP_LOG_MAX, PLUGIN_INVOKE_HISTORY_MAX};
+use crate::domain::{
+    DomainError, DomainResult, ErrorCode, PluginHistoryEntry, MCP_LOG_MAX,
+    PLUGIN_INVOKE_HISTORY_MAX,
+};
 
 pub struct PluginDb {
     conn: Mutex<Connection>,
@@ -100,7 +103,7 @@ impl PluginDb {
         Ok(keys)
     }
 
-        pub fn list_keys(&self, prefix: Option<&str>) -> DomainResult<Vec<String>> {
+    pub fn list_keys(&self, prefix: Option<&str>) -> DomainResult<Vec<String>> {
         let conn = self.conn.lock().unwrap();
         let mut out = Vec::new();
         if let Some(p) = prefix {

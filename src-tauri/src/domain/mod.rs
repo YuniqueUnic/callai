@@ -9,10 +9,10 @@ pub mod prompts;
 pub mod retry;
 mod runtime_context;
 pub mod schedule;
-mod timezone_detect;
 mod secret;
 pub mod settings;
 pub mod templates;
+mod timezone_detect;
 
 pub use ai_chat::*;
 pub use alarm::*;
@@ -24,9 +24,9 @@ pub use plugin_registry::*;
 pub use prompts::*;
 pub use retry::*;
 pub use schedule::*;
-pub use timezone_detect::detect_system_timezone;
 pub use settings::*;
 pub use templates::*;
+pub use timezone_detect::detect_system_timezone;
 
 pub use runtime_context::AiRuntimeContext;
 pub use secret::generate_secret_token;

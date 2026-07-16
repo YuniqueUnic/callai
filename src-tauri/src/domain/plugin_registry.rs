@@ -10,7 +10,6 @@ pub const REGISTRY_SCHEMA: u32 = 1;
 pub const DEFAULT_PLUGIN_REGISTRY_URL: &str =
     "https://raw.githubusercontent.com/YuniqueUnic/callai-plugin-registry/main/registry.json";
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegistryIndex {
     pub schema: u32,
@@ -82,9 +81,8 @@ impl RegistryIndex {
 }
 
 pub fn parse_registry_index(raw: &str) -> DomainResult<RegistryIndex> {
-    let idx: RegistryIndex = serde_json::from_str(raw).map_err(|e| {
-        DomainError::new(ErrorCode::ConfigCorrupt, format!("registry json: {e}"))
-    })?;
+    let idx: RegistryIndex = serde_json::from_str(raw)
+        .map_err(|e| DomainError::new(ErrorCode::ConfigCorrupt, format!("registry json: {e}")))?;
     idx.validate()?;
     Ok(idx)
 }

@@ -148,7 +148,12 @@ impl CallaiMcp {
         let args = json!({ "id": &params.id, "limit": params.limit });
         let res = self
             .plugins
-            .list_history(&params.id, params.limit.min(crate::domain::PLUGIN_INVOKE_HISTORY_MAX as u32))
+            .list_history(
+                &params.id,
+                params
+                    .limit
+                    .min(crate::domain::PLUGIN_INVOKE_HISTORY_MAX as u32),
+            )
             .map(|h| json!(h));
         self.audit("plugin_history", &args, &res);
         Self::ok_json(&res.map_err(Self::map_err)?)
@@ -213,7 +218,6 @@ impl CallaiMcp {
         Self::ok_json(&res.map_err(Self::map_err)?)
     }
 
-
     #[rmcp::tool(
         description = "Open/focus plugin host window. REQUIRES desktop `callai` GUI running (in-app MCP). Pure `mcp-server --http` without GUI returns app-handle error — then ask user to open app or use UI. Returns {action, ms, plugin_id}."
     )]
@@ -233,15 +237,15 @@ impl CallaiMcp {
         let map = params.params.clone().unwrap_or_default();
         let args = json!({ "id": &params.id, "params": &map });
         let t0 = Instant::now();
-        let res = crate::infra::plugin::open_plugin_from_app_handle(&params.id, &map).map(|action| {
-            json!({
-                "action": action,
-                "plugin_id": params.id,
-                "ms": t0.elapsed().as_millis() as u64,
-            })
-        });
+        let res =
+            crate::infra::plugin::open_plugin_from_app_handle(&params.id, &map).map(|action| {
+                json!({
+                    "action": action,
+                    "plugin_id": params.id,
+                    "ms": t0.elapsed().as_millis() as u64,
+                })
+            });
         self.audit("open_plugin_window", &args, &res);
         Self::ok_json(&res.map_err(Self::map_err)?)
     }
-
 }

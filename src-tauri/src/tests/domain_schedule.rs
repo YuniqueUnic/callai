@@ -133,22 +133,13 @@ fn probe_system_tz_and_daily_20_remaining() {
         times: vec!["20:00".into()],
     };
     let now = chrono::Utc::now();
-    let next = s
-        .next_trigger_after_in_tz(now, tz)
-        .unwrap()
-        .expect("next");
+    let next = s.next_trigger_after_in_tz(now, tz).unwrap().expect("next");
     let mins = (next - now).num_minutes();
     eprintln!("now_utc={now}");
     eprintln!("next_utc={next}");
     eprintln!("mins_remaining={mins} hours={:.2}", mins as f64 / 60.0);
-    eprintln!(
-        "next_in_tz={}",
-        next.with_timezone(&tz)
-    );
-    eprintln!(
-        "next_shanghai={}",
-        next.with_timezone(&Shanghai)
-    );
+    eprintln!("next_in_tz={}", next.with_timezone(&tz));
+    eprintln!("next_shanghai={}", next.with_timezone(&Shanghai));
     // On Asia/Shanghai host ~15:00, daily 20:00 should be ~5h not ~13h
     if tz.name() == "Asia/Shanghai" || tz.name() == "Asia/Chongqing" {
         assert!(

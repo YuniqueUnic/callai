@@ -33,7 +33,10 @@ fn export_import_roundtrip_bare_and_with_data() {
 
     let mgr2 = PluginManager::from_root(dir.path().join("plugins2")).unwrap();
     let s2 = mgr2
-        .import_zip_bytes(&bare, InstallPackageOpts::from_conflict(InstallConflictMode::Rename))
+        .import_zip_bytes(
+            &bare,
+            InstallPackageOpts::from_conflict(InstallConflictMode::Rename),
+        )
         .unwrap()
         .expect("installed bare");
     assert!(s2.id.starts_with("pack-demo"));
@@ -43,7 +46,10 @@ fn export_import_roundtrip_bare_and_with_data() {
     assert!(got.get("value").map(|v| v.is_null()).unwrap_or(true) || got["value"].is_null());
 
     let s3 = mgr2
-        .import_zip_bytes(&with_data, InstallPackageOpts::from_conflict(InstallConflictMode::Rename))
+        .import_zip_bytes(
+            &with_data,
+            InstallPackageOpts::from_conflict(InstallConflictMode::Rename),
+        )
         .unwrap()
         .expect("installed data");
     let got2 = mgr2
@@ -72,14 +78,23 @@ fn conflict_fail_and_overwrite() {
     let zip = mgr.export_zip_bytes("same-id", false).unwrap();
 
     assert!(mgr
-        .import_zip_bytes(&zip, InstallPackageOpts::from_conflict(InstallConflictMode::Fail))
+        .import_zip_bytes(
+            &zip,
+            InstallPackageOpts::from_conflict(InstallConflictMode::Fail)
+        )
         .is_err());
     assert!(mgr
-        .import_zip_bytes(&zip, InstallPackageOpts::from_conflict(InstallConflictMode::Skip))
+        .import_zip_bytes(
+            &zip,
+            InstallPackageOpts::from_conflict(InstallConflictMode::Skip)
+        )
         .unwrap()
         .is_none());
     let over = mgr
-        .import_zip_bytes(&zip, InstallPackageOpts::from_conflict(InstallConflictMode::Overwrite))
+        .import_zip_bytes(
+            &zip,
+            InstallPackageOpts::from_conflict(InstallConflictMode::Overwrite),
+        )
         .unwrap()
         .unwrap();
     assert_eq!(over.id, "same-id");
@@ -118,12 +133,9 @@ fn overwrite_blocks_silent_downgrade_keeps_data() {
         ui: "ui.html".into(),
         params: Default::default(),
     };
-    let zip = crate::infra::plugin::package::build_plugin_zip(
-        &lower_manifest,
-        "<html>v1</html>",
-        None,
-    )
-    .unwrap();
+    let zip =
+        crate::infra::plugin::package::build_plugin_zip(&lower_manifest, "<html>v1</html>", None)
+            .unwrap();
 
     let err = mgr
         .import_zip_bytes(
@@ -163,8 +175,7 @@ fn overwrite_blocks_silent_downgrade_keeps_data() {
         .unwrap();
     // storage.get returns the value itself
     assert!(
-        v.get("keep").and_then(|x| x.as_bool()) == Some(true)
-            || format!("{v}").contains("keep"),
+        v.get("keep").and_then(|x| x.as_bool()) == Some(true) || format!("{v}").contains("keep"),
         "data should be preserved: {v}"
     );
 }

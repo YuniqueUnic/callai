@@ -13,6 +13,6 @@ mod plugin_package;
 mod plugin_registry;
 mod process_timeout;
 mod prompts_embed;
+mod real_db_next_trigger;
 mod scheduler_queue;
 mod service_alarm;
-mod real_db_next_trigger;

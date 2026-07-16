@@ -89,7 +89,6 @@ impl CallaiMcp {
         Self::ok_json(&res.map_err(Self::map_err)?)
     }
 
-
     #[rmcp::tool(
         description = "List alarm execution logs (stdout/stderr/status). Filter by alarm_id/status/query. Use after run_alarm to debug failures."
     )]
@@ -100,15 +99,19 @@ impl CallaiMcp {
         >,
     ) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
         use crate::domain::{ExecutionStatus, LogFilter};
-        let status = params.status.as_deref().and_then(|s| match s.trim().to_ascii_lowercase().as_str() {
-            "success" => Some(ExecutionStatus::Success),
-            "failed" => Some(ExecutionStatus::Failed),
-            "running" => Some(ExecutionStatus::Running),
-            "canceled" | "cancelled" => Some(ExecutionStatus::Canceled),
-            "timeout" => Some(ExecutionStatus::Timeout),
-            "retrying" => Some(ExecutionStatus::Retrying),
-            _ => None,
-        });
+        let status =
+            params
+                .status
+                .as_deref()
+                .and_then(|s| match s.trim().to_ascii_lowercase().as_str() {
+                    "success" => Some(ExecutionStatus::Success),
+                    "failed" => Some(ExecutionStatus::Failed),
+                    "running" => Some(ExecutionStatus::Running),
+                    "canceled" | "cancelled" => Some(ExecutionStatus::Canceled),
+                    "timeout" => Some(ExecutionStatus::Timeout),
+                    "retrying" => Some(ExecutionStatus::Retrying),
+                    _ => None,
+                });
         let filter = LogFilter {
             alarm_id: params.alarm_id.clone(),
             status,
@@ -141,5 +144,4 @@ impl CallaiMcp {
         self.audit("set_alarm_enabled", &args, &res);
         Self::ok_json(&res.map_err(Self::map_err)?)
     }
-
 }

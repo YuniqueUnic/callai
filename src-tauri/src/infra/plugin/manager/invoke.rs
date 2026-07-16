@@ -101,7 +101,8 @@ impl PluginManager {
                     .get("limit")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(50)
-                    .min(crate::domain::PLUGIN_INVOKE_HISTORY_MAX as u64) as u32;
+                    .min(crate::domain::PLUGIN_INVOKE_HISTORY_MAX as u64)
+                    as u32;
                 let db = self.open_db(plugin_id)?;
                 Ok(json!(db.list_history(limit)?))
             }

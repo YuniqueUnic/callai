@@ -95,7 +95,9 @@ impl CallaiMcp {
         );
     }
 
-    pub(crate) fn ok_text(v: impl Into<String>) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
+    pub(crate) fn ok_text(
+        v: impl Into<String>,
+    ) -> Result<rmcp::model::CallToolResult, rmcp::ErrorData> {
         use rmcp::model::IntoContents;
         let s: String = v.into();
         Ok(rmcp::model::CallToolResult::success(s.into_contents()))
@@ -130,9 +132,7 @@ pub(crate) fn truncate(s: &str, max: usize) -> String {
 
 // ── Param schemas ───────────────────────────────────────────────────────────
 
-
 // ── Tools ───────────────────────────────────────────────────────────────────
-
 
 #[rmcp::tool_handler]
 impl rmcp::ServerHandler for CallaiMcp {
