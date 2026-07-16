@@ -180,7 +180,6 @@ fn looks_like_sqlite(bytes: &[u8]) -> bool {
     bytes.len() >= MAGIC.len() && &bytes[..MAGIC.len()] == MAGIC
 }
 
-
 fn read_zip_files(bytes: &[u8]) -> DomainResult<std::collections::HashMap<String, Vec<u8>>> {
     if bytes.is_empty() {
         return Err(err_invalid("zip is empty"));

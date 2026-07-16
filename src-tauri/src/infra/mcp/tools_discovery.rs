@@ -161,5 +161,4 @@ impl CallaiMcp {
         self.audit("get_runtime_context", &args, &res);
         Self::ok_json(&res.map_err(Self::map_err)?)
     }
-
 }

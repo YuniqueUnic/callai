@@ -84,7 +84,9 @@ pub fn plugin_get_console(
     id: String,
     limit: Option<u32>,
 ) -> Result<Vec<PluginConsoleEntry>, String> {
-    let lim = limit.unwrap_or(100).min(crate::domain::PLUGIN_CONSOLE_MAX as u32) as usize;
+    let lim = limit
+        .unwrap_or(100)
+        .min(crate::domain::PLUGIN_CONSOLE_MAX as u32) as usize;
     Ok(state.plugin_console.list(&id, lim))
 }
 
@@ -349,7 +351,9 @@ pub fn peek_plugin_zip(
 }
 
 #[tauri::command]
-pub async fn fetch_plugin_registry(url: Option<String>) -> Result<crate::domain::RegistryIndex, String> {
+pub async fn fetch_plugin_registry(
+    url: Option<String>,
+) -> Result<crate::domain::RegistryIndex, String> {
     let url = url
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())

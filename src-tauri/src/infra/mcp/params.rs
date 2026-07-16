@@ -120,7 +120,6 @@ pub struct ComposePromptParams {
     pub sdk: Option<bool>,
 }
 
-
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ListExecutionLogsParams {
     #[serde(default)]

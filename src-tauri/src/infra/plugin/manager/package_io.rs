@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 
 use super::PluginManager;
 use crate::domain::{DomainError, DomainResult, ErrorCode, PluginDraft, PluginSummary};
-use crate::infra::plugin::package::{self, InstallConflictMode, PluginPackage, version_cmp};
+use crate::infra::plugin::package::{self, version_cmp, InstallConflictMode, PluginPackage};
 
 /// Options for installing a zip package (marketplace / drag-drop).
 #[derive(Debug, Clone, Copy)]

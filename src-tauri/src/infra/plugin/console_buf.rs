@@ -36,7 +36,11 @@ fn push_capped(q: &mut VecDeque<PluginConsoleEntry>, entry: PluginConsoleEntry, 
     }
 }
 
-fn list_rev_take(q: &VecDeque<PluginConsoleEntry>, limit: usize, max: usize) -> Vec<PluginConsoleEntry> {
+fn list_rev_take(
+    q: &VecDeque<PluginConsoleEntry>,
+    limit: usize,
+    max: usize,
+) -> Vec<PluginConsoleEntry> {
     let lim = limit.clamp(1, max);
     q.iter()
         .rev()
